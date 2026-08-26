@@ -94,7 +94,7 @@
 
         #chat-modal {
             display: none; position: fixed; bottom: 70px; right: 15px; width: 90vw; max-width: 380px;
-            height: 450px; background: rgba(15, 10, 25, 0.98); border: 2px solid #673ab7;
+            height: 480px; background: rgba(15, 10, 25, 0.98); border: 2px solid #673ab7;
             border-radius: 15px; z-index: 1000; flex-direction: column; overflow: hidden;
             box-shadow: 0 10px 30px rgba(0,0,0,0.8);
         }
@@ -106,18 +106,33 @@
             flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
         }
         .chat-msg {
-            max-width: 80%; padding: 8px 12px; border-radius: 10px; font-size: 0.85rem; line-height: 1.3;
+            max-width: 85%; padding: 8px 12px; border-radius: 10px; font-size: 0.85rem; line-height: 1.3;
         }
         .chat-msg.me { align-self: flex-end; background: #673ab7; color: white; }
         .chat-msg.partner { align-self: flex-start; background: #2a1b38; border: 1px solid #673ab7; color: white; }
-        .chat-msg img, .chat-msg video { max-width: 100%; border-radius: 5px; margin-top: 5px; }
+        .chat-msg img, .chat-msg video { max-width: 100%; border-radius: 5px; margin-top: 5px; cursor: pointer; }
 
         #chat-controls {
             padding: 8px; background: #100a1c; border-top: 1px solid #332244;
-            display: flex; flex-direction: column; gap: 5px;
+            display: flex; flex-direction: column; gap: 6px;
         }
         .chat-btn-row { display: flex; gap: 5px; justify-content: space-around; }
         .btn-chat-media { padding: 6px 10px; font-size: 0.75rem; border-radius: 5px; border: 1px solid #673ab7; background: rgba(255,255,255,0.1); color: white; cursor: pointer; }
+        .btn-chat-rec { background: rgba(233, 30, 99, 0.2); border-color: var(--primary-accent); }
+
+        /* LIGHTBOX FULLSCREEN PER FOTO E VIDEO */
+        #lightbox-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.95); z-index: 2000; justify-content: center;
+            align-items: center; padding: 20px;
+        }
+        #lightbox-content { max-width: 100%; max-height: 90vh; border-radius: 10px; box-shadow: 0 0 30px rgba(233, 30, 99, 0.5); }
+        #lightbox-close {
+            position: absolute; top: 20px; right: 20px; color: white; font-size: 2rem;
+            font-weight: bold; cursor: pointer; background: rgba(255,255,255,0.1);
+            width: 45px; height: 45px; border-radius: 50%; display: flex;
+            align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.3);
+        }
 
         #gallery-grid {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -127,7 +142,7 @@
             background: rgba(30,20,40,0.8); border: 1px solid #673ab7; border-radius: 8px;
             padding: 8px; display: flex; flex-direction: column; align-items: center; gap: 5px;
         }
-        .gallery-card img, .gallery-card video { width: 100%; height: 110px; object-fit: cover; border-radius: 5px; }
+        .gallery-card img, .gallery-card video { width: 100%; height: 110px; object-fit: cover; border-radius: 5px; cursor: pointer; }
 
         #vn-screen { display: none; width: 100vw; height: 100vh; position: relative; background-size: cover; background-position: center; }
         #level-indicator { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.75); border: 1px solid var(--primary-accent); padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; z-index: 10; }
@@ -186,6 +201,12 @@
         <div class="spinner"></div>
     </div>
 
+    <!-- LIGHTBOX FULLSCREEN MODAL PER FOTO E VIDEO -->
+    <div id="lightbox-modal" onclick="closeLightbox()">
+        <span id="lightbox-close" onclick="closeLightbox()">✕</span>
+        <div id="lightbox-container" onclick="event.stopPropagation();"></div>
+    </div>
+
     <!-- BOTTONE FLOTTANTE LIVE CHAT P2P -->
     <button id="chat-toggle-btn" onclick="toggleChat()">
         💬 Chat Live <span id="chat-badge">0</span>
@@ -208,7 +229,8 @@
             <div class="chat-btn-row">
                 <button class="btn-chat-media" onclick="document.getElementById('chat-photo-input').click()">📷 Foto</button>
                 <button class="btn-chat-media" onclick="document.getElementById('chat-video-input').click()">🎥 Video</button>
-                <button class="btn-chat-media" onclick="document.getElementById('chat-file-input').click()">🎙️/📁 Media</button>
+                <button class="btn-chat-media btn-chat-rec" id="btn-record-audio" onclick="toggleAudioRecording()">🎙️ Registra Audio</button>
+                <button class="btn-chat-media" onclick="document.getElementById('chat-file-input').click()">📁 File</button>
             </div>
             <div style="display:flex; gap:5px;">
                 <input type="text" id="chat-text-input" placeholder="Scrivi un messaggio..." style="flex:1; padding:8px; border-radius:5px; border:1px solid #673ab7; background:#000; color:white;">
@@ -339,6 +361,7 @@
         var currentDrawnAction = null;
         var unreadChatCount = 0;
 
+        // --- SISTEMA AUDIO NOTIFICHE NATIVO ---
         function playNotificationSound() {
             try {
                 var ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -354,6 +377,83 @@
                 osc.start();
                 osc.stop(ctx.currentTime + 0.3);
             } catch(e){}
+        }
+
+        // --- LIGHTBOX FULLSCREEN PER FOTO E VIDEO ---
+        function openLightbox(src, isVideo) {
+            var modal = document.getElementById('lightbox-modal');
+            var container = document.getElementById('lightbox-container');
+            
+            if (isVideo) {
+                container.innerHTML = '<video id="lightbox-content" src="' + src + '" controls autoplay style="max-width:100%; max-height:85vh;"></video>';
+            } else {
+                container.innerHTML = '<img id="lightbox-content" src="' + src + '" style="max-width:100%; max-height:85vh;">';
+            }
+            modal.style.display = 'flex';
+        }
+
+        function closeLightbox() {
+            var modal = document.getElementById('lightbox-modal');
+            var container = document.getElementById('lightbox-container');
+            container.innerHTML = '';
+            modal.style.display = 'none';
+        }
+
+        // --- REGISTRATORE VOCALE IN-APP (MEDIARECORDER) ---
+        var mediaRecorder = null;
+        var audioChunks = [];
+        var isRecording = false;
+
+        function toggleAudioRecording() {
+            var btn = document.getElementById('btn-record-audio');
+            if (!isRecording) {
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(function(stream) {
+                        mediaRecorder = new MediaRecorder(stream);
+                        audioChunks = [];
+                        
+                        mediaRecorder.ondataavailable = function(e) {
+                            if (e.data.size > 0) audioChunks.push(e.data);
+                        };
+
+                        mediaRecorder.onstop = function() {
+                            var audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                            var reader = new FileReader();
+                            reader.onloadend = function() {
+                                var base64Data = reader.result;
+                                appendChatMediaMessage("Tu", base64Data, "audio", "me");
+                                saveMediaToLocalDB(base64Data, "audio", "Nota Vocale", currentPlayer);
+
+                                if (conn && conn.open) {
+                                    conn.send({
+                                        type: "media",
+                                        mediaType: "audio",
+                                        fileData: base64Data,
+                                        category: "Nota Vocale",
+                                        sender: currentPlayer
+                                    });
+                                }
+                            };
+                            reader.readAsDataURL(audioBlob);
+                        };
+
+                        mediaRecorder.start();
+                        isRecording = true;
+                        btn.innerText = "⏹️ Invia Audio";
+                        btn.style.background = "#e91e63";
+                    })
+                    .catch(function(err) {
+                        alert("Impossibile accedere al microfono: " + err);
+                    });
+            } else {
+                if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                    mediaRecorder.stop();
+                    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                }
+                isRecording = false;
+                btn.innerText = "🎙️ Registra Audio";
+                btn.style.background = "rgba(233, 30, 99, 0.2)";
+            }
         }
 
         // --- INDEXEDDB ---
@@ -484,17 +584,13 @@
                 return;
             }
 
-            // Invia la selezione privata al partner
             sendP2PCommand({ type: "SYNC_CATEGORIES_SUBMIT", categories: mySelectedCategories });
-
-            // Passa alla schermata di attesa se il partner non ha ancora inviato la sua
             showScreen('waiting-screen');
             checkBothCategoriesSubmitted();
         }
 
         function checkBothCategoriesSubmitted() {
             if (mySelectedCategories.length > 0 && partnerSelectedCategories !== null) {
-                // Calcola l'intersezione (categorie accettate da entrambi)
                 activeCategories = mySelectedCategories.filter(function(cat) {
                     return partnerSelectedCategories.indexOf(cat) !== -1;
                 });
@@ -530,7 +626,7 @@
 
             var mazzo = currentLevelActions[victim];
             var randomIndex = Math.floor(Math.random() * mazzo.length);
-            var drawn = mazzo[randomIndex]; // L'azione viene presa ma RIMOSSA solo dopo completeAction()
+            var drawn = mazzo[randomIndex];
 
             spinTheWheel(victim, drawn, false);
             sendP2PCommand({ type: "SYNC_SPIN_WHEEL", victim: victim, drawnAction: drawn });
@@ -547,7 +643,6 @@
         }
 
         function handleCompleteActionClick() {
-            // Rimuove l'azione completata dal mazzo
             if (currentDrawnAction && selectedVictim) {
                 var index = currentLevelActions[selectedVictim].indexOf(currentDrawnAction);
                 if (index !== -1) {
@@ -564,8 +659,6 @@
                 sendP2PCommand({ type: "SYNC_NEXT_LEVEL" });
             }
         }
-
-        // --- ESECUZIONE LOCALE E SINCRONIZZATA ---
 
         function selectScenario(scenarioId, isRemote) {
             currentScenarioId = scenarioId; 
@@ -597,7 +690,6 @@
         function loadLevelNarrative() {
             var levelData = roleplayScenarios[currentScenarioId].levels[currentLevelIndex];
             
-            // Popola i mazzi del livello con le azioni appartenenti alle categorie comuni approvate
             currentLevelActions["Claudia"] = levelData.actions.filter(function(a) {
                 return a.actor === "Claudia" && activeCategories.indexOf(a.category) !== -1;
             });
@@ -951,9 +1043,9 @@
             
             var mediaHTML = "";
             if (mediaType === "image") {
-                mediaHTML = '<img src="' + base64Data + '">';
+                mediaHTML = '<img src="' + base64Data + '" onclick="openLightbox(\'' + base64Data + '\', false)">';
             } else if (mediaType === "video") {
-                mediaHTML = '<video src="' + base64Data + '" controls></video>';
+                mediaHTML = '<video src="' + base64Data + '" controls onclick="openLightbox(\'' + base64Data + '\', true)"></video>';
             } else {
                 mediaHTML = '<audio src="' + base64Data + '" controls style="width:100%;"></audio>';
             }
@@ -993,9 +1085,9 @@
                     var fileName = "Scenari_" + item.category + "_" + item.timestamp.replace(/[/, :]/g, "-") + "." + ext;
 
                     if (item.type === "image") {
-                        mediaHTML = '<img src="' + item.data + '">';
+                        mediaHTML = '<img src="' + item.data + '" onclick="openLightbox(\'' + item.data + '\', false)">';
                     } else if (item.type === "video") {
-                        mediaHTML = '<video src="' + item.data + '" controls></video>';
+                        mediaHTML = '<video src="' + item.data + '" controls onclick="openLightbox(\'' + item.data + '\', true)"></video>';
                     } else {
                         mediaHTML = '<audio src="' + item.data + '" controls style="width:100%;"></audio>';
                     }
