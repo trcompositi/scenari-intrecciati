@@ -14,19 +14,24 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-color); overflow: hidden; }
+        body { background-color: var(--bg-color); color: var(--text-color); overflow-x: hidden; }
 
         .menu-screen {
-            display: none; flex-direction: column; justify-content: flex-start; align-items: center;
-            height: 100vh; background: linear-gradient(145deg, #170f1f, #0a060d); text-align: center;
-            animation: fadeIn 0.4s ease; padding: 2rem 1rem; overflow-y: auto; position: relative;
+            display: none; 
+            flex-direction: column; 
+            justify-content: flex-start; 
+            align-items: center;
+            min-height: 100vh; 
+            background: linear-gradient(145deg, #170f1f, #0a060d); 
+            text-align: center;
+            padding: 2rem 1rem; 
+            position: relative;
         }
-        .menu-screen.active { display: flex; justify-content: center; }
         
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .menu-screen.active { display: flex !important; }
 
         .title {
-            font-size: 2.2rem; margin-bottom: 1.5rem; margin-top: 1rem;
+            font-size: 2rem; margin-bottom: 1rem; margin-top: 1rem;
             background: -webkit-linear-gradient(45deg, var(--primary-accent), #673ab7);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
@@ -34,7 +39,7 @@
         .btn {
             width: 280px; padding: 15px; margin: 8px; border: none; border-radius: 8px;
             font-size: 1.05rem; font-weight: bold; color: white; cursor: pointer;
-            transition: transform 0.2s, background-color 0.2s;
+            transition: transform 0.2s;
         }
         .btn:active { transform: scale(0.96); }
         .btn-tiziano { background: linear-gradient(45deg, var(--secondary-accent), #0d47a1); }
@@ -103,14 +108,14 @@
     </div>
 
     <div id="scenario-screen" class="menu-screen">
-        <button class="back-btn" onclick="goBackTo('selection-screen')">← Indietro</button>
+        <button class="back-btn" onclick="showScreen('selection-screen')">← Indietro</button>
         <h1 class="title">Seleziona la Storia</h1>
         <p style="margin-bottom: 20px; color: #a996b8;">Scegliete in base a dove vi trovate ora.</p>
         <div id="scenario-list-container" style="display: flex; flex-direction: column; align-items: center; width: 100%;"></div>
     </div>
 
     <div id="customize-screen" class="menu-screen">
-        <button class="back-btn" onclick="goBackTo('scenario-screen')">← Indietro</button>
+        <button class="back-btn" onclick="showScreen('scenario-screen')">← Indietro</button>
         <h1 class="title" style="font-size: 1.8rem; margin-bottom: 5px;">Regole d'Ingaggio</h1>
         <p style="color: #a996b8; margin-bottom: 15px; font-size: 0.9rem;">Selezionate le categorie che desiderate includere stasera.</p>
         <div class="checklist-container">
@@ -123,7 +128,7 @@
     </div>
 
     <div id="briefing-screen" class="menu-screen">
-        <button class="back-btn" onclick="goBackTo('customize-screen')">← Indietro</button>
+        <button class="back-btn" onclick="showScreen('customize-screen')">← Indietro</button>
         <h1 class="title" style="font-size: 1.8rem;">Il Vostro Copione</h1>
         <p style="margin-bottom: 20px; color: #a996b8;">Leggete attentamente chi siete prima di iniziare.</p>
         <div class="checklist-container">
@@ -180,10 +185,12 @@
     </div>
 
     <script>
-        var roleplayScenarios = {
+        var localDatabaseScenarios = {
+            // ==========================================
+            // CONTESTO 1: INSIEME A LETTO (3 SCENARI)
+            // ==========================================
             "errore_prenotazione": {
-                title: "Errore di Prenotazione",
-                context: "Insieme a Letto",
+                title: "Errore di Prenotazione", context: "Insieme a Letto",
                 roles: { "Claudia": "La Viaggiatrice", "Tiziano": "Lo Sconosciuto" },
                 briefing: {
                     "Claudia": "Il tuo volo è stato cancellato per la tempesta. Avete diviso l'unico letto matrimoniale giurando di rimanere ciascuno sulla propria metà. Sei sotto le coperte al buio, riservata ma incuriosita.",
@@ -200,25 +207,16 @@
                         actions: [
                             { actor: "Claudia", text: "Muovi i piedi sotto le coperte fino a sfiorare 'per sbaglio' le gambe di Tiziano, ritirandoti subito.", category: "Soft" },
                             { actor: "Claudia", text: "Sussurra nel buio per chiedergli se anche lui non riesce a dormire.", category: "Romantico" },
-                            { actor: "Claudia", text: "Fai finta di girarti nel sonno e appoggia un braccio oltre il cuscino di confine.", category: "Teasing" },
                             { actor: "Tiziano", text: "Allunga un braccio fingendo di cercare le coperte e sfiora il fianco di Claudia.", category: "Soft" },
-                            { actor: "Tiziano", text: "Chiedile sottovoce che profumo indossa, dicendo che ti sta distraendo dal prendere sonno.", category: "Teasing" },
-                            { actor: "Tiziano", text: "Spostati leggermente verso di lei in modo che le vostre spalle si tocchino appena.", category: "Coccole" }
+                            { actor: "Tiziano", text: "Chiedile sottovoce che profumo indossa, dicendo che ti sta distraendo dal prendere sonno.", category: "Teasing" }
                         ]
                     },
                     {
                         level: 2, background: "https://images.unsplash.com/photo-1519500099198-d1a1b415e61d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-                        introDialogues: [
-                            { speaker: "Lo Sconosciuto", text: "Forse potremmo... avvicinarci un po'. Solo per non congelare." },
-                            { speaker: "La Viaggiatrice", text: "Solo per scaldarci. Non farti strane idee..." }
-                        ],
+                        introDialogues: [{ speaker: "Lo Sconosciuto", text: "Forse potremmo... avvicinarci un po'. Solo per non congelare." }],
                         actions: [
                             { actor: "Claudia", text: "Avvicinati schiena contro petto e chiedigli di stringerti per scaldarti.", category: "Coccole" },
-                            { actor: "Claudia", text: "Fai scivolare una mano sotto la sua maglietta con la scusa di avere le mani fredde.", category: "Spicy" },
-                            { actor: "Claudia", text: "Usa il piede per accarezzare lentamente il suo polpaccio sotto le coperte.", category: "Piedi" },
-                            { actor: "Tiziano", text: "Abbracciala da dietro, avvicinando il tuo viso al suo collo. Respira lentamente.", category: "Coccole" },
-                            { actor: "Tiziano", text: "Accarezzale dolcemente la coscia sotto le coperte, dicendole che sta tremando.", category: "Spicy" },
-                            { actor: "Tiziano", text: "Lasciale un bacio impercettibile sulla nuca.", category: "Romantico" }
+                            { actor: "Tiziano", text: "Abbracciala da dietro, avvicinando il tuo viso al suo collo. Respira lentamente.", category: "Coccole" }
                         ]
                     },
                     {
@@ -226,16 +224,13 @@
                         introDialogues: [{ speaker: "Narratore", text: "Le coperte si fanno pesanti. Le regole sono saltate." }],
                         actions: [
                             { actor: "Claudia", text: "Sali a cavalcioni su di lui sotto le coperte e bacialo come se lo desiderassi dall'inizio.", category: "Hard" },
-                            { actor: "Claudia", text: "Togliti un indumento sotto le coperte e passaglielo per fargli capire le tue intenzioni.", category: "Spicy" },
-                            { actor: "Tiziano", text: "Ribalta le posizioni, mettiti sopra di lei e toglile il primo indumento che incontri.", category: "Hard" },
-                            { actor: "Tiziano", text: "Baciale il collo scendendo verso il petto, ignorando il freddo.", category: "Spicy" }
+                            { actor: "Tiziano", text: "Ribalta le posizioni, mettiti sopra di lei e toglile il primo indumento che incontri.", category: "Hard" }
                         ]
                     }
                 ]
             },
             "blackout": {
-                title: "Il Blackout",
-                context: "Insieme a Letto",
+                title: "Il Blackout", context: "Insieme a Letto",
                 roles: { "Claudia": "L'Inquilina Freddolosa", "Tiziano": "Il Coinquilino Protettivo" },
                 briefing: {
                     "Claudia": "La corrente è saltata in tutto il quartiere. Ti sei rifugiata nel suo letto per non congelare. La scusa è il freddo, ma il buio ti fa sentire audace.",
@@ -246,11 +241,11 @@
                         level: 1, background: "#050505",
                         introDialogues: [
                             { speaker: "Narratore", text: "Il buio è totale. Sotto il piumone si respira un'aria densa." },
-                            { speaker: "L'Inquilina Freddolosa", text: "Sto congelando. Sei sicuro che non tornerà a breve la luce?" },
+                            { speaker: "L'Inquilina Freddolosa", text: "Sto congelando. Sei sicuro che non tornerà la luce?" },
                             { speaker: "Il Coinquilino Protettivo", text: "Ne dubito. Avvicinati, non ti mordo." }
                         ],
                         actions: [
-                            { actor: "Claudia", text: "Stringiti contro il suo braccio e strofina il viso sulla sua spalla per cercare calore.", category: "Coccole" },
+                            { actor: "Claudia", text: "Stringiti contro il suo braccio e strofina il viso sulla sua spalla.", category: "Coccole" },
                             { actor: "Tiziano", text: "Avvolgi un braccio attorno alla sua vita per stringerla a te.", category: "Soft" }
                         ]
                     },
@@ -273,8 +268,7 @@
                 ]
             },
             "ospiti_silenziosi": {
-                title: "Ospiti Silenziosi",
-                context: "Insieme a Letto",
+                title: "Ospiti Silenziosi", context: "Insieme a Letto",
                 roles: { "Claudia": "L'Ospite Ribelle", "Tiziano": "L'Ospite Prudente" },
                 briefing: {
                     "Claudia": "Siete ospiti a casa di amici. La parete è vicinissima. L'idea del rischio ti eccita e vuoi provocare il partner in silenzio.",
@@ -311,13 +305,16 @@
                     }
                 ]
             },
+
+            // ==========================================
+            // CONTESTO 2: STANZE SEPARATE (3 SCENARI)
+            // ==========================================
             "smart_working": {
-                title: "Distrazioni in Smart Working",
-                context: "Stanze Separate",
+                title: "Distrazioni in Smart Working", context: "Stanze Separate",
                 roles: { "Claudia": "La Dipendente", "Tiziano": "Il Capo Severo" },
                 briefing: {
-                    "Claudia": "Siete a casa in stanze diverse. I fogli excel ti annoiano e decidi di usare la chat aziendale per stuzzicare il tuo Capo.",
-                    "Tiziano": "Stai cercando di lavorare. Claudia ti manda messaggi inappropriati. Vorresti richiamarla, ma ti eccita."
+                    "Claudia": "Siete a casa in stanze diverse. I fogli excel ti annoiano e decidi di stuzzicare il tuo Capo in chat.",
+                    "Tiziano": "Stai cercando di lavorare. Claudia ti manda messaggi inappropriati che ti eccitano."
                 },
                 levels: [
                     {
@@ -352,8 +349,7 @@
                 ]
             },
             "parete_sottile": {
-                title: "La Parete Sottile",
-                context: "Stanze Separate",
+                title: "La Parete Sottile", context: "Stanze Separate",
                 roles: { "Claudia": "L'Ospite 205", "Tiziano": "L'Ospite 204" },
                 briefing: {
                     "Claudia": "Sei nella stanza 205. Una parete vi separa. Il divieto di vedersi rende la chat molto più intensa.",
@@ -390,8 +386,7 @@
                 ]
             },
             "prova_abiti": {
-                title: "La Sfilata Privata",
-                context: "Stanze Separate",
+                title: "La Sfilata Privata", context: "Stanze Separate",
                 roles: { "Claudia": "La Modella", "Tiziano": "Il Giudice" },
                 briefing: {
                     "Claudia": "Sei in camera a provare vestiti. Tiziano è in salotto. Avete trasformato il tutto in una sfilata privata via chat.",
@@ -428,47 +423,37 @@
                     }
                 ]
             },
+
+            // ==========================================
+            // CONTESTO 3: VIDEOCHIAMATA / DISTANZA (3 SCENARI)
+            // ==========================================
             "primo_match": {
-                title: "Il Primo Match",
-                context: "Videochiamata (Distanza)",
+                title: "Il Primo Match", context: "Videochiamata (Distanza)",
                 roles: { "Claudia": "La Sconosciuta", "Tiziano": "Il Ragazzo di Tinder" },
                 briefing: {
-                    "Claudia": "Prima videochiamata dopo un match su Tinder. Sii misteriosa, provocatoria e fai finta di scoprire i suoi gusti.",
+                    "Claudia": "Prima videochiamata dopo un match su Tinder. Sii misteriosa e provocatoria.",
                     "Tiziano": "Primo appuntamento virtuale. Il tuo obiettivo è farla sciogliere davanti alla cam."
                 },
                 levels: [
                     {
                         level: 1, background: "#000000",
-                        introDialogues: [
-                            { speaker: "Il Ragazzo di Tinder", text: "Wow, sei ancora più bella che in foto." },
-                            { speaker: "La Sconosciuta", text: "Grazie! Anche tu non sei male... Cosa cerchi qui?" }
-                        ],
-                        actions: [
-                            { actor: "Claudia", text: "Accarezzati i capelli e fai una domanda imbarazzante sui suoi gusti a letto.", category: "Spicy" },
-                            { actor: "Tiziano", text: "Falle un complimento esplicito sulle labbra chiedendole di avvicinarsi.", category: "Teasing" }
-                        ]
+                        introDialogues: [{ speaker: "Il Ragazzo di Tinder", text: "Wow, sei ancora più bella che in foto." }],
+                        actions: [{ actor: "Claudia", text: "Accarezzati i capelli e fai una domanda imbarazzante sui suoi gusti.", category: "Spicy" }]
                     },
                     {
                         level: 2, background: "#000000",
                         introDialogues: [{ speaker: "Narratore", text: "I convenevoli lasciano il posto alla passione." }],
-                        actions: [
-                            { actor: "Claudia", text: "Spostati la maglia per mostrare maliziosamente la spalla nuda.", category: "Spicy" },
-                            { actor: "Tiziano", text: "Sfidala a togliersi la maglia in diretta per te.", category: "Spicy" }
-                        ]
+                        actions: [{ actor: "Claudia", text: "Spostati la maglia per mostrare maliziosamente la spalla nuda.", category: "Spicy" }]
                     },
                     {
                         level: 3, background: "#000000",
                         introDialogues: [{ speaker: "Narratore", text: "La videochiamata si fa bollente." }],
-                        actions: [
-                            { actor: "Claudia", text: "Accetta la sfida, spogliati e regala lo show in cam.", category: "Autoerotismo" },
-                            { actor: "Tiziano", text: "Rendile il favore: spogliati e toccati mentre la guardi.", category: "Autoerotismo" }
-                        ]
+                        actions: [{ actor: "Claudia", text: "Accetta la sfida, spogliati e regala lo show in cam.", category: "Autoerotismo" }]
                     }
                 ]
             },
             "diretta_privata": {
-                title: "Diretta Privata",
-                context: "Videochiamata (Distanza)",
+                title: "Diretta Privata", context: "Videochiamata (Distanza)",
                 roles: { "Claudia": "La Protagonista", "Tiziano": "Il Regista" },
                 briefing: {
                     "Claudia": "Sei la protagonista di uno show esclusivo. La telecamera è il tuo palcoscenico e segui le indicazioni.",
@@ -502,8 +487,7 @@
                 ]
             },
             "controllo_vocale": {
-                title: "Controllo Vocale",
-                context: "Videochiamata (Distanza)",
+                title: "Controllo Vocale", context: "Videochiamata (Distanza)",
                 roles: { "Claudia": "La Giocatrice Remota", "Tiziano": "Il Master" },
                 briefing: {
                     "Claudia": "Sei bendata di fronte al telefono in videochiamata. Devi eseguire esattamente gli ordini del tuo Master tramite la voce.",
@@ -542,13 +526,32 @@
         var currentLevelIndex = 0, actionsCompletedInLevel = 0, currentDialogueIndex = 0, selectedVictim = "", currentRotation = 0;
         var ACTIONS_PER_LEVEL = 6;
 
+        function showScreen(screenId) {
+            var screens = document.querySelectorAll('.menu-screen');
+            for (var i = 0; i < screens.length; i++) {
+                screens[i].classList.remove('active');
+                screens[i].style.display = 'none';
+            }
+            
+            var vn = document.getElementById('vn-screen'); if (vn) vn.style.display = 'none';
+            var mini = document.getElementById('minigame-screen'); if (mini) mini.style.display = 'none';
+            var cards = document.getElementById('cards-screen'); if (cards) cards.style.display = 'none';
+
+            var target = document.getElementById(screenId);
+            if (target) {
+                target.style.display = 'flex';
+                target.classList.add('active');
+            }
+        }
+
         window.onload = function() {
             buildScenarioMenu();
+            showScreen('selection-screen');
         };
 
         function buildScenarioMenu() {
             var container = document.getElementById('scenario-list-container');
-            if(!container) return;
+            if (!container) return;
             container.innerHTML = '';
             
             var grouped = {};
@@ -577,33 +580,17 @@
             });
         }
 
-        function goBackTo(targetScreenId) {
-            var screens = ['selection-screen', 'scenario-screen', 'customize-screen', 'briefing-screen', 'vn-screen', 'minigame-screen', 'cards-screen'];
-            screens.forEach(function(id) {
-                var el = document.getElementById(id);
-                if (el) {
-                    el.classList.remove('active');
-                    el.style.display = 'none';
-                }
-            });
-            var target = document.getElementById(targetScreenId);
-            if (target) {
-                target.style.display = 'flex';
-                target.classList.add('active');
-            }
-        }
-
         function selectPlayer(name) { 
             currentPlayer = name; 
-            goBackTo('scenario-screen');
+            showScreen('scenario-screen');
         }
         
         function selectScenario(scenarioId) {
             currentScenarioId = scenarioId; 
-            goBackTo('customize-screen');
+            showScreen('customize-screen');
             
             var list = document.getElementById('category-list'); 
-            if(!list) return;
+            if (!list) return;
             list.innerHTML = '';
             var allCategories = [];
             
@@ -617,9 +604,7 @@
                 }
             });
 
-            if (allCategories.length === 0) {
-                allCategories.push("Generale");
-            }
+            if (allCategories.length === 0) allCategories.push("Generale");
 
             allCategories.forEach(function(cat) {
                 var div = document.createElement('div'); 
@@ -627,7 +612,7 @@
                 div.style.flex = "1 1 calc(50% - 10px)"; 
                 div.style.justifyContent = "center";
                 div.innerText = cat; 
-                div.onclick = function() { div.classList.toggle('active'); }; 
+                div.onclick = function() { this.classList.toggle('active'); }; 
                 div.dataset.category = cat; 
                 list.appendChild(div);
             });
@@ -636,13 +621,13 @@
         function goToBriefing() {
             var items = document.querySelectorAll('.check-item.active');
             activeCategories = [];
-            for(var i=0; i<items.length; i++) {
+            for (var i = 0; i < items.length; i++) {
                 activeCategories.push(items[i].dataset.category);
             }
 
             if (activeCategories.length === 0) { alert("Seleziona almeno una categoria per proseguire!"); return; }
             
-            goBackTo('briefing-screen');
+            showScreen('briefing-screen');
             
             var sc = localDatabaseScenarios[currentScenarioId];
             document.getElementById('briefing-title-claudia').innerText = "CLAUDIA: " + sc.roles["Claudia"];
@@ -652,8 +637,11 @@
         }
 
         function startRoleplay() {
-            document.getElementById('briefing-screen').style.display = 'none';
-            document.getElementById('briefing-screen').classList.remove('active');
+            var screens = document.querySelectorAll('.menu-screen');
+            for (var i = 0; i < screens.length; i++) {
+                screens[i].classList.remove('active');
+                screens[i].style.display = 'none';
+            }
             document.getElementById('vn-screen').style.display = 'block';
             currentLevelIndex = 0; actionsCompletedInLevel = 0; loadLevelNarrative();
         }
@@ -720,8 +708,10 @@
         }
 
         function goToCards() {
-            document.getElementById('minigame-screen').style.display = 'none'; document.getElementById('cards-screen').style.display = 'flex';
-            document.getElementById('playingCard').classList.remove('is-flipped'); document.getElementById('continueBtn').style.display = 'none';
+            document.getElementById('minigame-screen').style.display = 'none'; 
+            document.getElementById('cards-screen').style.display = 'flex';
+            document.getElementById('playingCard').classList.remove('is-flipped'); 
+            document.getElementById('continueBtn').style.display = 'none';
             
             var roleName = localDatabaseScenarios[currentScenarioId].roles[selectedVictim];
             document.getElementById('card-turn-title').innerText = "Azione per " + roleName;
@@ -730,7 +720,6 @@
             document.getElementById('cardRoleLabel').style.color = selectedVictim === "Claudia" ? "var(--primary-accent)" : "var(--secondary-accent)";
             
             var levelData = localDatabaseScenarios[currentScenarioId].levels[currentLevelIndex];
-            
             var validActions = levelData.actions.filter(function(a) {
                 return a.actor === selectedVictim && (activeCategories.indexOf(a.category) !== -1 || !a.category);
             });
