@@ -7,7 +7,7 @@
     
     <!-- Libreria PapaParse per leggere i dati da Google Sheets (CSV) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-
+ 
     <style>
         /* --- CSS BASE E VARIABILI --- */
         :root {
