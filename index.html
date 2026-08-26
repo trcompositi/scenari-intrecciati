@@ -203,8 +203,21 @@
 
     <script>
         // Link CSV Diretti da Google Sheets
-        const LINK_SCENARI_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1088679208&single=true&output=csv";
-        const LINK_COPIONE_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1067890923&single=true&output=csv";
+        let LINK_SCENARI_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1088679208&single=true&output=csv";
+        let LINK_COPIONE_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1067890923&single=true&output=csv";
+
+        // Database locale di emergenza (Fallback se siamo offline)
+        var fallbackScenarios = {
+            "errore_prenotazione": {
+                title: "Errore di Prenotazione", context: "Insieme a Letto",
+                roles: { "Claudia": "La Viaggiatrice", "Tiziano": "Lo Sconosciuto" },
+                briefing: {
+                    "Claudia": "Il tuo volo è stato cancellato per la tempesta. Avete diviso l'unico letto matrimoniale giurando di rimanere ciascuno sulla propria metà.",
+                    "Tiziano": "La tempesta ti ha bloccato in questo motel. Quando questa sconosciuta è entrata, le hai ceduto metà letto."
+                },
+                levels: [{ level: 1, background: "#000", introDialogues: [{ speaker: "Narratore", text: "La stanza è buia." }], actions: [{ actor: "Claudia", text: "Sfiora le sue gambe.", category: "Soft" }] }]
+            }
+        };
 
         var roleplayScenarios = {};
         var currentPlayer = "", currentScenarioId = "", activeCategories = [];
@@ -233,12 +246,19 @@
             if (LINK_SCENARI_RAW && LINK_SCENARI_RAW.indexOf("http") === 0) {
                 loadFromGoogleSheets();
             } else {
-                alert("Per favore inserisci i link CSV di Google Sheets nello script per caricare le tue storie!");
+                useFallback("Link Google Sheets non definiti.");
             }
         };
 
+        function useFallback(msg) {
+            console.warn("Utilizzo Database di Riserva:", msg);
+            roleplayScenarios = fallbackScenarios;
+            buildScenarioMenu();
+            showScreen('selection-screen');
+        }
+
         function loadFromGoogleSheets() {
-            // Parametro Anti-Cache diretto su Google Sheets (senza proxy)
+            // Parametro Anti-Cache diretto su Google Sheets
             const cacheBuster = "&_t=" + Date.now();
             const urlScenari = LINK_SCENARI_RAW + cacheBuster;
             const urlCopione = LINK_COPIONE_RAW + cacheBuster;
@@ -287,17 +307,15 @@
                                 showScreen('selection-screen');
                             },
                             error: function(err) {
-                                console.error("Errore Copione:", err);
-                                alert("Errore nel caricamento del Foglio Copione. Controlla la console.");
+                                useFallback("Errore caricamento Foglio Copione: " + err);
                             }
                         });
                     } else {
-                        alert("Il foglio Scenari risulta vuoto o non accessibile.");
+                        useFallback("Foglio Scenari vuoto o non leggibile.");
                     }
                 },
                 error: function(err) {
-                    console.error("Errore Scenari:", err);
-                    alert("Errore nel caricamento del foglio Google Sheet. Verifica che sia pubblicato sul web.");
+                    useFallback("Errore caricamento Foglio Scenari: " + err);
                 }
             });
         }
