@@ -275,7 +275,7 @@
         <button class="btn btn-context" id="start-sync-btn" style="display:none; background: var(--primary-accent);" onclick="showScreen('scenario-screen')">Entra nel Gioco Sincronizzato</button>
 
         <button class="btn btn-gallery" style="margin-top: 15px;" onclick="openGallery()">📂 Galleria Privata In-App</button>
-        <button class="btn btn-reset" id="btn-reset-game" style="display:none;" onclick="resetGameState()">🔄 Nuova Partita (Resetta)</button>
+        <button class="btn btn-reset" id="btn-reset-game" style="display:none;" onclick="resetGameState()">🔄 Abbandona e Nuova Partita</button>
     </div>
 
     <div id="gallery-screen" class="menu-screen">
@@ -306,6 +306,7 @@
         </div>
     </div>
 
+    <!-- SCHERMATA ATTESA CATEGORIE PARTNER -->
     <div id="waiting-screen" class="menu-screen">
         <h1 class="title" style="font-size: 1.8rem;">In Attesa del Partner...</h1>
         <p style="color: #a996b8; margin-top: 20px;" id="waiting-msg">Le tue categorie sono state salvate.<br>In attesa che il partner completi la sua selezione...</p>
@@ -381,12 +382,13 @@
         var mySelectedCategories = [], partnerSelectedCategories = null;
         var currentLevelIndex = 0, currentDialogueIndex = 0, selectedVictim = "", currentRotation = 0;
         var currentScreenId = "selection-screen";
+        var isCardFlipped = false;
         
         var currentLevelActions = { "Claudia": [], "Tiziano": [] };
         var currentDrawnAction = null;
         var unreadChatCount = 0;
 
-        // --- SISTEMA DI PERSISTENZA STATO LOCALE (LOCALSTORAGE) ---
+        // --- SISTEMA PERSISTENZA E RIPRISTINO EXACT STATE (LOCALSTORAGE) ---
         function saveGameState() {
             var state = {
                 currentPlayer: currentPlayer,
@@ -394,13 +396,16 @@
                 activeCategories: activeCategories,
                 currentLevelIndex: currentLevelIndex,
                 currentDialogueIndex: currentDialogueIndex,
-                currentScreenId: currentScreenId
+                currentScreenId: currentScreenId,
+                selectedVictim: selectedVictim,
+                currentDrawnAction: currentDrawnAction,
+                isCardFlipped: isCardFlipped
             };
-            localStorage.setItem("ScenariGameState", JSON.stringify(state));
+            localStorage.setItem("ScenariGameState_v2", JSON.stringify(state));
         }
 
         function restoreGameState() {
-            var saved = localStorage.getItem("ScenariGameState");
+            var saved = localStorage.getItem("ScenariGameState_v2");
             if (!saved) return false;
             try {
                 var state = JSON.parse(saved);
@@ -411,6 +416,9 @@
                     currentLevelIndex = state.currentLevelIndex || 0;
                     currentDialogueIndex = state.currentDialogueIndex || 0;
                     currentScreenId = state.currentScreenId || "selection-screen";
+                    selectedVictim = state.selectedVictim || "";
+                    currentDrawnAction = state.currentDrawnAction || null;
+                    isCardFlipped = state.isCardFlipped || false;
 
                     document.getElementById('btn-select-tiziano').disabled = (currentPlayer === 'Claudia');
                     document.getElementById('btn-select-claudia').disabled = (currentPlayer === 'Tiziano');
@@ -419,10 +427,32 @@
                     autoConnectP2P(currentPlayer);
 
                     if (currentScenarioId && roleplayScenarios[currentScenarioId]) {
+                        // Ripristina mazzi se il livello è attivo
+                        var levelData = roleplayScenarios[currentScenarioId].levels[currentLevelIndex];
+                        if (levelData) {
+                            currentLevelActions["Claudia"] = levelData.actions.filter(function(a) {
+                                return a.actor === "Claudia" && activeCategories.indexOf(a.category) !== -1;
+                            });
+                            currentLevelActions["Tiziano"] = levelData.actions.filter(function(a) {
+                                return a.actor === "Tiziano" && activeCategories.indexOf(a.category) !== -1;
+                            });
+                        }
+
+                        // Jump alla schermata esatta salvata
                         showScreen(currentScreenId);
+
                         if (currentScreenId === 'vn-screen') {
                             document.getElementById('fixed-skip-level-btn').style.display = 'block';
                             loadLevelNarrative();
+                        } else if (currentScreenId === 'minigame-screen') {
+                            document.getElementById('fixed-skip-level-btn').style.display = 'block';
+                            openMinigame(true);
+                        } else if (currentScreenId === 'cards-screen') {
+                            document.getElementById('fixed-skip-level-btn').style.display = 'block';
+                            goToCards(true);
+                            if (isCardFlipped) {
+                                revealCard(true);
+                            }
                         }
                     } else {
                         showScreen('selection-screen');
@@ -435,7 +465,7 @@
 
         function resetGameState() {
             if (confirm("Vuoi azzerare la partita attuale per iniziarne una nuova?")) {
-                localStorage.removeItem("ScenariGameState");
+                localStorage.removeItem("ScenariGameState_v2");
                 location.reload();
             }
         }
@@ -857,8 +887,8 @@
                 return;
             }
 
-            document.getElementById('vn-screen').style.display = 'none';
-            document.getElementById('minigame-screen').style.display = 'flex';
+            showScreen('minigame-screen');
+            document.getElementById('fixed-skip-level-btn').style.display = 'block';
             document.getElementById('spinBtn').style.display = 'block';
             document.getElementById('nextPhaseBtn').style.display = 'none';
             document.getElementById('winner-text').style.opacity = 0;
@@ -866,6 +896,7 @@
             document.getElementById('minigame-status-text').innerText = 
                 "Azioni rimaste per questo livello: " + remainingTotal;
 
+            saveGameState();
             if (!isRemote) sendP2PCommand({ type: "SYNC_OPEN_MINIGAME" });
         }
 
@@ -886,14 +917,16 @@
                 winnerText.innerText = "Tocca a: " + roleplayScenarios[currentScenarioId].roles[selectedVictim];
                 winnerText.style.opacity = 1; 
                 document.getElementById('nextPhaseBtn').style.display = 'block';
+                saveGameState();
             }, 3000);
         }
 
         function goToCards(isRemote) {
-            document.getElementById('minigame-screen').style.display = 'none'; 
-            document.getElementById('cards-screen').style.display = 'flex';
+            showScreen('cards-screen');
+            document.getElementById('fixed-skip-level-btn').style.display = 'block';
             document.getElementById('playingCard').classList.remove('is-flipped'); 
             document.getElementById('continueBtn').style.display = 'none';
+            isCardFlipped = false;
             
             var roleName = roleplayScenarios[currentScenarioId].roles[selectedVictim];
             document.getElementById('card-turn-title').innerText = "Azione per " + roleName;
@@ -906,22 +939,23 @@
                 var cat = currentDrawnAction.category ? currentDrawnAction.category.toUpperCase() : 'GENERALE';
                 document.getElementById('cardCategoryTag').innerText = "CATEGORIA: " + cat;
             }
+            saveGameState();
         }
 
         function revealCard(isRemote) {
             var card = document.getElementById('playingCard');
             if (!card.classList.contains('is-flipped')) {
                 card.classList.add('is-flipped');
+                isCardFlipped = true;
                 setTimeout(function() { document.getElementById('continueBtn').style.display = 'inline-block'; }, 400);
+                saveGameState();
             }
         }
 
         function completeAction(isRemote) {
-            document.getElementById('cards-screen').style.display = 'none';
-            
             var remainingTotal = currentLevelActions["Claudia"].length + currentLevelActions["Tiziano"].length;
             if (remainingTotal > 0) {
-                document.getElementById('vn-screen').style.display = 'block'; 
+                showScreen('vn-screen');
                 document.getElementById('dialogue-box').style.display = 'none';
                 document.getElementById('choices-container').innerHTML = 
                     "<button class='choice-btn' onclick='openMinigame(false)'>Prossima Azione 🎡 (Rimaste: " + remainingTotal + ")</button>";
@@ -935,9 +969,7 @@
             currentLevelIndex++;
             saveGameState();
             if (currentLevelIndex >= roleplayScenarios[currentScenarioId].levels.length) {
-                document.getElementById('minigame-screen').style.display = 'none';
-                document.getElementById('cards-screen').style.display = 'none';
-                document.getElementById('vn-screen').style.display = 'block';
+                showScreen('vn-screen');
                 document.getElementById('fixed-skip-level-btn').style.display = 'none';
                 document.getElementById('level-indicator').innerText = "Fine Copione";
                 document.getElementById('level-indicator').style.borderColor = "#673ab7";
@@ -946,7 +978,7 @@
                     "<h2 style='color: white;'>Il copione è finito.</h2><p style='color: #a996b8;'>Ora le regole le scrivete voi.</p><button class='choice-btn' onclick='resetGameState()'>Torna al Menu Principale</button>";
                 return;
             }
-            document.getElementById('vn-screen').style.display = 'block'; 
+            showScreen('vn-screen');
             loadLevelNarrative();
         }
 
@@ -1059,7 +1091,6 @@
                                 });
                                 buildScenarioMenu();
                                 
-                                // PROVA RIPRISTINO STATO DALLA CACHE LOCALE
                                 var restored = restoreGameState();
                                 if (!restored) {
                                     showScreen('selection-screen');
