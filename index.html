@@ -52,6 +52,7 @@
         .btn-claudia { background: linear-gradient(45deg, var(--primary-accent), #c2185b); }
         .btn-context { background: rgba(255,255,255,0.08); border: 1px solid #673ab7; }
         .btn-gallery { background: linear-gradient(45deg, #673ab7, #e91e63); }
+        .btn-reset { background: rgba(255, 82, 82, 0.2); border: 1px solid #ff5252; color: #ff5252; margin-top: 15px; }
 
         .back-btn {
             position: absolute; top: 15px; left: 15px;
@@ -159,7 +160,6 @@
 
         #vn-screen { display: none; width: 100vw; height: 100vh; position: relative; background-size: cover; background-position: center; }
         
-        /* INDICATORE DI LIVELLO PERSONALIZZATO IN ALTO A DESTRA */
         #level-indicator { 
             position: absolute; top: 20px; right: 20px; 
             background: rgba(0,0,0,0.85); border: 2px solid #4caf50; 
@@ -228,10 +228,10 @@
         <div id="lightbox-container" onclick="event.stopPropagation();"></div>
     </div>
 
-    <!-- PULSANTE CAMBIO LIVELLO FISSO IN BASSO A SINISTRA -->
+    <!-- PULSANTE CAMBIO LIVELLO FISSO -->
     <button id="fixed-skip-level-btn" onclick="handleForceNextLevelClick()">⚡ Sali di Livello</button>
 
-    <!-- BOTTONE FLOTTANTE LIVE CHAT P2P IN BASSO A DESTRA -->
+    <!-- BOTTONE FLOTTANTE LIVE CHAT P2P -->
     <button id="chat-toggle-btn" onclick="toggleChat()">
         💬 Chat Live <span id="chat-badge">0</span>
     </button>
@@ -275,6 +275,7 @@
         <button class="btn btn-context" id="start-sync-btn" style="display:none; background: var(--primary-accent);" onclick="showScreen('scenario-screen')">Entra nel Gioco Sincronizzato</button>
 
         <button class="btn btn-gallery" style="margin-top: 15px;" onclick="openGallery()">📂 Galleria Privata In-App</button>
+        <button class="btn btn-reset" id="btn-reset-game" style="display:none;" onclick="resetGameState()">🔄 Nuova Partita (Resetta)</button>
     </div>
 
     <div id="gallery-screen" class="menu-screen">
@@ -305,7 +306,6 @@
         </div>
     </div>
 
-    <!-- SCHERMATA ATTESA CATEGORIE PARTNER -->
     <div id="waiting-screen" class="menu-screen">
         <h1 class="title" style="font-size: 1.8rem;">In Attesa del Partner...</h1>
         <p style="color: #a996b8; margin-top: 20px;" id="waiting-msg">Le tue categorie sono state salvate.<br>In attesa che il partner completi la sua selezione...</p>
@@ -380,10 +380,65 @@
         var currentPlayer = "", currentScenarioId = "", activeCategories = [];
         var mySelectedCategories = [], partnerSelectedCategories = null;
         var currentLevelIndex = 0, currentDialogueIndex = 0, selectedVictim = "", currentRotation = 0;
+        var currentScreenId = "selection-screen";
         
         var currentLevelActions = { "Claudia": [], "Tiziano": [] };
         var currentDrawnAction = null;
         var unreadChatCount = 0;
+
+        // --- SISTEMA DI PERSISTENZA STATO LOCALE (LOCALSTORAGE) ---
+        function saveGameState() {
+            var state = {
+                currentPlayer: currentPlayer,
+                currentScenarioId: currentScenarioId,
+                activeCategories: activeCategories,
+                currentLevelIndex: currentLevelIndex,
+                currentDialogueIndex: currentDialogueIndex,
+                currentScreenId: currentScreenId
+            };
+            localStorage.setItem("ScenariGameState", JSON.stringify(state));
+        }
+
+        function restoreGameState() {
+            var saved = localStorage.getItem("ScenariGameState");
+            if (!saved) return false;
+            try {
+                var state = JSON.parse(saved);
+                if (state.currentPlayer) {
+                    currentPlayer = state.currentPlayer;
+                    currentScenarioId = state.currentScenarioId;
+                    activeCategories = state.activeCategories || [];
+                    currentLevelIndex = state.currentLevelIndex || 0;
+                    currentDialogueIndex = state.currentDialogueIndex || 0;
+                    currentScreenId = state.currentScreenId || "selection-screen";
+
+                    document.getElementById('btn-select-tiziano').disabled = (currentPlayer === 'Claudia');
+                    document.getElementById('btn-select-claudia').disabled = (currentPlayer === 'Tiziano');
+                    document.getElementById('btn-reset-game').style.display = 'inline-block';
+                    
+                    autoConnectP2P(currentPlayer);
+
+                    if (currentScenarioId && roleplayScenarios[currentScenarioId]) {
+                        showScreen(currentScreenId);
+                        if (currentScreenId === 'vn-screen') {
+                            document.getElementById('fixed-skip-level-btn').style.display = 'block';
+                            loadLevelNarrative();
+                        }
+                    } else {
+                        showScreen('selection-screen');
+                    }
+                    return true;
+                }
+            } catch(e) { console.error("Errore ripristino stato:", e); }
+            return false;
+        }
+
+        function resetGameState() {
+            if (confirm("Vuoi azzerare la partita attuale per iniziarne una nuova?")) {
+                localStorage.removeItem("ScenariGameState");
+                location.reload();
+            }
+        }
 
         function playNotificationSound() {
             try {
@@ -706,6 +761,7 @@
             mySelectedCategories = []; partnerSelectedCategories = null;
             showScreen('customize-screen');
             buildCategoryList();
+            saveGameState();
             if (!isRemote) sendP2PCommand({ type: "SYNC_SCENARIO_SELECT", scenarioId: scenarioId });
         }
 
@@ -718,14 +774,16 @@
             document.getElementById('briefing-claudia').innerText = scenario.briefing["Claudia"];
             document.getElementById('briefing-tiziano').innerText = scenario.briefing["Tiziano"];
 
+            saveGameState();
             if (!isRemote) sendP2PCommand({ type: "SYNC_BRIEFING" });
         }
 
         function startRoleplay(isRemote) {
             showScreen('vn-screen');
             document.getElementById('vn-screen').style.display = 'block';
-            document.getElementById('fixed-skip-level-btn').style.display = 'block'; // Mostra il tasto fisso
+            document.getElementById('fixed-skip-level-btn').style.display = 'block';
             currentLevelIndex = 0; loadLevelNarrative();
+            saveGameState();
             if (!isRemote) sendP2PCommand({ type: "SYNC_START" });
         }
 
@@ -744,7 +802,6 @@
                 return;
             }
 
-            // AGGIORNAMENTO DINAMICO INDICATORE DI LIVELLO
             var levelIndicator = document.getElementById('level-indicator');
             if (levelData.level === 1) {
                 levelIndicator.innerText = "🟢 Livello: EASY";
@@ -789,6 +846,7 @@
 
         function nextDialogue(isRemote) { 
             currentDialogueIndex++; 
+            saveGameState();
             showDialogue(); 
         }
 
@@ -870,10 +928,12 @@
             } else {
                 advanceToNextLevel(isRemote);
             }
+            saveGameState();
         }
 
         function advanceToNextLevel(isRemote) {
             currentLevelIndex++;
+            saveGameState();
             if (currentLevelIndex >= roleplayScenarios[currentScenarioId].levels.length) {
                 document.getElementById('minigame-screen').style.display = 'none';
                 document.getElementById('cards-screen').style.display = 'none';
@@ -883,7 +943,7 @@
                 document.getElementById('level-indicator').style.borderColor = "#673ab7";
                 document.getElementById('dialogue-box').style.display = 'none';
                 document.getElementById('choices-container').innerHTML = 
-                    "<h2 style='color: white;'>Il copione è finito.</h2><p style='color: #a996b8;'>Ora le regole le scrivete voi.</p><button class='choice-btn' onclick='location.reload()'>Torna al Menu Principale</button>";
+                    "<h2 style='color: white;'>Il copione è finito.</h2><p style='color: #a996b8;'>Ora le regole le scrivete voi.</p><button class='choice-btn' onclick='resetGameState()'>Torna al Menu Principale</button>";
                 return;
             }
             document.getElementById('vn-screen').style.display = 'block'; 
@@ -895,6 +955,8 @@
             currentPlayer = name; 
             document.getElementById('btn-select-tiziano').disabled = (name === 'Claudia');
             document.getElementById('btn-select-claudia').disabled = (name === 'Tiziano');
+            document.getElementById('btn-reset-game').style.display = 'inline-block';
+            saveGameState();
             autoConnectP2P(name);
         }
 
@@ -929,6 +991,7 @@
         }
 
         function showScreen(screenId) {
+            currentScreenId = screenId;
             var screens = document.querySelectorAll('.menu-screen');
             for (var i = 0; i < screens.length; i++) {
                 screens[i].classList.remove('active');
@@ -944,6 +1007,7 @@
                 target.style.display = 'flex';
                 target.classList.add('active');
             }
+            saveGameState();
         }
 
         window.onload = function() {
@@ -994,7 +1058,12 @@
                                     }
                                 });
                                 buildScenarioMenu();
-                                showScreen('selection-screen');
+                                
+                                // PROVA RIPRISTINO STATO DALLA CACHE LOCALE
+                                var restored = restoreGameState();
+                                if (!restored) {
+                                    showScreen('selection-screen');
+                                }
                             }
                         });
                     }
