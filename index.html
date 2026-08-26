@@ -659,7 +659,7 @@
             tx.oncomplete = function() { loadGalleryContent(); };
         }
 
-        // --- ROBUTO HANDSHAKE P2P CON RETRY AUTOMATICO E PING-PONG ---
+        // --- MOTORE P2P ULTRA-STABILE (PING/PONG + RECONNECT LOOP) ---
         var peer = null, conn = null, retryTimer = null, pingInterval = null;
 
         function autoConnectP2P(playerName) {
@@ -669,7 +669,10 @@
             var myPeerId = FIXED_ROOM_CODE + "-" + playerName.toLowerCase();
             var targetPeerId = FIXED_ROOM_CODE + "-" + (playerName === "Tiziano" ? "claudia" : "tiziano");
             
-            if (peer) { try { peer.destroy(); } catch(e){} }
+            if (peer && !peer.destroyed) {
+                attemptConnection(targetPeerId);
+                return;
+            }
             
             peer = new Peer(myPeerId);
             peer.on('open', function(id) {
@@ -684,24 +687,32 @@
 
             peer.on('error', function(err) {
                 console.log("P2P Status Info:", err);
+                if (err.type === 'unavailable-id') {
+                    // ID occupato da sessione precedente in sospeso, riconnette senza distruggere
+                    attemptConnection(targetPeerId);
+                }
             });
         }
 
         function attemptConnection(targetPeerId) {
             if (conn && conn.open) return;
-            conn = peer.connect(targetPeerId, { reliable: true });
-            setupConnEvents();
+            try {
+                conn = peer.connect(targetPeerId, { reliable: true });
+                setupConnEvents();
+            } catch(e){}
 
             if (!retryTimer) {
                 retryTimer = setInterval(function() {
                     if (!conn || !conn.open) {
-                        conn = peer.connect(targetPeerId, { reliable: true });
-                        setupConnEvents();
+                        try {
+                            conn = peer.connect(targetPeerId, { reliable: true });
+                            setupConnEvents();
+                        } catch(e){}
                     } else {
                         clearInterval(retryTimer);
                         retryTimer = null;
                     }
-                }, 2500);
+                }, 2000);
             }
         }
 
@@ -714,16 +725,17 @@
                 document.getElementById('start-sync-btn').style.display = "inline-block";
                 playNotificationSound();
 
-                // Keep-Alive Heartbeat ogni 4 secondi
+                // PING/PONG CONTINUO PER EVITARE DISCONNESSIONI IN INATTIVITÀ
                 if (!pingInterval) {
                     pingInterval = setInterval(function() {
-                        if (conn && conn.open) conn.send({ type: "PING" });
-                    }, 4000);
+                        if (conn && conn.open) {
+                            conn.send({ type: "PING" });
+                        }
+                    }, 3000);
                 }
 
                 sendP2PCommand({ type: "SYNC_JOIN", player: currentPlayer });
 
-                // Se avevamo inviato le categorie e siamo in attesa, ri-invia subito
                 if (mySelectedCategories.length > 0 && partnerSelectedCategories === null) {
                     sendP2PCommand({ type: "SYNC_CATEGORIES_SUBMIT", categories: mySelectedCategories });
                 }
@@ -734,7 +746,7 @@
                 document.getElementById('p2p-status').style.color = "#e91e63";
                 document.getElementById('p2p-status').innerText = "🔴 Connessione persa. Riconnessione...";
                 if (pingInterval) { clearInterval(pingInterval); pingInterval = null; }
-                autoConnectP2P(currentPlayer);
+                attemptConnection(FIXED_ROOM_CODE + "-" + (currentPlayer === "Tiziano" ? "claudia" : "tiziano"));
             });
         }
 
@@ -743,7 +755,11 @@
         }
 
         function handleIncomingP2PData(data) {
-            if (data.type === "PING") return; // Ignora il battito di controllo
+            if (data.type === "PING") {
+                sendP2PCommand({ type: "PONG" });
+                return;
+            }
+            if (data.type === "PONG") return;
 
             if (data.type === "text") {
                 playNotificationSound();
@@ -758,7 +774,6 @@
                 selectScenario(data.scenarioId, true);
             } else if (data.type === "SYNC_CATEGORIES_SUBMIT") {
                 partnerSelectedCategories = data.categories;
-                // Rispondi con ACK
                 sendP2PCommand({ type: "SYNC_CATEGORIES_ACK", categories: mySelectedCategories });
                 checkBothCategoriesSubmitted();
             } else if (data.type === "SYNC_CATEGORIES_ACK") {
@@ -797,8 +812,6 @@
             }
         }
 
-        // --- GESTIONE CATEGORIE PRIVATA E SINCRONIZZATA ROBUSTA ---
-
         function submitCategories() {
             var items = document.querySelectorAll('.check-item.active');
             mySelectedCategories = [];
@@ -810,7 +823,6 @@
 
             showScreen('waiting-screen');
 
-            // Invia le categorie in modo persistente finché non arriva ACK dal partner
             if (catSyncInterval) clearInterval(catSyncInterval);
             catSyncInterval = setInterval(function() {
                 if (partnerSelectedCategories !== null) {
@@ -819,7 +831,7 @@
                 } else {
                     sendP2PCommand({ type: "SYNC_CATEGORIES_SUBMIT", categories: mySelectedCategories });
                 }
-            }, 2000);
+            }, 1500);
 
             sendP2PCommand({ type: "SYNC_CATEGORIES_SUBMIT", categories: mySelectedCategories });
             checkBothCategoriesSubmitted();
