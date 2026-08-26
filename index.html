@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scenari Intrecciati - Tiziano & Claudia</title>
+    
+    <!-- Libreria PapaParse per leggere i dati da Google Sheets -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
     <style>
         :root {
             --bg-color: #0a060d;
@@ -53,6 +57,13 @@
             cursor: pointer; z-index: 100;
         }
 
+        .spinner {
+            width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.1);
+            border-top-color: var(--primary-accent); border-radius: 50%;
+            animation: spin 1s linear infinite; margin-top: 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
         .checklist-container { width: 100%; max-width: 500px; margin-bottom: 20px; text-align: left; }
         .checklist-title { color: var(--primary-accent); font-size: 1.1rem; margin: 15px 0 10px 0; border-bottom: 1px solid #673ab7; padding-bottom: 5px; font-weight: bold; }
         
@@ -100,7 +111,13 @@
 </head>
 <body>
 
-    <div id="selection-screen" class="menu-screen active">
+    <div id="loader-screen" class="menu-screen active">
+        <h1 class="title">Scenari Intrecciati</h1>
+        <p style="color: #a996b8;" id="loader-msg">Sincronizzazione con Google Sheets...</p>
+        <div class="spinner"></div>
+    </div>
+
+    <div id="selection-screen" class="menu-screen">
         <h1 class="title">Scenari Intrecciati</h1>
         <p style="margin-bottom: 20px;">Chi ha in mano il dispositivo?</p>
         <button class="btn btn-tiziano" onclick="selectPlayer('Tiziano')">Sono Tiziano</button>
@@ -185,343 +202,13 @@
     </div>
 
     <script>
-        var localDatabaseScenarios = {
-            // ==========================================
-            // CONTESTO 1: INSIEME A LETTO (3 SCENARI)
-            // ==========================================
-            "errore_prenotazione": {
-                title: "Errore di Prenotazione", context: "Insieme a Letto",
-                roles: { "Claudia": "La Viaggiatrice", "Tiziano": "Lo Sconosciuto" },
-                briefing: {
-                    "Claudia": "Il tuo volo è stato cancellato per la tempesta. Avete diviso l'unico letto matrimoniale giurando di rimanere ciascuno sulla propria metà. Sei sotto le coperte al buio, riservata ma incuriosita.",
-                    "Tiziano": "La tempesta ti ha bloccato in questo motel. Quando questa sconosciuta è entrata, le hai ceduto metà letto. Il patto è non superare il confine, ma il suo profumo rende la promessa difficile da mantenere."
-                },
-                levels: [
-                    {
-                        level: 1, background: "https://images.unsplash.com/photo-1542462215-97e3f8be0092?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-                        introDialogues: [
-                            { speaker: "Narratore", text: "La stanza è buia. Siete rigidi, ognuno sul proprio lato del letto." },
-                            { speaker: "La Viaggiatrice", text: "Senti... ti dispiace non invadere il mio lato? Questo cuscino segna il confine." },
-                            { speaker: "Lo Sconosciuto", text: "Nessun problema, sto fermo qui. Anche se fa davvero freddo stanotte..." }
-                        ],
-                        actions: [
-                            { actor: "Claudia", text: "Muovi i piedi sotto le coperte fino a sfiorare 'per sbaglio' le gambe di Tiziano, ritirandoti subito.", category: "Soft" },
-                            { actor: "Claudia", text: "Sussurra nel buio per chiedergli se anche lui non riesce a dormire.", category: "Romantico" },
-                            { actor: "Tiziano", text: "Allunga un braccio fingendo di cercare le coperte e sfiora il fianco di Claudia.", category: "Soft" },
-                            { actor: "Tiziano", text: "Chiedile sottovoce che profumo indossa, dicendo che ti sta distraendo dal prendere sonno.", category: "Teasing" }
-                        ]
-                    },
-                    {
-                        level: 2, background: "https://images.unsplash.com/photo-1519500099198-d1a1b415e61d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-                        introDialogues: [{ speaker: "Lo Sconosciuto", text: "Forse potremmo... avvicinarci un po'. Solo per non congelare." }],
-                        actions: [
-                            { actor: "Claudia", text: "Avvicinati schiena contro petto e chiedigli di stringerti per scaldarti.", category: "Coccole" },
-                            { actor: "Tiziano", text: "Abbracciala da dietro, avvicinando il tuo viso al suo collo. Respira lentamente.", category: "Coccole" }
-                        ]
-                    },
-                    {
-                        level: 3, background: "https://images.unsplash.com/photo-1517487881594-2787fef5ebf7?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-                        introDialogues: [{ speaker: "Narratore", text: "Le coperte si fanno pesanti. Le regole sono saltate." }],
-                        actions: [
-                            { actor: "Claudia", text: "Sali a cavalcioni su di lui sotto le coperte e bacialo come se lo desiderassi dall'inizio.", category: "Hard" },
-                            { actor: "Tiziano", text: "Ribalta le posizioni, mettiti sopra di lei e toglile il primo indumento che incontri.", category: "Hard" }
-                        ]
-                    }
-                ]
-            },
-            "blackout": {
-                title: "Il Blackout", context: "Insieme a Letto",
-                roles: { "Claudia": "L'Inquilina Freddolosa", "Tiziano": "Il Coinquilino Protettivo" },
-                briefing: {
-                    "Claudia": "La corrente è saltata in tutto il quartiere. Ti sei rifugiata nel suo letto per non congelare. La scusa è il freddo, ma il buio ti fa sentire audace.",
-                    "Tiziano": "La tua coinquilina si è appena infilata nel tuo letto a causa del blackout. Devi riscaldarla, ma il buio rende difficile mantenere il controllo."
-                },
-                levels: [
-                    {
-                        level: 1, background: "#050505",
-                        introDialogues: [
-                            { speaker: "Narratore", text: "Il buio è totale. Sotto il piumone si respira un'aria densa." },
-                            { speaker: "L'Inquilina Freddolosa", text: "Sto congelando. Sei sicuro che non tornerà la luce?" },
-                            { speaker: "Il Coinquilino Protettivo", text: "Ne dubito. Avvicinati, non ti mordo." }
-                        ],
-                        actions: [
-                            { actor: "Claudia", text: "Stringiti contro il suo braccio e strofina il viso sulla sua spalla.", category: "Coccole" },
-                            { actor: "Tiziano", text: "Avvolgi un braccio attorno alla sua vita per stringerla a te.", category: "Soft" }
-                        ]
-                    },
-                    {
-                        level: 2, background: "#0a0a0a",
-                        introDialogues: [{ speaker: "Narratore", text: "Il calore ha sostituito il freddo, ma nessuno si allontana." }],
-                        actions: [
-                            { actor: "Claudia", text: "Sospira dolcemente e intreccia le tue gambe con le sue sotto le coperte.", category: "Spicy" },
-                            { actor: "Tiziano", text: "Sposta i capelli dal collo di Claudia e lasciale un bacio impercettibile.", category: "Romantico" }
-                        ]
-                    },
-                    {
-                        level: 3, background: "#111111",
-                        introDialogues: [{ speaker: "Narratore", text: "Il finto ruolo dei coinquilini è giunto al termine." }],
-                        actions: [
-                            { actor: "Claudia", text: "Sali sopra di lui al buio, guidando le sue mani sui tuoi fianchi.", category: "Hard" },
-                            { actor: "Tiziano", text: "Tirala sopra di te e baciala in modo profondo e passionale.", category: "Hard" }
-                        ]
-                    }
-                ]
-            },
-            "ospiti_silenziosi": {
-                title: "Ospiti Silenziosi", context: "Insieme a Letto",
-                roles: { "Claudia": "L'Ospite Ribelle", "Tiziano": "L'Ospite Prudente" },
-                briefing: {
-                    "Claudia": "Siete ospiti a casa di amici. La parete è vicinissima. L'idea del rischio ti eccita e vuoi provocare il partner in silenzio.",
-                    "Tiziano": "Vuoi assolutamente evitare figuracce con i padroni di casa. Cerchi di mantenere la calma, ma le sue provocazioni ti mettono a dura prova."
-                },
-                levels: [
-                    {
-                        level: 1, background: "https://images.unsplash.com/photo-1542462215-97e3f8be0092?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-                        introDialogues: [
-                            { speaker: "Narratore", text: "La casa è immersa nel silenzio più assoluto." },
-                            { speaker: "L'Ospite Prudente", text: "(Sussurrando) Dormi? Fai piano, il materasso scricchiola." },
-                            { speaker: "L'Ospite Ribelle", text: "(Sussurrando) Mmh... e se volessi fare un po' di rumore?" }
-                        ],
-                        actions: [
-                            { actor: "Claudia", text: "Mordi dolcemente l'orecchio di Tiziano per farlo sussultare in silenzio.", category: "Teasing" },
-                            { actor: "Tiziano", text: "Afferra i polsi di Claudia sotto le coperte per intimarle di fare la brava.", category: "Dominazione" }
-                        ]
-                    },
-                    {
-                        level: 2, background: "https://images.unsplash.com/photo-1519500099198-d1a1b415e61d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-                        introDialogues: [{ speaker: "Narratore", text: "Le provocazioni continuano a bassa voce." }],
-                        actions: [
-                            { actor: "Claudia", text: "Spostati sotto le coperte e inizia a baciargli l'interno coscia.", category: "Spicy" },
-                            { actor: "Tiziano", text: "Falle scivolare via le mutandine in assoluto silenzio.", category: "Hard" }
-                        ]
-                    },
-                    {
-                        level: 3, background: "https://images.unsplash.com/photo-1517487881594-2787fef5ebf7?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-                        introDialogues: [{ speaker: "Narratore", text: "Il rischio di essere scoperti accresce la tensione." }],
-                        actions: [
-                            { actor: "Claudia", text: "Bacialo mettendo una mano sulla sua bocca per attutire ogni suono.", category: "Hard" },
-                            { actor: "Tiziano", text: "Prendi il controllo in rigoroso silenzio.", category: "Hard" }
-                        ]
-                    }
-                ]
-            },
+        // =========================================================================
+        // INCOLLA QUI SOTTO I TUOI LINK PUBBLICATI IN FORMATO CSV DA GOOGLE SHEETS
+        // =========================================================================
+        const LINK_SCENARI_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pubhtml?gid=1088679208&single=true";
+        const LINK_COPIONE_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pubhtml?gid=1067890923&single=true";
 
-            // ==========================================
-            // CONTESTO 2: STANZE SEPARATE (3 SCENARI)
-            // ==========================================
-            "smart_working": {
-                title: "Distrazioni in Smart Working", context: "Stanze Separate",
-                roles: { "Claudia": "La Dipendente", "Tiziano": "Il Capo Severo" },
-                briefing: {
-                    "Claudia": "Siete a casa in stanze diverse. I fogli excel ti annoiano e decidi di stuzzicare il tuo Capo in chat.",
-                    "Tiziano": "Stai cercando di lavorare. Claudia ti manda messaggi inappropriati che ti eccitano."
-                },
-                levels: [
-                    {
-                        level: 1, background: "#000000",
-                        introDialogues: [
-                            { speaker: "Narratore", text: "*Notifica chat aziendale*" },
-                            { speaker: "La Dipendente", text: "Capo, la sedia è rigida... posso spostarmi sul divano?" },
-                            { speaker: "Il Capo Severo", text: "Siamo in orario di lavoro. Concentrati." }
-                        ],
-                        actions: [
-                            { actor: "Claudia", text: "Mandagli un messaggio descrivendo la tua posizione sensuale.", category: "Teasing" },
-                            { actor: "Claudia", text: "Inviagli un audio con tono di voce provocatorio.", category: "Voice" },
-                            { actor: "Tiziano", text: "Rispondi imponendole di inviare una foto del suo outfit.", category: "Foto" }
-                        ]
-                    },
-                    {
-                        level: 2, background: "#000000",
-                        introDialogues: [{ speaker: "Narratore", text: "Il lavoro è ormai un lontano ricordo." }],
-                        actions: [
-                            { actor: "Claudia", text: "Mandagli una foto di te che accavalli le gambe.", category: "Foto" },
-                            { actor: "Tiziano", text: "Manda un vocale descrivendo la sua punizione disciplinare.", category: "Voice" }
-                        ]
-                    },
-                    {
-                        level: 3, background: "#000000",
-                        introDialogues: [{ speaker: "Narratore", text: "Pausa pranzo anticipata." }],
-                        actions: [
-                            { actor: "Claudia", text: "Scrivigli che ti sei tolta l'intimo e lo stai aspettando.", category: "Hard" },
-                            { actor: "Tiziano", text: "Mandale un ultimo messaggio: 'Arrivo'. Raggiungila.", category: "Hard" }
-                        ]
-                    }
-                ]
-            },
-            "parete_sottile": {
-                title: "La Parete Sottile", context: "Stanze Separate",
-                roles: { "Claudia": "L'Ospite 205", "Tiziano": "L'Ospite 204" },
-                briefing: {
-                    "Claudia": "Sei nella stanza 205. Una parete vi separa. Il divieto di vedersi rende la chat molto più intensa.",
-                    "Tiziano": "Sei nella stanza 204. Sai che lei è di là. Non puoi entrare, devi seguire le regole via telefono."
-                },
-                levels: [
-                    {
-                        level: 1, background: "#000000",
-                        introDialogues: [
-                            { speaker: "Narratore", text: "Siete chiusi nelle rispettive stanze." },
-                            { speaker: "L'Ospite 205", text: "Sento i tuoi passi di là... che stai facendo?" }
-                        ],
-                        actions: [
-                            { actor: "Claudia", text: "Manda un audio descrivendo esattamente come sei vestita o svestita.", category: "Voice" },
-                            { actor: "Tiziano", text: "Bussa due volte alla parete e sussurra il suo nome da vicino.", category: "Soft" }
-                        ]
-                    },
-                    {
-                        level: 2, background: "#000000",
-                        introDialogues: [{ speaker: "Narratore", text: "La frustrazione di non vedersi aumenta." }],
-                        actions: [
-                            { actor: "Claudia", text: "Mandagli una foto inquadrando solo un dettaglio intimo.", category: "Foto" },
-                            { actor: "Tiziano", text: "Manda un audio di 15 secondi spiegando cosa le faresti.", category: "Voice" }
-                        ]
-                    },
-                    {
-                        level: 3, background: "#000000",
-                        introDialogues: [{ speaker: "Narratore", text: "Separati ma vicini al culmine." }],
-                        actions: [
-                            { actor: "Claudia", text: "Chiudi gli occhi, toccati e manda un audio del tuo respiro.", category: "Autoerotismo" },
-                            { actor: "Tiziano", text: "Fatti guidare via messaggio dicendole come ti stai toccando.", category: "Autoerotismo" }
-                        ]
-                    }
-                ]
-            },
-            "prova_abiti": {
-                title: "La Sfilata Privata", context: "Stanze Separate",
-                roles: { "Claudia": "La Modella", "Tiziano": "Il Giudice" },
-                briefing: {
-                    "Claudia": "Sei in camera a provare vestiti. Tiziano è in salotto. Avete trasformato il tutto in una sfilata privata via chat.",
-                    "Tiziano": "Il tuo ruolo è giudicare gli outfit che Claudia ti invia, chiedendole di osare sempre di più."
-                },
-                levels: [
-                    {
-                        level: 1, background: "#000000",
-                        introDialogues: [
-                            { speaker: "Narratore", text: "*Notifica foto ricevuta*" },
-                            { speaker: "La Modella", text: "Che ne dici di questo? È troppo scollato?" },
-                            { speaker: "Il Giudice", text: "Fammi vedere meglio, l'inquadratura non mi convince..." }
-                        ],
-                        actions: [
-                            { actor: "Claudia", text: "Indossa l'indumento più aderente che hai e invia una foto.", category: "Foto" },
-                            { actor: "Tiziano", text: "Boccia l'outfit e chiedile di togliere un capo di intimo.", category: "Comando" }
-                        ]
-                    },
-                    {
-                        level: 2, background: "#000000",
-                        introDialogues: [{ speaker: "Narratore", text: "La sfilata diventa provocatoria." }],
-                        actions: [
-                            { actor: "Claudia", text: "Manda una foto del momento in cui apri i bottoni.", category: "Teasing" },
-                            { actor: "Tiziano", text: "Chiedi un breve video in cui fa una piroetta mostrando il lato B.", category: "Video" }
-                        ]
-                    },
-                    {
-                        level: 3, background: "#000000",
-                        introDialogues: [{ speaker: "Narratore", text: "Gli abiti scarseggiano." }],
-                        actions: [
-                            { actor: "Claudia", text: "Manda la foto finale con addosso solo l'intimo o niente.", category: "Foto" },
-                            { actor: "Tiziano", text: "Chiedile di toccarsi sul vestito e mandare un audio.", category: "Hard" }
-                        ]
-                    }
-                ]
-            },
-
-            // ==========================================
-            // CONTESTO 3: VIDEOCHIAMATA / DISTANZA (3 SCENARI)
-            // ==========================================
-            "primo_match": {
-                title: "Il Primo Match", context: "Videochiamata (Distanza)",
-                roles: { "Claudia": "La Sconosciuta", "Tiziano": "Il Ragazzo di Tinder" },
-                briefing: {
-                    "Claudia": "Prima videochiamata dopo un match su Tinder. Sii misteriosa e provocatoria.",
-                    "Tiziano": "Primo appuntamento virtuale. Il tuo obiettivo è farla sciogliere davanti alla cam."
-                },
-                levels: [
-                    {
-                        level: 1, background: "#000000",
-                        introDialogues: [{ speaker: "Il Ragazzo di Tinder", text: "Wow, sei ancora più bella che in foto." }],
-                        actions: [{ actor: "Claudia", text: "Accarezzati i capelli e fai una domanda imbarazzante sui suoi gusti.", category: "Spicy" }]
-                    },
-                    {
-                        level: 2, background: "#000000",
-                        introDialogues: [{ speaker: "Narratore", text: "I convenevoli lasciano il posto alla passione." }],
-                        actions: [{ actor: "Claudia", text: "Spostati la maglia per mostrare maliziosamente la spalla nuda.", category: "Spicy" }]
-                    },
-                    {
-                        level: 3, background: "#000000",
-                        introDialogues: [{ speaker: "Narratore", text: "La videochiamata si fa bollente." }],
-                        actions: [{ actor: "Claudia", text: "Accetta la sfida, spogliati e regala lo show in cam.", category: "Autoerotismo" }]
-                    }
-                ]
-            },
-            "diretta_privata": {
-                title: "Diretta Privata", context: "Videochiamata (Distanza)",
-                roles: { "Claudia": "La Protagonista", "Tiziano": "Il Regista" },
-                briefing: {
-                    "Claudia": "Sei la protagonista di uno show esclusivo. La telecamera è il tuo palcoscenico e segui le indicazioni.",
-                    "Tiziano": "Sei il regista. Hai il controllo dello spettacolo e decidi cosa deve fare la tua modella."
-                },
-                levels: [
-                    {
-                        level: 1, background: "#000000",
-                        introDialogues: [{ speaker: "Il Regista", text: "Voglio vederti. Accendi la cam e posizionala bene." }],
-                        actions: [
-                            { actor: "Claudia", text: "Senza mostrare il viso, inquadra il tuo corpo e accarezzati i fianchi.", category: "Sensuale" },
-                            { actor: "Tiziano", text: "Ordina a Claudia di cambiare inquadratura per mostrare le sue curve.", category: "Comando" }
-                        ]
-                    },
-                    {
-                        level: 2, background: "#000000",
-                        introDialogues: [{ speaker: "Narratore", text: "Lo schermo si scalda." }],
-                        actions: [
-                            { actor: "Claudia", text: "Togliti lentamente un indumento mantenendo il contatto visivo.", category: "Spicy" },
-                            { actor: "Tiziano", text: "Toccati sopra i vestiti guardandola negli occhi.", category: "Autoerotismo" }
-                        ]
-                    },
-                    {
-                        level: 3, background: "#000000",
-                        introDialogues: [{ speaker: "Narratore", text: "Oltre lo schermo." }],
-                        actions: [
-                            { actor: "Claudia", text: "Toccati seguendo le istruzioni esatte che lui ti dà a voce.", category: "Autoerotismo" },
-                            { actor: "Tiziano", text: "Guidala al piacere usando solo le parole e il tono di voce.", category: "Comando" }
-                        ]
-                    }
-                ]
-            },
-            "controllo_vocale": {
-                title: "Controllo Vocale", context: "Videochiamata (Distanza)",
-                roles: { "Claudia": "La Giocatrice Remota", "Tiziano": "Il Master" },
-                briefing: {
-                    "Claudia": "Sei bendata di fronte al telefono in videochiamata. Devi eseguire esattamente gli ordini del tuo Master tramite la voce.",
-                    "Tiziano": "Hai il controllo totale. Lei ha gli occhi chiusi. La tua voce è il suo unico riferimento per toccarsi."
-                },
-                levels: [
-                    {
-                        level: 1, background: "#000000",
-                        introDialogues: [{ speaker: "Il Master", text: "Chiudi gli occhi. Fai un respiro profondo e ascoltami." }],
-                        actions: [
-                            { actor: "Claudia", text: "Con gli occhi chiusi, passati le mani sul corpo sopra i vestiti.", category: "Sensuale" },
-                            { actor: "Tiziano", text: "Guidala con la voce dicendole dove appoggiare le dita.", category: "Comando" }
-                        ]
-                    },
-                    {
-                        level: 2, background: "#000000",
-                        introDialogues: [{ speaker: "Narratore", text: "La fiducia è totale." }],
-                        actions: [
-                            { actor: "Claudia", text: "Slacciati un indumento alla cieca guidata dalla sua voce.", category: "Spicy" },
-                            { actor: "Tiziano", text: "Ordinale di fermare le mani a un millimetro dalle sue zone intime.", category: "Dominazione" }
-                        ]
-                    },
-                    {
-                        level: 3, background: "#000000",
-                        introDialogues: [{ speaker: "Narratore", text: "Il limite finale." }],
-                        actions: [
-                            { actor: "Claudia", text: "Sotto il suo comando, toccati intimamente facendogli sentire il tuo piacere.", category: "Autoerotismo" },
-                            { actor: "Tiziano", text: "Portala al massimo dettando il ritmo solo con la voce.", category: "Comando" }
-                        ]
-                    }
-                ]
-            }
-        };
-
+        var roleplayScenarios = {};
         var currentPlayer = "", currentScenarioId = "", activeCategories = [];
         var currentLevelIndex = 0, actionsCompletedInLevel = 0, currentDialogueIndex = 0, selectedVictim = "", currentRotation = 0;
         var ACTIONS_PER_LEVEL = 6;
@@ -545,9 +232,67 @@
         }
 
         window.onload = function() {
-            buildScenarioMenu();
-            showScreen('selection-screen');
+            if (LINK_SCENARI_RAW && LINK_SCENARI_RAW.indexOf("http") === 0) {
+                loadFromGoogleSheets();
+            } else {
+                alert("Per favore inserisci i link CSV di Google Sheets nello script per caricare le tue storie!");
+            }
         };
+
+        function loadFromGoogleSheets() {
+            const proxy = "https://corsproxy.io/?";
+            
+            // Parametro Anti-Cache dinamico per costringere Google a scaricare la versione appena modificata
+            const cacheBuster = "&_t=" + Date.now();
+            const urlScenari = proxy + encodeURIComponent(LINK_SCENARI_RAW + cacheBuster);
+            const urlCopione = proxy + encodeURIComponent(LINK_COPIONE_RAW + cacheBuster);
+
+            Papa.parse(urlScenari, {
+                download: true, header: true, skipEmptyLines: true,
+                transformHeader: function(h) { return h.trim(); },
+                complete: function(res) {
+                    if (res.data && res.data.length > 0) {
+                        roleplayScenarios = {};
+                        res.data.forEach(function(row) {
+                            if (!row.ID_Scenario) return;
+                            roleplayScenarios[row.ID_Scenario] = {
+                                title: row.Titolo_Storia, context: row.Contesto_Menu,
+                                roles: { "Claudia": row.Ruolo_Claudia, "Tiziano": row.Ruolo_Tiziano },
+                                briefing: { "Claudia": row.Briefing_Claudia, "Tiziano": row.Briefing_Tiziano },
+                                levels: []
+                            };
+                        });
+                        
+                        Papa.parse(urlCopione, {
+                            download: true, header: true, skipEmptyLines: true,
+                            transformHeader: function(h) { return h.trim(); },
+                            complete: function(resCopione) {
+                                resCopione.data.forEach(function(row) {
+                                    let id = row.ID_Scenario;
+                                    if (!id || !roleplayScenarios[id]) return;
+                                    let lvlIndex = parseInt(row.Livello) - 1;
+                                    if (isNaN(lvlIndex)) return;
+                                    if (!roleplayScenarios[id].levels[lvlIndex]) {
+                                        let bg = row.Sfondo_URL ? row.Sfondo_URL.trim() : "#000";
+                                        roleplayScenarios[id].levels[lvlIndex] = { level: lvlIndex + 1, background: bg, introDialogues: [], actions: [] };
+                                    }
+                                    if (row.Tipo === "Dialogo") {
+                                        roleplayScenarios[id].levels[lvlIndex].introDialogues.push({ speaker: row.Chi_Parla_o_Agisce, text: row.Testo });
+                                    } else if (row.Tipo === "Azione") {
+                                        roleplayScenarios[id].levels[lvlIndex].actions.push({ actor: row.Chi_Parla_o_Agisce, text: row.Testo, category: row.Categoria });
+                                    }
+                                });
+                                buildScenarioMenu();
+                                showScreen('selection-screen');
+                            }
+                        });
+                    }
+                },
+                error: function() {
+                    alert("Errore nel caricamento del foglio Google Sheet. Verifica i link inseriti.");
+                }
+            });
+        }
 
         function buildScenarioMenu() {
             var container = document.getElementById('scenario-list-container');
@@ -555,8 +300,8 @@
             container.innerHTML = '';
             
             var grouped = {};
-            Object.keys(localDatabaseScenarios).forEach(function(key) {
-                var sc = localDatabaseScenarios[key];
+            Object.keys(roleplayScenarios).forEach(function(key) {
+                var sc = roleplayScenarios[key];
                 var ctx = sc.context || "Altro";
                 if (!grouped[ctx]) grouped[ctx] = [];
                 grouped[ctx].push({ id: key, title: sc.title });
@@ -594,7 +339,7 @@
             list.innerHTML = '';
             var allCategories = [];
             
-            localDatabaseScenarios[currentScenarioId].levels.forEach(function(lvl) {
+            roleplayScenarios[currentScenarioId].levels.forEach(function(lvl) {
                 if (lvl.actions) {
                     lvl.actions.forEach(function(act) { 
                         if (act.category && act.category.trim() !== "" && allCategories.indexOf(act.category.trim()) === -1) {
@@ -629,7 +374,7 @@
             
             showScreen('briefing-screen');
             
-            var sc = localDatabaseScenarios[currentScenarioId];
+            var sc = roleplayScenarios[currentScenarioId];
             document.getElementById('briefing-title-claudia').innerText = "CLAUDIA: " + sc.roles["Claudia"];
             document.getElementById('briefing-title-tiziano').innerText = "TIZIANO: " + sc.roles["Tiziano"];
             document.getElementById('briefing-claudia').innerText = sc.briefing["Claudia"];
@@ -647,7 +392,7 @@
         }
 
         function loadLevelNarrative() {
-            var levelData = localDatabaseScenarios[currentScenarioId].levels[currentLevelIndex];
+            var levelData = roleplayScenarios[currentScenarioId].levels[currentLevelIndex];
             document.getElementById('level-indicator').innerText = "Livello Intensità: " + levelData.level;
             
             if (levelData.background && levelData.background.indexOf("http") === 0) {
@@ -663,14 +408,14 @@
         }
 
         function showDialogue() {
-            var levelData = localDatabaseScenarios[currentScenarioId].levels[currentLevelIndex];
+            var levelData = roleplayScenarios[currentScenarioId].levels[currentLevelIndex];
             if (currentDialogueIndex < levelData.introDialogues.length) {
                 var line = levelData.introDialogues[currentDialogueIndex];
                 document.getElementById('speaker-name').innerText = line.speaker;
                 document.getElementById('dialogue-text').innerText = line.text;
                 
                 var color = "var(--primary-accent)"; 
-                if (line.speaker === localDatabaseScenarios[currentScenarioId].roles["Tiziano"] || line.speaker === "Tiziano") color = "var(--secondary-accent)";
+                if (line.speaker === roleplayScenarios[currentScenarioId].roles["Tiziano"] || line.speaker === "Tiziano") color = "var(--secondary-accent)";
                 if (line.speaker === "Narratore") color = "#a996b8";
                 document.getElementById('speaker-name').style.color = color;
             } else {
@@ -702,7 +447,7 @@
                 if (pointerAngle >= 0 && pointerAngle < 180) { selectedVictim = "Tiziano"; winnerText.style.color = "var(--secondary-accent)"; } 
                 else { selectedVictim = "Claudia"; winnerText.style.color = "var(--primary-accent)"; }
 
-                winnerText.innerText = "Tocca a: " + localDatabaseScenarios[currentScenarioId].roles[selectedVictim];
+                winnerText.innerText = "Tocca a: " + roleplayScenarios[currentScenarioId].roles[selectedVictim];
                 winnerText.style.opacity = 1; document.getElementById('nextPhaseBtn').style.display = 'block';
             }, 4000);
         }
@@ -713,13 +458,13 @@
             document.getElementById('playingCard').classList.remove('is-flipped'); 
             document.getElementById('continueBtn').style.display = 'none';
             
-            var roleName = localDatabaseScenarios[currentScenarioId].roles[selectedVictim];
+            var roleName = roleplayScenarios[currentScenarioId].roles[selectedVictim];
             document.getElementById('card-turn-title').innerText = "Azione per " + roleName;
             document.getElementById('card-turn-title').style.color = selectedVictim === "Claudia" ? "var(--primary-accent)" : "var(--secondary-accent)";
             document.getElementById('cardRoleLabel').innerText = "RUOLO: " + roleName.toUpperCase();
             document.getElementById('cardRoleLabel').style.color = selectedVictim === "Claudia" ? "var(--primary-accent)" : "var(--secondary-accent)";
             
-            var levelData = localDatabaseScenarios[currentScenarioId].levels[currentLevelIndex];
+            var levelData = roleplayScenarios[currentScenarioId].levels[currentLevelIndex];
             var validActions = levelData.actions.filter(function(a) {
                 return a.actor === selectedVictim && (activeCategories.indexOf(a.category) !== -1 || !a.category);
             });
@@ -751,7 +496,7 @@
             actionsCompletedInLevel++;
             if (actionsCompletedInLevel >= ACTIONS_PER_LEVEL) {
                 currentLevelIndex++; actionsCompletedInLevel = 0;
-                if (currentLevelIndex >= localDatabaseScenarios[currentScenarioId].levels.length) {
+                if (currentLevelIndex >= roleplayScenarios[currentScenarioId].levels.length) {
                     document.getElementById('vn-screen').style.display = 'block';
                     document.getElementById('level-indicator').innerText = "Fine Copione";
                     document.getElementById('choices-container').innerHTML = "<h2 style='color: white;'>Il copione è finito.</h2><p style='color: #a996b8;'>Ora le regole le scrivete voi.</p><button class='choice-btn' onclick='location.reload()'>Torna al Menu Principale</button>";
