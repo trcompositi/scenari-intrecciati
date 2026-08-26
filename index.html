@@ -4,12 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scenari Intrecciati - Tiziano & Claudia</title>
-    
-    <!-- Libreria PapaParse per leggere i dati da Google Sheets (CSV) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <style>
-        /* --- CSS BASE E VARIABILI --- */
         :root {
             --bg-color: #0a060d;
             --text-color: #f0e6f5;
@@ -21,7 +18,6 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: var(--bg-color); color: var(--text-color); overflow: hidden; }
 
-        /* --- SCHERMATE MENU E LOADER --- */
         .menu-screen {
             display: none; flex-direction: column; justify-content: flex-start; align-items: center;
             height: 100vh; background: linear-gradient(145deg, #170f1f, #0a060d); text-align: center;
@@ -48,7 +44,6 @@
         .btn-context { background: rgba(255,255,255,0.08); border: 1px solid #673ab7; margin-bottom: 8px; }
         .btn-context:hover { background: rgba(103, 58, 183, 0.3); }
 
-        /* PULSANTE INDIETRO */
         .back-btn {
             position: absolute; top: 15px; left: 15px;
             background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
@@ -58,7 +53,6 @@
         }
         .back-btn:hover { background: rgba(255,255,255,0.2); color: #fff; }
 
-        /* LOADER ANIMATO */
         .spinner {
             width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.1);
             border-top-color: var(--primary-accent); border-radius: 50%;
@@ -66,7 +60,6 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* --- BRIEFING E PERSONALIZZAZIONE --- */
         .checklist-container { width: 100%; max-width: 500px; margin-bottom: 20px; text-align: left; }
         .checklist-title { color: var(--primary-accent); font-size: 1.1rem; margin: 15px 0 10px 0; border-bottom: 1px solid #673ab7; padding-bottom: 5px; font-weight: bold; }
         
@@ -84,7 +77,6 @@
         .briefing-box { background: rgba(30,20,40,0.8); border-left: 4px solid var(--primary-accent); padding: 18px; margin-bottom: 15px; text-align: left; border-radius: 0 10px 10px 0; }
         .briefing-title { font-weight: bold; margin-bottom: 8px; font-size: 1.1rem; }
 
-        /* --- VISUAL NOVEL --- */
         #vn-screen { display: none; width: 100vw; height: 100vh; position: relative; background-size: cover; background-position: center; transition: background-image 0.5s ease-in-out; }
         #level-indicator { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.75); border: 1px solid var(--primary-accent); padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; z-index: 10; }
         #choices-container { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; gap: 15px; width: 90%; max-width: 400px; z-index: 10; }
@@ -93,7 +85,6 @@
         #speaker-name { font-size: 1.2rem; font-weight: bold; margin-bottom: 8px; text-transform: uppercase; }
         #dialogue-text { font-size: 1.1rem; line-height: 1.5; color: #fff; }
 
-        /* --- RUOTA E CARTE --- */
         #minigame-screen, #cards-screen { display: none; flex-direction: column; justify-content: center; align-items: center; height: 100vh; background: radial-gradient(circle, #1a1025 0%, #0a060d 100%); position: relative; }
         .wheel-container { position: relative; width: 300px; height: 300px; margin-bottom: 2rem; }
         .pointer { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 30px solid white; z-index: 10; }
@@ -116,32 +107,26 @@
 </head>
 <body>
 
-    <!-- LOADER PER GOOGLE SHEETS -->
-    <div id="loader-screen" class="menu-screen active">
+    <div id="loader-screen" class="menu-screen">
         <h1 class="title">Scenari Intrecciati</h1>
         <p style="color: #a996b8;" id="loader-msg">Caricamento del gioco...</p>
         <div class="spinner"></div>
     </div>
 
-    <!-- SCHERMATA 1: CHI SEI? -->
-    <div id="selection-screen" class="menu-screen">
+    <div id="selection-screen" class="menu-screen active">
         <h1 class="title">Scenari Intrecciati</h1>
         <p style="margin-bottom: 20px;">Chi ha in mano il dispositivo?</p>
         <button class="btn btn-tiziano" onclick="selectPlayer('Tiziano')">Sono Tiziano</button>
         <button class="btn btn-claudia" onclick="selectPlayer('Claudia')">Sono Claudia</button>
     </div>
 
-    <!-- SCHERMATA 2: SCELTA SCENARIO -->
     <div id="scenario-screen" class="menu-screen">
         <button class="back-btn" onclick="goBackTo('selection-screen')">← Indietro</button>
         <h1 class="title">Seleziona la Storia</h1>
         <p style="margin-bottom: 20px; color: #a996b8;">Scegliete in base a dove vi trovate ora.</p>
-        <div id="scenario-list-container" style="display: flex; flex-direction: column; align-items: center; width: 100%;">
-            <!-- Generato dinamicamente da JS per mostrare TUTTI gli scenari -->
-        </div>
+        <div id="scenario-list-container" style="display: flex; flex-direction: column; align-items: center; width: 100%;"></div>
     </div>
 
-    <!-- SCHERMATA 3: REGOLE D'INGAGGIO / CATEGORIE -->
     <div id="customize-screen" class="menu-screen">
         <button class="back-btn" onclick="goBackTo('scenario-screen')">← Indietro</button>
         <h1 class="title" style="font-size: 1.8rem; margin-bottom: 5px;">Regole d'Ingaggio</h1>
@@ -155,7 +140,6 @@
         </div>
     </div>
 
-    <!-- SCHERMATA 4: BRIEFING PERSONAGGI -->
     <div id="briefing-screen" class="menu-screen">
         <button class="back-btn" onclick="goBackTo('customize-screen')">← Indietro</button>
         <h1 class="title" style="font-size: 1.8rem;">Il Vostro Copione</h1>
@@ -175,7 +159,6 @@
         </div>
     </div>
 
-    <!-- SCHERMATA 5: LA VISUAL NOVEL -->
     <div id="vn-screen">
         <div id="level-indicator">Livello 1</div>
         <div id="choices-container"></div>
@@ -185,7 +168,6 @@
         </div>
     </div>
 
-    <!-- SCHERMATA 6: LA RUOTA -->
     <div id="minigame-screen">
         <h2 style="margin-bottom: 2rem; color: #a996b8;">Chi farà la prossima mossa?</h2>
         <div class="wheel-container">
@@ -200,7 +182,6 @@
         <button class="btn btn-context" id="nextPhaseBtn" style="display: none;" onclick="goToCards()">Scopri l'Azione</button>
     </div>
 
-    <!-- SCHERMATA 7: CARTE AZIONE -->
     <div id="cards-screen">
         <h2 id="card-turn-title" style="margin-bottom: 1rem; font-size: 1.5rem; color: #a996b8;">Azione per...</h2>
         <div class="card-container">
@@ -217,12 +198,9 @@
     </div>
 
     <script>
-        // --- CONFIGURAZIONE GOOGLE SHEETS (SE USATO) ---
-        // Sostituisci i link sottostanti con i tuoi link CSV pubblicati se desideri usare Google Sheets
         const LINK_SCENARI_RAW = "";
         const LINK_COPIONE_RAW = "";
 
-        // --- DATABASE LOCALE FALLBACK CON TUTTI GLI SCENARI E CATEGORIE ---
         const localDatabaseScenarios = {
             "errore_prenotazione": {
                 title: "Errore di Prenotazione",
@@ -581,19 +559,15 @@
             }
         };
 
-        // VARIABILI GLOBALI
         let roleplayScenarios = {};
         let currentPlayer = "", currentScenarioId = "", activeCategories = [];
         let currentLevelIndex = 0, actionsCompletedInLevel = 0, currentDialogueIndex = 0, selectedVictim = "", currentRotation = 0;
-        let lastDrawnActionCategory = "";
         const ACTIONS_PER_LEVEL = 6;
 
-        // INIZIALIZZAZIONE
         window.onload = function() {
-            if(LINK_SCENARI_RAW && LINK_SCENARI_RAW.startsWith("http")) {
+            if (typeof LINK_SCENARI_RAW !== "undefined" && LINK_SCENARI_RAW.startsWith("http")) {
                 loadFromGoogleSheets();
             } else {
-                // Caricamento dal database locale completo
                 roleplayScenarios = localDatabaseScenarios;
                 buildScenarioMenu();
             }
@@ -608,10 +582,10 @@
                 download: true, header: true, skipEmptyLines: true,
                 transformHeader: h => h.trim(),
                 complete: function(res) {
-                    if(res.data && res.data.length > 0) {
+                    if (res.data && res.data.length > 0) {
                         roleplayScenarios = {};
                         res.data.forEach(row => {
-                            if(!row.ID_Scenario) return;
+                            if (!row.ID_Scenario) return;
                             roleplayScenarios[row.ID_Scenario] = {
                                 title: row.Titolo_Storia, context: row.Contesto_Menu,
                                 roles: { "Claudia": row.Ruolo_Claudia, "Tiziano": row.Ruolo_Tiziano },
@@ -626,16 +600,16 @@
                             complete: function(resCopione) {
                                 resCopione.data.forEach(row => {
                                     let id = row.ID_Scenario;
-                                    if(!id || !roleplayScenarios[id]) return;
+                                    if (!id || !roleplayScenarios[id]) return;
                                     let lvlIndex = parseInt(row.Livello) - 1;
-                                    if(isNaN(lvlIndex)) return;
-                                    if(!roleplayScenarios[id].levels[lvlIndex]) {
+                                    if (isNaN(lvlIndex)) return;
+                                    if (!roleplayScenarios[id].levels[lvlIndex]) {
                                         let bg = row.Sfondo_URL ? row.Sfondo_URL.trim() : "#000";
                                         roleplayScenarios[id].levels[lvlIndex] = { level: lvlIndex + 1, background: bg, introDialogues: [], actions: [] };
                                     }
-                                    if(row.Tipo === "Dialogo") {
+                                    if (row.Tipo === "Dialogo") {
                                         roleplayScenarios[id].levels[lvlIndex].introDialogues.push({ speaker: row.Chi_Parla_o_Agisce, text: row.Testo });
-                                    } else if(row.Tipo === "Azione") {
+                                    } else if (row.Tipo === "Azione") {
                                         roleplayScenarios[id].levels[lvlIndex].actions.push({ actor: row.Chi_Parla_o_Agisce, text: row.Testo, category: row.Categoria });
                                     }
                                 });
@@ -643,11 +617,13 @@
                             }
                         });
                     } else {
-                        roleplayScenarios = localDatabaseScenarios; buildScenarioMenu();
+                        roleplayScenarios = localDatabaseScenarios;
+                        buildScenarioMenu();
                     }
                 },
                 error: function() {
-                    roleplayScenarios = localDatabaseScenarios; buildScenarioMenu();
+                    roleplayScenarios = localDatabaseScenarios;
+                    buildScenarioMenu();
                 }
             });
         }
@@ -660,7 +636,7 @@
             Object.keys(roleplayScenarios).forEach(key => {
                 const sc = roleplayScenarios[key];
                 const ctx = sc.context || "Altro";
-                if(!grouped[ctx]) grouped[ctx] = [];
+                if (!grouped[ctx]) grouped[ctx] = [];
                 grouped[ctx].push({ id: key, title: sc.title });
             });
 
@@ -681,22 +657,24 @@
                 });
             });
 
-            document.getElementById('loader-screen').classList.remove('active');
-            document.getElementById('loader-screen').style.display = 'none';
+            const loader = document.getElementById('loader-screen');
+            if (loader) {
+                loader.classList.remove('active');
+                loader.style.display = 'none';
+            }
         }
 
-        // NAVIGATION LOGIC (INDIETRO)
         function goBackTo(targetScreenId) {
             const screens = ['selection-screen', 'scenario-screen', 'customize-screen', 'briefing-screen', 'vn-screen', 'minigame-screen', 'cards-screen'];
             screens.forEach(id => {
                 const el = document.getElementById(id);
-                if(el) {
+                if (el) {
                     el.classList.remove('active');
                     el.style.display = 'none';
                 }
             });
             const target = document.getElementById(targetScreenId);
-            if(target) {
+            if (target) {
                 target.style.display = 'flex';
                 target.classList.add('active');
             }
@@ -716,16 +694,16 @@
             const allCategories = new Set();
             
             roleplayScenarios[currentScenarioId].levels.forEach(lvl => {
-                if(lvl.actions) {
+                if (lvl.actions) {
                     lvl.actions.forEach(act => { 
-                        if(act.category && act.category.trim() !== "") {
+                        if (act.category && act.category.trim() !== "") {
                             allCategories.add(act.category.trim()); 
                         }
                     });
                 }
             });
 
-            if(allCategories.size === 0) {
+            if (allCategories.size === 0) {
                 allCategories.add("Generale");
             }
 
@@ -761,7 +739,6 @@
             currentLevelIndex = 0; actionsCompletedInLevel = 0; loadLevelNarrative();
         }
 
-        // ENGINE NARRATIVO E MINIGIOCHI
         function loadLevelNarrative() {
             const levelData = roleplayScenarios[currentScenarioId].levels[currentLevelIndex];
             document.getElementById('level-indicator').innerText = `Livello Intensità: ${levelData.level}`;
@@ -835,18 +812,16 @@
             
             const levelData = roleplayScenarios[currentScenarioId].levels[currentLevelIndex];
             
-            // Filtra le azioni basate sia sull'attore (Claudia/Tiziano) sia sulle Categorie attive
             let validActions = levelData.actions.filter(a => 
                 a.actor === selectedVictim && 
                 (activeCategories.includes(a.category) || !a.category)
             );
             
-            // Fallback se i filtri sono troppo restrittivi
-            if(validActions.length === 0) {
+            if (validActions.length === 0) {
                 validActions = levelData.actions.filter(a => a.actor === selectedVictim);
             }
             
-            if(validActions.length > 0) {
+            if (validActions.length > 0) {
                 const drawn = validActions[Math.floor(Math.random() * validActions.length)];
                 document.getElementById('cardText').innerText = drawn.text;
                 document.getElementById('cardCategoryTag').innerText = `CATEGORIA: ${drawn.category ? drawn.category.toUpperCase() : 'GENERALE'}`;
@@ -858,7 +833,7 @@
 
         function revealCard() {
             const card = document.getElementById('playingCard');
-            if(!card.classList.contains('is-flipped')) {
+            if (!card.classList.contains('is-flipped')) {
                 card.classList.add('is-flipped');
                 setTimeout(() => document.getElementById('continueBtn').style.display = 'inline-block', 800);
             }
@@ -867,9 +842,9 @@
         function completeAction() {
             document.getElementById('cards-screen').style.display = 'none';
             actionsCompletedInLevel++;
-            if(actionsCompletedInLevel >= ACTIONS_PER_LEVEL) {
+            if (actionsCompletedInLevel >= ACTIONS_PER_LEVEL) {
                 currentLevelIndex++; actionsCompletedInLevel = 0;
-                if(currentLevelIndex >= roleplayScenarios[currentScenarioId].levels.length) {
+                if (currentLevelIndex >= roleplayScenarios[currentScenarioId].levels.length) {
                     document.getElementById('vn-screen').style.display = 'block';
                     document.getElementById('level-indicator').innerText = "Fine Copione";
                     document.getElementById('choices-container').innerHTML = "<h2 style='color: white;'>Il copione è finito.</h2><p style='color: #a996b8;'>Ora le regole le scrivete voi.</p><button class='choice-btn' onclick='location.reload()'>Torna al Menu Principale</button>";
