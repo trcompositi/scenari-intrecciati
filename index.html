@@ -62,7 +62,6 @@
             cursor: pointer; z-index: 100;
         }
 
-        /* PULSANTE MENU PAUSA FISSO IN ALTO A SINISTRA */
         #game-menu-btn {
             display: none; position: fixed; top: 15px; left: 15px; z-index: 999;
             background: rgba(0, 0, 0, 0.75); border: 1px solid #673ab7;
@@ -72,7 +71,6 @@
         }
         #game-menu-btn:active { transform: scale(0.95); }
 
-        /* MODAL MENU PAUSA */
         #pause-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(10, 6, 13, 0.95); z-index: 2500; justify-content: center;
@@ -103,7 +101,6 @@
         .check-item::before { content: '○'; font-size: 1.4rem; margin-right: 12px; color: #888; }
         .check-item.active::before { content: '●'; color: var(--primary-accent); }
 
-        /* PULSANTE CAMBIO LIVELLO FISSO IN BASSO A SINISTRA */
         #fixed-skip-level-btn {
             display: none; position: fixed; bottom: 15px; left: 15px; z-index: 999;
             background: rgba(233, 30, 99, 0.25); border: 1px solid var(--primary-accent);
@@ -113,7 +110,6 @@
         }
         #fixed-skip-level-btn:active { transform: scale(0.95); }
 
-        /* WIDGET LIVE CHAT FLOTTANTE IN BASSO A DESTRA */
         #chat-toggle-btn {
             position: fixed; bottom: 15px; right: 15px; z-index: 999;
             background: linear-gradient(45deg, var(--primary-accent), #673ab7);
@@ -154,7 +150,6 @@
         .btn-chat-media { padding: 6px 10px; font-size: 0.75rem; border-radius: 5px; border: 1px solid #673ab7; background: rgba(255,255,255,0.1); color: white; cursor: pointer; }
         .btn-chat-rec { background: rgba(233, 30, 99, 0.2); border-color: var(--primary-accent); }
 
-        /* LIGHTBOX FULLSCREEN MODAL */
         #lightbox-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(0, 0, 0, 0.95); z-index: 2000; justify-content: center;
@@ -347,8 +342,8 @@
 
     <!-- SCHERMATA ATTESA CATEGORIE PARTNER -->
     <div id="waiting-screen" class="menu-screen">
-        <h1 class="title" style="font-size: 1.8rem;">In Attesa del Partner...</h1>
-        <p style="color: #a996b8; margin-top: 20px;" id="waiting-msg">Le tue categorie sono state salvate.<br>In attesa che il partner completi la sua selezione...</p>
+        <h1 class="title" style="font-size: 1.8rem;">Sincronizzazione Categorie...</h1>
+        <p style="color: #a996b8; margin-top: 20px;" id="waiting-msg">Invio selezione in corso...<br>In attesa della conferma dal partner.</p>
         <div class="spinner"></div>
     </div>
 
@@ -442,6 +437,7 @@
         var currentLevelActions = { "Claudia": [], "Tiziano": [] };
         var currentDrawnAction = null;
         var unreadChatCount = 0;
+        var catSyncInterval = null;
 
         function openPauseModal() { document.getElementById('pause-modal').style.display = 'flex'; }
         function closePauseModal() { document.getElementById('pause-modal').style.display = 'none'; }
@@ -663,17 +659,17 @@
             tx.oncomplete = function() { loadGalleryContent(); };
         }
 
-        // --- HANDSHAKE P2P CON RETRY AUTOMATICO ---
-        var peer = null, conn = null, retryTimer = null;
+        // --- ROBUTO HANDSHAKE P2P CON RETRY AUTOMATICO E PING-PONG ---
+        var peer = null, conn = null, retryTimer = null, pingInterval = null;
 
         function autoConnectP2P(playerName) {
             if (!playerName) return;
-            document.getElementById('p2p-status').innerText = "🟡 Inizializzazione rete P2P...";
+            document.getElementById('p2p-status').innerText = "🟡 Connessione alla rete P2P...";
             
             var myPeerId = FIXED_ROOM_CODE + "-" + playerName.toLowerCase();
             var targetPeerId = FIXED_ROOM_CODE + "-" + (playerName === "Tiziano" ? "claudia" : "tiziano");
             
-            if (peer) peer.destroy();
+            if (peer) { try { peer.destroy(); } catch(e){} }
             
             peer = new Peer(myPeerId);
             peer.on('open', function(id) {
@@ -705,7 +701,7 @@
                         clearInterval(retryTimer);
                         retryTimer = null;
                     }
-                }, 3000);
+                }, 2500);
             }
         }
 
@@ -717,13 +713,27 @@
                 document.getElementById('p2p-status').innerText = "🟢 Partner Connesso! Entrambi pronti.";
                 document.getElementById('start-sync-btn').style.display = "inline-block";
                 playNotificationSound();
+
+                // Keep-Alive Heartbeat ogni 4 secondi
+                if (!pingInterval) {
+                    pingInterval = setInterval(function() {
+                        if (conn && conn.open) conn.send({ type: "PING" });
+                    }, 4000);
+                }
+
                 sendP2PCommand({ type: "SYNC_JOIN", player: currentPlayer });
+
+                // Se avevamo inviato le categorie e siamo in attesa, ri-invia subito
+                if (mySelectedCategories.length > 0 && partnerSelectedCategories === null) {
+                    sendP2PCommand({ type: "SYNC_CATEGORIES_SUBMIT", categories: mySelectedCategories });
+                }
             });
 
             conn.on('data', function(data) { handleIncomingP2PData(data); });
             conn.on('close', function() {
                 document.getElementById('p2p-status').style.color = "#e91e63";
                 document.getElementById('p2p-status').innerText = "🔴 Connessione persa. Riconnessione...";
+                if (pingInterval) { clearInterval(pingInterval); pingInterval = null; }
                 autoConnectP2P(currentPlayer);
             });
         }
@@ -733,6 +743,8 @@
         }
 
         function handleIncomingP2PData(data) {
+            if (data.type === "PING") return; // Ignora il battito di controllo
+
             if (data.type === "text") {
                 playNotificationSound();
                 appendChatMessage(data.sender, data.text, "partner");
@@ -746,6 +758,13 @@
                 selectScenario(data.scenarioId, true);
             } else if (data.type === "SYNC_CATEGORIES_SUBMIT") {
                 partnerSelectedCategories = data.categories;
+                // Rispondi con ACK
+                sendP2PCommand({ type: "SYNC_CATEGORIES_ACK", categories: mySelectedCategories });
+                checkBothCategoriesSubmitted();
+            } else if (data.type === "SYNC_CATEGORIES_ACK") {
+                if (data.categories && data.categories.length > 0) {
+                    partnerSelectedCategories = data.categories;
+                }
                 checkBothCategoriesSubmitted();
             } else if (data.type === "SYNC_BRIEFING") {
                 goToBriefing(true);
@@ -778,6 +797,8 @@
             }
         }
 
+        // --- GESTIONE CATEGORIE PRIVATA E SINCRONIZZATA ROBUSTA ---
+
         function submitCategories() {
             var items = document.querySelectorAll('.check-item.active');
             mySelectedCategories = [];
@@ -787,13 +808,27 @@
 
             if (mySelectedCategories.length === 0) { alert("⚠️ Seleziona almeno una categoria!"); return; }
 
-            sendP2PCommand({ type: "SYNC_CATEGORIES_SUBMIT", categories: mySelectedCategories });
             showScreen('waiting-screen');
+
+            // Invia le categorie in modo persistente finché non arriva ACK dal partner
+            if (catSyncInterval) clearInterval(catSyncInterval);
+            catSyncInterval = setInterval(function() {
+                if (partnerSelectedCategories !== null) {
+                    clearInterval(catSyncInterval);
+                    catSyncInterval = null;
+                } else {
+                    sendP2PCommand({ type: "SYNC_CATEGORIES_SUBMIT", categories: mySelectedCategories });
+                }
+            }, 2000);
+
+            sendP2PCommand({ type: "SYNC_CATEGORIES_SUBMIT", categories: mySelectedCategories });
             checkBothCategoriesSubmitted();
         }
 
         function checkBothCategoriesSubmitted() {
             if (mySelectedCategories.length > 0 && partnerSelectedCategories !== null) {
+                if (catSyncInterval) { clearInterval(catSyncInterval); catSyncInterval = null; }
+
                 activeCategories = mySelectedCategories.filter(function(cat) {
                     return partnerSelectedCategories.indexOf(cat) !== -1;
                 });
