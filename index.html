@@ -62,7 +62,7 @@
             cursor: pointer; z-index: 100;
         }
 
-        /* PULSANTE MENU PAUSA FISSO IN ALTO A SINISTRA DURANTE IL GIOCO */
+        /* PULSANTE MENU PAUSA FISSO IN ALTO A SINISTRA */
         #game-menu-btn {
             display: none; position: fixed; top: 15px; left: 15px; z-index: 999;
             background: rgba(0, 0, 0, 0.75); border: 1px solid #673ab7;
@@ -207,7 +207,6 @@
         .label-claudia { bottom: 25%; right: 65%; transform: rotate(-90deg); }
         #winner-text { font-size: 1.8rem; font-weight: bold; margin-bottom: 1rem; min-height: 2.5rem; opacity: 0; transition: opacity 0.5s; }
 
-        /* STRUTTURA CARTA ADATTIVA CON IMMAGINI TEMATICHE SUL FRONTE */
         .card-container { 
             width: 92vw; max-width: 480px; min-height: 440px; 
             margin: 1rem auto; position: relative;
@@ -417,7 +416,6 @@
 
         const FIXED_ROOM_CODE = "tiziano-claudia-intimo-2026";
 
-        // DIZIONARIO IMMAGINI COPERTINA PER CATEGORIA
         const CATEGORY_IMAGES = {
             "DIALOGO": "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=600&q=80",
             "VOICE": "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=600&q=80",
@@ -665,32 +663,69 @@
             tx.oncomplete = function() { loadGalleryContent(); };
         }
 
-        var peer = null, conn = null;
+        // --- HANDSHAKE P2P CON RETRY AUTOMATICO ---
+        var peer = null, conn = null, retryTimer = null;
+
         function autoConnectP2P(playerName) {
             if (!playerName) return;
-            document.getElementById('p2p-status').innerText = "🟡 Connessione al partner in corso...";
+            document.getElementById('p2p-status').innerText = "🟡 Inizializzazione rete P2P...";
+            
             var myPeerId = FIXED_ROOM_CODE + "-" + playerName.toLowerCase();
             var targetPeerId = FIXED_ROOM_CODE + "-" + (playerName === "Tiziano" ? "claudia" : "tiziano");
+            
+            if (peer) peer.destroy();
+            
             peer = new Peer(myPeerId);
             peer.on('open', function(id) {
-                conn = peer.connect(targetPeerId);
-                setupConnEvents();
+                document.getElementById('p2p-status').innerText = "🟡 In attesa del partner...";
+                attemptConnection(targetPeerId);
             });
+
             peer.on('connection', function(c) {
                 conn = c;
                 setupConnEvents();
             });
+
+            peer.on('error', function(err) {
+                console.log("P2P Status Info:", err);
+            });
+        }
+
+        function attemptConnection(targetPeerId) {
+            if (conn && conn.open) return;
+            conn = peer.connect(targetPeerId, { reliable: true });
+            setupConnEvents();
+
+            if (!retryTimer) {
+                retryTimer = setInterval(function() {
+                    if (!conn || !conn.open) {
+                        conn = peer.connect(targetPeerId, { reliable: true });
+                        setupConnEvents();
+                    } else {
+                        clearInterval(retryTimer);
+                        retryTimer = null;
+                    }
+                }, 3000);
+            }
         }
 
         function setupConnEvents() {
+            if (!conn) return;
             conn.on('open', function() {
+                if (retryTimer) { clearInterval(retryTimer); retryTimer = null; }
                 document.getElementById('p2p-status').style.color = "#4caf50";
                 document.getElementById('p2p-status').innerText = "🟢 Partner Connesso! Entrambi pronti.";
                 document.getElementById('start-sync-btn').style.display = "inline-block";
                 playNotificationSound();
                 sendP2PCommand({ type: "SYNC_JOIN", player: currentPlayer });
             });
+
             conn.on('data', function(data) { handleIncomingP2PData(data); });
+            conn.on('close', function() {
+                document.getElementById('p2p-status').style.color = "#e91e63";
+                document.getElementById('p2p-status').innerText = "🔴 Connessione persa. Riconnessione...";
+                autoConnectP2P(currentPlayer);
+            });
         }
 
         function sendP2PCommand(dataObj) {
@@ -979,7 +1014,6 @@
                 var cat = currentDrawnAction.category ? currentDrawnAction.category.toUpperCase() : 'GENERALE';
                 document.getElementById('cardCategoryTag').innerText = "CATEGORIA: " + cat;
 
-                // AGGIORNA SFONDO COPERTINA FRONTE CARTA IN BASE ALLA CATEGORIA
                 var bgUrl = CATEGORY_IMAGES[cat] || CATEGORY_IMAGES["DEFAULT"];
                 document.getElementById('cardFrontFace').style.background = "linear-gradient(rgba(10,6,13,0.5), rgba(10,6,13,0.85)), url('" + bgUrl + "') center/cover";
             }
