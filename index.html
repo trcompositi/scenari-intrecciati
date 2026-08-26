@@ -202,13 +202,9 @@
     </div>
 
     <script>
-        // =========================================================================
-        // INCOLLA QUI SOTTO I TUOI LINK PUBBLICATI IN FORMATO CSV DA GOOGLE SHEETS
-        // =========================================================================
-        const LINK_SCENARI_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1088679208&single=true&output=csv](https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1088679208&single=true&output=csv)
-
-Foglio 2 (Copione):";
-        const LINK_COPIONE_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1067890923&single=true&output=csv](https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1067890923&single=true&output=csv)";
+        // Link CSV Pubblici da Google Sheets (formato &output=csv)
+        const LINK_SCENARI_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1088679208&single=true&output=csv";
+        const LINK_COPIONE_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1067890923&single=true&output=csv";
 
         var roleplayScenarios = {};
         var currentPlayer = "", currentScenarioId = "", activeCategories = [];
@@ -244,7 +240,7 @@ Foglio 2 (Copione):";
         function loadFromGoogleSheets() {
             const proxy = "https://corsproxy.io/?";
             
-            // Parametro Anti-Cache dinamico per costringere Google a scaricare la versione appena modificata
+            // Parametro Anti-Cache dinamico
             const cacheBuster = "&_t=" + Date.now();
             const urlScenari = proxy + encodeURIComponent(LINK_SCENARI_RAW + cacheBuster);
             const urlCopione = proxy + encodeURIComponent(LINK_COPIONE_RAW + cacheBuster);
