@@ -226,7 +226,7 @@
 
         <div id="p2p-status" style="font-size: 0.9rem; color: #e91e63; margin: 20px 0; font-weight: bold;">🔴 Seleziona chi sei per connetterti al partner</div>
 
-        <button class="btn btn-context" id="start-sync-btn" style="display:none; background: var(--primary-accent);" onclick="showScreen('scenario-screen')"> Entra nel Gioco Sincronizzato</button>
+        <button class="btn btn-context" id="start-sync-btn" style="display:none; background: var(--primary-accent);" onclick="showScreen('scenario-screen')">Entra nel Gioco Sincronizzato</button>
 
         <button class="btn btn-gallery" style="margin-top: 15px;" onclick="openGallery()">📂 Galleria Privata In-App</button>
     </div>
@@ -248,14 +248,21 @@
     <div id="customize-screen" class="menu-screen">
         <button class="back-btn" onclick="showScreen('scenario-screen')">← Indietro</button>
         <h1 class="title" style="font-size: 1.8rem; margin-bottom: 5px;">Regole d'Ingaggio</h1>
-        <p style="color: #a996b8; margin-bottom: 15px; font-size: 0.9rem;">Selezionate di comune accordo le categorie che desiderate includere stasera.</p>
+        <p style="color: #a996b8; margin-bottom: 15px; font-size: 0.9rem;">Selezionate privatamente le categorie. Verranno incluse solo quelle accettate da entrambi.</p>
         <div class="checklist-container">
             <div class="checklist-title">CATEGORIE DISPONIBILI</div>
             <div id="category-list" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;"></div>
         </div>
         <div class="save-btn-container">
-            <button class="btn btn-context" style="width: 100%;" onclick="goToBriefing()">Avanti</button>
+            <button class="btn btn-context" id="btn-submit-categories" style="width: 100%;" onclick="submitCategories()">Conferma Selezione Privata</button>
         </div>
+    </div>
+
+    <!-- SCHERMATA ATTESA CATEGORIE PARTNER -->
+    <div id="waiting-screen" class="menu-screen">
+        <h1 class="title" style="font-size: 1.8rem;">In Attesa del Partner...</h1>
+        <p style="color: #a996b8; margin-top: 20px;" id="waiting-msg">Le tue categorie sono state salvate.<br>In attesa che il partner completi la sua selezione...</p>
+        <div class="spinner"></div>
     </div>
 
     <div id="briefing-screen" class="menu-screen">
@@ -325,6 +332,7 @@
 
         var roleplayScenarios = {};
         var currentPlayer = "", currentScenarioId = "", activeCategories = [];
+        var mySelectedCategories = [], partnerSelectedCategories = null;
         var currentLevelIndex = 0, currentDialogueIndex = 0, selectedVictim = "", currentRotation = 0;
         
         var currentLevelActions = { "Claudia": [], "Tiziano": [] };
@@ -375,7 +383,7 @@
             });
         }
 
-        // --- MOTORE DI SINCRONIZZAZIONE P2P ---
+        // --- PEERJS LIVE P2P ---
         var peer = null, conn = null;
         function autoConnectP2P(playerName) {
             if (!playerName) return;
@@ -402,8 +410,6 @@
                 document.getElementById('p2p-status').innerText = "🟢 Partner Connesso! Entrambi pronti.";
                 document.getElementById('start-sync-btn').style.display = "inline-block";
                 playNotificationSound();
-                
-                // Invia ping di benvenuto
                 sendP2PCommand({ type: "SYNC_JOIN", player: currentPlayer });
             });
 
@@ -418,7 +424,6 @@
             }
         }
 
-        // GESTIONE DEI COMANDI RICEVUTI IN TEMPO REALE DAL PARTNER
         function handleIncomingP2PData(data) {
             if (data.type === "text") {
                 playNotificationSound();
@@ -431,6 +436,9 @@
                 notifyChatBadge();
             } else if (data.type === "SYNC_SCENARIO_SELECT") {
                 selectScenario(data.scenarioId, true);
+            } else if (data.type === "SYNC_CATEGORIES_SUBMIT") {
+                partnerSelectedCategories = data.categories;
+                checkBothCategoriesSubmitted();
             } else if (data.type === "SYNC_BRIEFING") {
                 goToBriefing(true);
             } else if (data.type === "SYNC_START") {
@@ -462,6 +470,46 @@
             }
         }
 
+        // --- GESTIONE CATEGORIE PRIVATA E SINCRONIZZATA ---
+
+        function submitCategories() {
+            var items = document.querySelectorAll('.check-item.active');
+            mySelectedCategories = [];
+            for (var i = 0; i < items.length; i++) {
+                mySelectedCategories.push(items[i].dataset.category);
+            }
+
+            if (mySelectedCategories.length === 0) {
+                alert("⚠️ Seleziona almeno una categoria!");
+                return;
+            }
+
+            // Invia la selezione privata al partner
+            sendP2PCommand({ type: "SYNC_CATEGORIES_SUBMIT", categories: mySelectedCategories });
+
+            // Passa alla schermata di attesa se il partner non ha ancora inviato la sua
+            showScreen('waiting-screen');
+            checkBothCategoriesSubmitted();
+        }
+
+        function checkBothCategoriesSubmitted() {
+            if (mySelectedCategories.length > 0 && partnerSelectedCategories !== null) {
+                // Calcola l'intersezione (categorie accettate da entrambi)
+                activeCategories = mySelectedCategories.filter(function(cat) {
+                    return partnerSelectedCategories.indexOf(cat) !== -1;
+                });
+
+                if (activeCategories.length === 0) {
+                    alert("⚠️ Nessuna categoria in comune selezionata! Riattivate qualche categoria.");
+                    mySelectedCategories = []; partnerSelectedCategories = null;
+                    showScreen('customize-screen');
+                    return;
+                }
+
+                goToBriefing(false);
+            }
+        }
+
         // --- AZIONI DI GIOCO SINCRONIZZATE ---
 
         function handleDialogueClick() {
@@ -482,7 +530,7 @@
 
             var mazzo = currentLevelActions[victim];
             var randomIndex = Math.floor(Math.random() * mazzo.length);
-            var drawn = mazzo.splice(randomIndex, 1)[0];
+            var drawn = mazzo[randomIndex]; // L'azione viene presa ma RIMOSSA solo dopo completeAction()
 
             spinTheWheel(victim, drawn, false);
             sendP2PCommand({ type: "SYNC_SPIN_WHEEL", victim: victim, drawnAction: drawn });
@@ -499,6 +547,13 @@
         }
 
         function handleCompleteActionClick() {
+            // Rimuove l'azione completata dal mazzo
+            if (currentDrawnAction && selectedVictim) {
+                var index = currentLevelActions[selectedVictim].indexOf(currentDrawnAction);
+                if (index !== -1) {
+                    currentLevelActions[selectedVictim].splice(index, 1);
+                }
+            }
             completeAction(false);
             sendP2PCommand({ type: "SYNC_COMPLETE_ACTION" });
         }
@@ -514,23 +569,13 @@
 
         function selectScenario(scenarioId, isRemote) {
             currentScenarioId = scenarioId; 
+            mySelectedCategories = []; partnerSelectedCategories = null;
             showScreen('customize-screen');
             buildCategoryList();
             if (!isRemote) sendP2PCommand({ type: "SYNC_SCENARIO_SELECT", scenarioId: scenarioId });
         }
 
         function goToBriefing(isRemote) {
-            var items = document.querySelectorAll('.check-item.active');
-            activeCategories = [];
-            for (var i = 0; i < items.length; i++) {
-                activeCategories.push(items[i].dataset.category);
-            }
-
-            if (activeCategories.length === 0) { 
-                alert("⚠️ Selezionate almeno una categoria per proseguire!"); 
-                return; 
-            }
-            
             var scenario = roleplayScenarios[currentScenarioId];
             showScreen('briefing-screen');
             
@@ -547,6 +592,36 @@
             document.getElementById('vn-screen').style.display = 'block';
             currentLevelIndex = 0; loadLevelNarrative();
             if (!isRemote) sendP2PCommand({ type: "SYNC_START" });
+        }
+
+        function loadLevelNarrative() {
+            var levelData = roleplayScenarios[currentScenarioId].levels[currentLevelIndex];
+            
+            // Popola i mazzi del livello con le azioni appartenenti alle categorie comuni approvate
+            currentLevelActions["Claudia"] = levelData.actions.filter(function(a) {
+                return a.actor === "Claudia" && activeCategories.indexOf(a.category) !== -1;
+            });
+            currentLevelActions["Tiziano"] = levelData.actions.filter(function(a) {
+                return a.actor === "Tiziano" && activeCategories.indexOf(a.category) !== -1;
+            });
+
+            if (currentLevelActions["Claudia"].length === 0 && currentLevelActions["Tiziano"].length === 0) {
+                advanceToNextLevel(true);
+                return;
+            }
+
+            document.getElementById('level-indicator').innerText = "Livello Intensità: " + levelData.level;
+            
+            if (levelData.background && levelData.background.indexOf("http") === 0) {
+                document.getElementById('vn-screen').style.backgroundImage = "url('" + levelData.background + "')";
+            } else {
+                document.getElementById('vn-screen').style.backgroundImage = 'none';
+                document.getElementById('vn-screen').style.backgroundColor = levelData.background || "#000";
+            }
+            
+            document.getElementById('choices-container').innerHTML = ""; 
+            document.getElementById('dialogue-box').style.display = "block";
+            currentDialogueIndex = 0; showDialogue();
         }
 
         function showDialogue() {
