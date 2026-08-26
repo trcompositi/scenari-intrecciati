@@ -52,6 +52,7 @@
         .btn-claudia { background: linear-gradient(45deg, var(--primary-accent), #c2185b); }
         .btn-context { background: rgba(255,255,255,0.08); border: 1px solid #673ab7; }
         .btn-gallery { background: linear-gradient(45deg, #673ab7, #e91e63); }
+        .btn-resume { background: linear-gradient(45deg, #4caf50, #2e7d32); }
         .btn-reset { background: rgba(255, 82, 82, 0.2); border: 1px solid #ff5252; color: #ff5252; margin-top: 15px; }
 
         .back-btn {
@@ -59,6 +60,28 @@
             background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
             color: #d1c4db; border-radius: 50px; padding: 8px 16px; font-size: 0.9rem;
             cursor: pointer; z-index: 100;
+        }
+
+        /* PULSANTE MENU PAUSA IN ALTO A SINISTRA DURANTE IL GIOCO */
+        #game-menu-btn {
+            display: none; position: fixed; top: 15px; left: 15px; z-index: 999;
+            background: rgba(0, 0, 0, 0.75); border: 1px solid #673ab7;
+            color: white; border-radius: 50px; padding: 8px 16px;
+            font-weight: bold; font-size: 0.85rem; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            cursor: pointer; backdrop-filter: blur(5px); transition: transform 0.2s;
+        }
+        #game-menu-btn:active { transform: scale(0.95); }
+
+        /* MODAL MENU PAUSA */
+        #pause-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(10, 6, 13, 0.95); z-index: 2500; justify-content: center;
+            align-items: center; flex-direction: column; padding: 20px;
+        }
+        .pause-box {
+            background: rgba(25, 15, 38, 0.98); border: 2px solid #673ab7; border-radius: 18px;
+            padding: 25px; width: 90vw; max-width: 380px; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.9); display: flex; flex-direction: column; gap: 12px;
         }
 
         .spinner {
@@ -228,10 +251,25 @@
         <div id="lightbox-container" onclick="event.stopPropagation();"></div>
     </div>
 
-    <!-- PULSANTE CAMBIO LIVELLO FISSO -->
+    <!-- PULSANTE MENU PAUSA FISSO IN ALTO A SINISTRA -->
+    <button id="game-menu-btn" onclick="openPauseModal()">⚙️ Menu</button>
+
+    <!-- MODAL MENU PAUSA (RIPRENDI, SALVA, ESCI) -->
+    <div id="pause-modal">
+        <div class="pause-box">
+            <h2 style="color: var(--primary-accent); margin-bottom: 5px;">Partita in Pausa</h2>
+            <p style="font-size: 0.85rem; color: #a996b8; margin-bottom: 15px;">Scegli un'azione per continuare o riorganizzare la sessione.</p>
+            
+            <button class="btn btn-resume" onclick="closePauseModal()">▶️ Riprendi Gioco</button>
+            <button class="btn btn-context" onclick="manualSaveGame()">💾 Salva Partita</button>
+            <button class="btn btn-reset" style="margin-top: 5px;" onclick="abandonGame()">🚪 Abbandona e Esci</button>
+        </div>
+    </div>
+
+    <!-- PULSANTE CAMBIO LIVELLO FISSO IN BASSO A SINISTRA -->
     <button id="fixed-skip-level-btn" onclick="handleForceNextLevelClick()">⚡ Sali di Livello</button>
 
-    <!-- BOTTONE FLOTTANTE LIVE CHAT P2P -->
+    <!-- BOTTONE FLOTTANTE LIVE CHAT P2P IN BASSO A DESTRA -->
     <button id="chat-toggle-btn" onclick="toggleChat()">
         💬 Chat Live <span id="chat-badge">0</span>
     </button>
@@ -272,10 +310,11 @@
 
         <div id="p2p-status" style="font-size: 0.9rem; color: #e91e63; margin: 20px 0; font-weight: bold;">🔴 Seleziona chi sei per connetterti al partner</div>
 
+        <button class="btn btn-resume" id="btn-resume-game" style="display:none;" onclick="resumeSavedGame()">▶️ Riprendi Partita Salvata</button>
         <button class="btn btn-context" id="start-sync-btn" style="display:none; background: var(--primary-accent);" onclick="showScreen('scenario-screen')">Entra nel Gioco Sincronizzato</button>
 
         <button class="btn btn-gallery" style="margin-top: 15px;" onclick="openGallery()">📂 Galleria Privata In-App</button>
-        <button class="btn btn-reset" id="btn-reset-game" style="display:none;" onclick="resetGameState()">🔄 Abbandona e Nuova Partita</button>
+        <button class="btn btn-reset" id="btn-reset-game" style="display:none;" onclick="resetGameState()">🔄 Nuova Partita (Resetta)</button>
     </div>
 
     <div id="gallery-screen" class="menu-screen">
@@ -388,7 +427,29 @@
         var currentDrawnAction = null;
         var unreadChatCount = 0;
 
-        // --- SISTEMA PERSISTENZA E RIPRISTINO EXACT STATE (LOCALSTORAGE) ---
+        // --- SISTEMA PAUSA / SALVA / ESCI ---
+        function openPauseModal() {
+            document.getElementById('pause-modal').style.display = 'flex';
+        }
+
+        function closePauseModal() {
+            document.getElementById('pause-modal').style.display = 'none';
+        }
+
+        function manualSaveGame() {
+            saveGameState();
+            alert("💾 Partita salvata con successo nella memoria locale!");
+            closePauseModal();
+        }
+
+        function abandonGame() {
+            if (confirm("Vuoi davvero abbandonare la partita attuale e tornare al menu iniziale?")) {
+                closePauseModal();
+                showScreen('selection-screen');
+            }
+        }
+
+        // --- SISTEMA PERSISTENZA E RIPRISTINO EXACT STATE ---
         function saveGameState() {
             var state = {
                 currentPlayer: currentPlayer,
@@ -401,11 +462,28 @@
                 currentDrawnAction: currentDrawnAction,
                 isCardFlipped: isCardFlipped
             };
-            localStorage.setItem("ScenariGameState_v2", JSON.stringify(state));
+            localStorage.setItem("ScenariGameState_v3", JSON.stringify(state));
+        }
+
+        function checkSavedGameAvailable() {
+            var saved = localStorage.getItem("ScenariGameState_v3");
+            if (saved) {
+                try {
+                    var state = JSON.parse(saved);
+                    if (state.currentPlayer && state.currentScenarioId) {
+                        document.getElementById('btn-resume-game').style.display = 'inline-block';
+                        document.getElementById('btn-reset-game').style.display = 'inline-block';
+                    }
+                } catch(e){}
+            }
+        }
+
+        function resumeSavedGame() {
+            restoreGameState();
         }
 
         function restoreGameState() {
-            var saved = localStorage.getItem("ScenariGameState_v2");
+            var saved = localStorage.getItem("ScenariGameState_v3");
             if (!saved) return false;
             try {
                 var state = JSON.parse(saved);
@@ -427,7 +505,6 @@
                     autoConnectP2P(currentPlayer);
 
                     if (currentScenarioId && roleplayScenarios[currentScenarioId]) {
-                        // Ripristina mazzi se il livello è attivo
                         var levelData = roleplayScenarios[currentScenarioId].levels[currentLevelIndex];
                         if (levelData) {
                             currentLevelActions["Claudia"] = levelData.actions.filter(function(a) {
@@ -438,16 +515,18 @@
                             });
                         }
 
-                        // Jump alla schermata esatta salvata
                         showScreen(currentScreenId);
 
                         if (currentScreenId === 'vn-screen') {
+                            document.getElementById('game-menu-btn').style.display = 'block';
                             document.getElementById('fixed-skip-level-btn').style.display = 'block';
                             loadLevelNarrative();
                         } else if (currentScreenId === 'minigame-screen') {
+                            document.getElementById('game-menu-btn').style.display = 'block';
                             document.getElementById('fixed-skip-level-btn').style.display = 'block';
                             openMinigame(true);
                         } else if (currentScreenId === 'cards-screen') {
+                            document.getElementById('game-menu-btn').style.display = 'block';
                             document.getElementById('fixed-skip-level-btn').style.display = 'block';
                             goToCards(true);
                             if (isCardFlipped) {
@@ -465,7 +544,7 @@
 
         function resetGameState() {
             if (confirm("Vuoi azzerare la partita attuale per iniziarne una nuova?")) {
-                localStorage.removeItem("ScenariGameState_v2");
+                localStorage.removeItem("ScenariGameState_v3");
                 location.reload();
             }
         }
@@ -810,7 +889,7 @@
 
         function startRoleplay(isRemote) {
             showScreen('vn-screen');
-            document.getElementById('vn-screen').style.display = 'block';
+            document.getElementById('game-menu-btn').style.display = 'block';
             document.getElementById('fixed-skip-level-btn').style.display = 'block';
             currentLevelIndex = 0; loadLevelNarrative();
             saveGameState();
@@ -888,6 +967,7 @@
             }
 
             showScreen('minigame-screen');
+            document.getElementById('game-menu-btn').style.display = 'block';
             document.getElementById('fixed-skip-level-btn').style.display = 'block';
             document.getElementById('spinBtn').style.display = 'block';
             document.getElementById('nextPhaseBtn').style.display = 'none';
@@ -923,6 +1003,7 @@
 
         function goToCards(isRemote) {
             showScreen('cards-screen');
+            document.getElementById('game-menu-btn').style.display = 'block';
             document.getElementById('fixed-skip-level-btn').style.display = 'block';
             document.getElementById('playingCard').classList.remove('is-flipped'); 
             document.getElementById('continueBtn').style.display = 'none';
@@ -953,6 +1034,8 @@
         }
 
         function completeAction(isRemote) {
+            document.getElementById('cards-screen').style.display = 'none';
+            
             var remainingTotal = currentLevelActions["Claudia"].length + currentLevelActions["Tiziano"].length;
             if (remainingTotal > 0) {
                 showScreen('vn-screen');
@@ -971,6 +1054,7 @@
             if (currentLevelIndex >= roleplayScenarios[currentScenarioId].levels.length) {
                 showScreen('vn-screen');
                 document.getElementById('fixed-skip-level-btn').style.display = 'none';
+                document.getElementById('game-menu-btn').style.display = 'none';
                 document.getElementById('level-indicator').innerText = "Fine Copione";
                 document.getElementById('level-indicator').style.borderColor = "#673ab7";
                 document.getElementById('dialogue-box').style.display = 'none';
@@ -1034,6 +1118,11 @@
             var mini = document.getElementById('minigame-screen'); if (mini) mini.style.display = 'none';
             var cards = document.getElementById('cards-screen'); if (cards) cards.style.display = 'none';
 
+            // Visibilità pulsanti fissi
+            var isGamingScreen = (screenId === 'vn-screen' || screenId === 'minigame-screen' || screenId === 'cards-screen');
+            document.getElementById('game-menu-btn').style.display = isGamingScreen ? 'block' : 'none';
+            document.getElementById('fixed-skip-level-btn').style.display = isGamingScreen ? 'block' : 'none';
+
             var target = document.getElementById(screenId);
             if (target) {
                 target.style.display = 'flex';
@@ -1090,6 +1179,7 @@
                                     }
                                 });
                                 buildScenarioMenu();
+                                checkSavedGameAvailable();
                                 
                                 var restored = restoreGameState();
                                 if (!restored) {
