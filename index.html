@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scenari Intrecciati - Tiziano & Claudia</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-
     <style>
         :root {
             --bg-color: #0a060d;
@@ -36,29 +34,19 @@
         .btn {
             width: 280px; padding: 15px; margin: 8px; border: none; border-radius: 8px;
             font-size: 1.05rem; font-weight: bold; color: white; cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+            transition: transform 0.2s, background-color 0.2s;
         }
         .btn:active { transform: scale(0.96); }
         .btn-tiziano { background: linear-gradient(45deg, var(--secondary-accent), #0d47a1); }
         .btn-claudia { background: linear-gradient(45deg, var(--primary-accent), #c2185b); }
         .btn-context { background: rgba(255,255,255,0.08); border: 1px solid #673ab7; margin-bottom: 8px; }
-        .btn-context:hover { background: rgba(103, 58, 183, 0.3); }
 
         .back-btn {
             position: absolute; top: 15px; left: 15px;
             background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
             color: #d1c4db; border-radius: 50px; padding: 8px 16px; font-size: 0.9rem;
-            cursor: pointer; z-index: 100; transition: background 0.2s;
-            display: flex; align-items: center; gap: 5px;
+            cursor: pointer; z-index: 100;
         }
-        .back-btn:hover { background: rgba(255,255,255,0.2); color: #fff; }
-
-        .spinner {
-            width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.1);
-            border-top-color: var(--primary-accent); border-radius: 50%;
-            animation: spin 1s linear infinite; margin-top: 20px;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
 
         .checklist-container { width: 100%; max-width: 500px; margin-bottom: 20px; text-align: left; }
         .checklist-title { color: var(--primary-accent); font-size: 1.1rem; margin: 15px 0 10px 0; border-bottom: 1px solid #673ab7; padding-bottom: 5px; font-weight: bold; }
@@ -66,7 +54,7 @@
         .check-item { 
             background-color: rgba(30, 20, 40, 0.5); border: 1px solid #332244; color: #888; 
             padding: 12px; margin-bottom: 8px; border-radius: 8px; cursor: pointer; 
-            display: flex; align-items: center; user-select: none; transition: all 0.2s;
+            display: flex; align-items: center; user-select: none;
         }
         .check-item.active { background-color: rgba(103, 58, 183, 0.25); border: 1px solid var(--secondary-accent); color: #fff; }
         .check-item::before { content: '○'; font-size: 1.4rem; margin-right: 12px; color: #888; }
@@ -77,7 +65,7 @@
         .briefing-box { background: rgba(30,20,40,0.8); border-left: 4px solid var(--primary-accent); padding: 18px; margin-bottom: 15px; text-align: left; border-radius: 0 10px 10px 0; }
         .briefing-title { font-weight: bold; margin-bottom: 8px; font-size: 1.1rem; }
 
-        #vn-screen { display: none; width: 100vw; height: 100vh; position: relative; background-size: cover; background-position: center; transition: background-image 0.5s ease-in-out; }
+        #vn-screen { display: none; width: 100vw; height: 100vh; position: relative; background-size: cover; background-position: center; }
         #level-indicator { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.75); border: 1px solid var(--primary-accent); padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; z-index: 10; }
         #choices-container { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; gap: 15px; width: 90%; max-width: 400px; z-index: 10; }
         .choice-btn { background-color: rgba(30, 20, 40, 0.95); border: 2px solid #673ab7; color: white; padding: 15px; border-radius: 10px; font-size: 1rem; cursor: pointer; }
@@ -106,12 +94,6 @@
     </style>
 </head>
 <body>
-
-    <div id="loader-screen" class="menu-screen">
-        <h1 class="title">Scenari Intrecciati</h1>
-        <p style="color: #a996b8;" id="loader-msg">Caricamento del gioco...</p>
-        <div class="spinner"></div>
-    </div>
 
     <div id="selection-screen" class="menu-screen active">
         <h1 class="title">Scenari Intrecciati</h1>
@@ -198,10 +180,7 @@
     </div>
 
     <script>
-        const LINK_SCENARI_RAW = "";
-        const LINK_COPIONE_RAW = "";
-
-        const localDatabaseScenarios = {
+        var roleplayScenarios = {
             "errore_prenotazione": {
                 title: "Errore di Prenotazione",
                 context: "Insieme a Letto",
@@ -559,121 +538,55 @@
             }
         };
 
-        let roleplayScenarios = {};
-        let currentPlayer = "", currentScenarioId = "", activeCategories = [];
-        let currentLevelIndex = 0, actionsCompletedInLevel = 0, currentDialogueIndex = 0, selectedVictim = "", currentRotation = 0;
-        const ACTIONS_PER_LEVEL = 6;
+        var currentPlayer = "", currentScenarioId = "", activeCategories = [];
+        var currentLevelIndex = 0, actionsCompletedInLevel = 0, currentDialogueIndex = 0, selectedVictim = "", currentRotation = 0;
+        var ACTIONS_PER_LEVEL = 6;
 
         window.onload = function() {
-            if (typeof LINK_SCENARI_RAW !== "undefined" && LINK_SCENARI_RAW.startsWith("http")) {
-                loadFromGoogleSheets();
-            } else {
-                roleplayScenarios = localDatabaseScenarios;
-                buildScenarioMenu();
-            }
+            buildScenarioMenu();
         };
 
-        function loadFromGoogleSheets() {
-            const proxy = "https://corsproxy.io/?";
-            const urlScenari = proxy + encodeURIComponent(LINK_SCENARI_RAW);
-            const urlCopione = proxy + encodeURIComponent(LINK_COPIONE_RAW);
-
-            Papa.parse(urlScenari, {
-                download: true, header: true, skipEmptyLines: true,
-                transformHeader: h => h.trim(),
-                complete: function(res) {
-                    if (res.data && res.data.length > 0) {
-                        roleplayScenarios = {};
-                        res.data.forEach(row => {
-                            if (!row.ID_Scenario) return;
-                            roleplayScenarios[row.ID_Scenario] = {
-                                title: row.Titolo_Storia, context: row.Contesto_Menu,
-                                roles: { "Claudia": row.Ruolo_Claudia, "Tiziano": row.Ruolo_Tiziano },
-                                briefing: { "Claudia": row.Briefing_Claudia, "Tiziano": row.Briefing_Tiziano },
-                                levels: []
-                            };
-                        });
-                        
-                        Papa.parse(urlCopione, {
-                            download: true, header: true, skipEmptyLines: true,
-                            transformHeader: h => h.trim(),
-                            complete: function(resCopione) {
-                                resCopione.data.forEach(row => {
-                                    let id = row.ID_Scenario;
-                                    if (!id || !roleplayScenarios[id]) return;
-                                    let lvlIndex = parseInt(row.Livello) - 1;
-                                    if (isNaN(lvlIndex)) return;
-                                    if (!roleplayScenarios[id].levels[lvlIndex]) {
-                                        let bg = row.Sfondo_URL ? row.Sfondo_URL.trim() : "#000";
-                                        roleplayScenarios[id].levels[lvlIndex] = { level: lvlIndex + 1, background: bg, introDialogues: [], actions: [] };
-                                    }
-                                    if (row.Tipo === "Dialogo") {
-                                        roleplayScenarios[id].levels[lvlIndex].introDialogues.push({ speaker: row.Chi_Parla_o_Agisce, text: row.Testo });
-                                    } else if (row.Tipo === "Azione") {
-                                        roleplayScenarios[id].levels[lvlIndex].actions.push({ actor: row.Chi_Parla_o_Agisce, text: row.Testo, category: row.Categoria });
-                                    }
-                                });
-                                buildScenarioMenu();
-                            }
-                        });
-                    } else {
-                        roleplayScenarios = localDatabaseScenarios;
-                        buildScenarioMenu();
-                    }
-                },
-                error: function() {
-                    roleplayScenarios = localDatabaseScenarios;
-                    buildScenarioMenu();
-                }
-            });
-        }
-
         function buildScenarioMenu() {
-            const container = document.getElementById('scenario-list-container');
+            var container = document.getElementById('scenario-list-container');
+            if(!container) return;
             container.innerHTML = '';
             
-            const grouped = {};
-            Object.keys(roleplayScenarios).forEach(key => {
-                const sc = roleplayScenarios[key];
-                const ctx = sc.context || "Altro";
+            var grouped = {};
+            Object.keys(localDatabaseScenarios).forEach(function(key) {
+                var sc = localDatabaseScenarios[key];
+                var ctx = sc.context || "Altro";
                 if (!grouped[ctx]) grouped[ctx] = [];
                 grouped[ctx].push({ id: key, title: sc.title });
             });
 
-            Object.keys(grouped).forEach(contextName => {
-                const titleDiv = document.createElement('div');
+            Object.keys(grouped).forEach(function(contextName) {
+                var titleDiv = document.createElement('div');
                 titleDiv.className = 'checklist-title';
                 titleDiv.style.cssText = 'color: #fff; border-bottom: 1px solid #444; width: 100%; max-width: 320px; margin-top: 15px; text-transform: uppercase; font-size: 0.95rem; text-align: left; padding-bottom: 4px;';
                 titleDiv.innerText = contextName;
                 container.appendChild(titleDiv);
 
-                grouped[contextName].forEach(sc => {
-                    const btn = document.createElement('button');
+                grouped[contextName].forEach(function(sc) {
+                    var btn = document.createElement('button');
                     btn.className = 'btn btn-context';
                     btn.style.cssText = 'width: 320px; padding: 12px; margin: 4px 0; font-size: 1rem;';
                     btn.innerText = sc.title;
-                    btn.onclick = () => selectScenario(sc.id);
+                    btn.onclick = function() { selectScenario(sc.id); };
                     container.appendChild(btn);
                 });
             });
-
-            const loader = document.getElementById('loader-screen');
-            if (loader) {
-                loader.classList.remove('active');
-                loader.style.display = 'none';
-            }
         }
 
         function goBackTo(targetScreenId) {
-            const screens = ['selection-screen', 'scenario-screen', 'customize-screen', 'briefing-screen', 'vn-screen', 'minigame-screen', 'cards-screen'];
-            screens.forEach(id => {
-                const el = document.getElementById(id);
+            var screens = ['selection-screen', 'scenario-screen', 'customize-screen', 'briefing-screen', 'vn-screen', 'minigame-screen', 'cards-screen'];
+            screens.forEach(function(id) {
+                var el = document.getElementById(id);
                 if (el) {
                     el.classList.remove('active');
                     el.style.display = 'none';
                 }
             });
-            const target = document.getElementById(targetScreenId);
+            var target = document.getElementById(targetScreenId);
             if (target) {
                 target.style.display = 'flex';
                 target.classList.add('active');
@@ -689,45 +602,51 @@
             currentScenarioId = scenarioId; 
             goBackTo('customize-screen');
             
-            const list = document.getElementById('category-list'); 
+            var list = document.getElementById('category-list'); 
+            if(!list) return;
             list.innerHTML = '';
-            const allCategories = new Set();
+            var allCategories = [];
             
-            roleplayScenarios[currentScenarioId].levels.forEach(lvl => {
+            localDatabaseScenarios[currentScenarioId].levels.forEach(function(lvl) {
                 if (lvl.actions) {
-                    lvl.actions.forEach(act => { 
-                        if (act.category && act.category.trim() !== "") {
-                            allCategories.add(act.category.trim()); 
+                    lvl.actions.forEach(function(act) { 
+                        if (act.category && act.category.trim() !== "" && allCategories.indexOf(act.category.trim()) === -1) {
+                            allCategories.push(act.category.trim()); 
                         }
                     });
                 }
             });
 
-            if (allCategories.size === 0) {
-                allCategories.add("Generale");
+            if (allCategories.length === 0) {
+                allCategories.push("Generale");
             }
 
-            allCategories.forEach(cat => {
-                const div = document.createElement('div'); 
+            allCategories.forEach(function(cat) {
+                var div = document.createElement('div'); 
                 div.className = 'check-item active'; 
                 div.style.flex = "1 1 calc(50% - 10px)"; 
                 div.style.justifyContent = "center";
                 div.innerText = cat; 
-                div.onclick = () => div.classList.toggle('active'); 
+                div.onclick = function() { div.classList.toggle('active'); }; 
                 div.dataset.category = cat; 
                 list.appendChild(div);
             });
         }
 
         function goToBriefing() {
-            activeCategories = Array.from(document.querySelectorAll('.check-item.active')).map(item => item.dataset.category);
+            var items = document.querySelectorAll('.check-item.active');
+            activeCategories = [];
+            for(var i=0; i<items.length; i++) {
+                activeCategories.push(items[i].dataset.category);
+            }
+
             if (activeCategories.length === 0) { alert("Seleziona almeno una categoria per proseguire!"); return; }
             
             goBackTo('briefing-screen');
             
-            const sc = roleplayScenarios[currentScenarioId];
-            document.getElementById('briefing-title-claudia').innerText = `CLAUDIA: ${sc.roles["Claudia"]}`;
-            document.getElementById('briefing-title-tiziano').innerText = `TIZIANO: ${sc.roles["Tiziano"]}`;
+            var sc = localDatabaseScenarios[currentScenarioId];
+            document.getElementById('briefing-title-claudia').innerText = "CLAUDIA: " + sc.roles["Claudia"];
+            document.getElementById('briefing-title-tiziano').innerText = "TIZIANO: " + sc.roles["Tiziano"];
             document.getElementById('briefing-claudia').innerText = sc.briefing["Claudia"];
             document.getElementById('briefing-tiziano').innerText = sc.briefing["Tiziano"];
         }
@@ -740,11 +659,11 @@
         }
 
         function loadLevelNarrative() {
-            const levelData = roleplayScenarios[currentScenarioId].levels[currentLevelIndex];
-            document.getElementById('level-indicator').innerText = `Livello Intensità: ${levelData.level}`;
+            var levelData = localDatabaseScenarios[currentScenarioId].levels[currentLevelIndex];
+            document.getElementById('level-indicator').innerText = "Livello Intensità: " + levelData.level;
             
-            if (levelData.background && levelData.background.startsWith("http")) {
-                document.getElementById('vn-screen').style.backgroundImage = `url('${levelData.background}')`;
+            if (levelData.background && levelData.background.indexOf("http") === 0) {
+                document.getElementById('vn-screen').style.backgroundImage = "url('" + levelData.background + "')";
             } else {
                 document.getElementById('vn-screen').style.backgroundImage = 'none';
                 document.getElementById('vn-screen').style.backgroundColor = levelData.background || "#000";
@@ -756,19 +675,19 @@
         }
 
         function showDialogue() {
-            const levelData = roleplayScenarios[currentScenarioId].levels[currentLevelIndex];
+            var levelData = localDatabaseScenarios[currentScenarioId].levels[currentLevelIndex];
             if (currentDialogueIndex < levelData.introDialogues.length) {
-                const line = levelData.introDialogues[currentDialogueIndex];
+                var line = levelData.introDialogues[currentDialogueIndex];
                 document.getElementById('speaker-name').innerText = line.speaker;
                 document.getElementById('dialogue-text').innerText = line.text;
                 
-                let color = "var(--primary-accent)"; 
-                if (line.speaker === roleplayScenarios[currentScenarioId].roles["Tiziano"] || line.speaker === "Tiziano") color = "var(--secondary-accent)";
+                var color = "var(--primary-accent)"; 
+                if (line.speaker === localDatabaseScenarios[currentScenarioId].roles["Tiziano"] || line.speaker === "Tiziano") color = "var(--secondary-accent)";
                 if (line.speaker === "Narratore") color = "#a996b8";
                 document.getElementById('speaker-name').style.color = color;
             } else {
                 document.getElementById('dialogue-box').style.display = "none";
-                document.getElementById('choices-container').innerHTML = `<button class='choice-btn' onclick='openMinigame()'>Gira la Ruota dell'Azione 🎡</button>`;
+                document.getElementById('choices-container').innerHTML = "<button class='choice-btn' onclick='openMinigame()'>Gira la Ruota dell'Azione 🎡</button>";
             }
         }
         function nextDialogue() { currentDialogueIndex++; showDialogue(); }
@@ -782,20 +701,20 @@
         }
 
         function spinTheWheel() {
-            const wheel = document.getElementById('spinWheel');
+            var wheel = document.getElementById('spinWheel');
             document.getElementById('spinBtn').style.display = 'none';
-            const winnerText = document.getElementById('winner-text');
+            var winnerText = document.getElementById('winner-text');
             
-            const extraDegrees = Math.floor(Math.random() * 360);
+            var extraDegrees = Math.floor(Math.random() * 360);
             currentRotation += 1440 + extraDegrees; 
-            wheel.style.transform = `rotate(${currentRotation}deg)`;
+            wheel.style.transform = "rotate(" + currentRotation + "deg)";
 
-            setTimeout(() => {
-                const pointerAngle = (360 - (currentRotation % 360)) % 360;
+            setTimeout(function() {
+                var pointerAngle = (360 - (currentRotation % 360)) % 360;
                 if (pointerAngle >= 0 && pointerAngle < 180) { selectedVictim = "Tiziano"; winnerText.style.color = "var(--secondary-accent)"; } 
                 else { selectedVictim = "Claudia"; winnerText.style.color = "var(--primary-accent)"; }
 
-                winnerText.innerText = `Tocca a: ${roleplayScenarios[currentScenarioId].roles[selectedVictim]}`;
+                winnerText.innerText = "Tocca a: " + localDatabaseScenarios[currentScenarioId].roles[selectedVictim];
                 winnerText.style.opacity = 1; document.getElementById('nextPhaseBtn').style.display = 'block';
             }, 4000);
         }
@@ -804,27 +723,26 @@
             document.getElementById('minigame-screen').style.display = 'none'; document.getElementById('cards-screen').style.display = 'flex';
             document.getElementById('playingCard').classList.remove('is-flipped'); document.getElementById('continueBtn').style.display = 'none';
             
-            const roleName = roleplayScenarios[currentScenarioId].roles[selectedVictim];
-            document.getElementById('card-turn-title').innerText = `Azione per ${roleName}`;
+            var roleName = localDatabaseScenarios[currentScenarioId].roles[selectedVictim];
+            document.getElementById('card-turn-title').innerText = "Azione per " + roleName;
             document.getElementById('card-turn-title').style.color = selectedVictim === "Claudia" ? "var(--primary-accent)" : "var(--secondary-accent)";
-            document.getElementById('cardRoleLabel').innerText = `RUOLO: ${roleName.toUpperCase()}`;
+            document.getElementById('cardRoleLabel').innerText = "RUOLO: " + roleName.toUpperCase();
             document.getElementById('cardRoleLabel').style.color = selectedVictim === "Claudia" ? "var(--primary-accent)" : "var(--secondary-accent)";
             
-            const levelData = roleplayScenarios[currentScenarioId].levels[currentLevelIndex];
+            var levelData = localDatabaseScenarios[currentScenarioId].levels[currentLevelIndex];
             
-            let validActions = levelData.actions.filter(a => 
-                a.actor === selectedVictim && 
-                (activeCategories.includes(a.category) || !a.category)
-            );
+            var validActions = levelData.actions.filter(function(a) {
+                return a.actor === selectedVictim && (activeCategories.indexOf(a.category) !== -1 || !a.category);
+            });
             
             if (validActions.length === 0) {
-                validActions = levelData.actions.filter(a => a.actor === selectedVictim);
+                validActions = levelData.actions.filter(function(a) { return a.actor === selectedVictim; });
             }
             
             if (validActions.length > 0) {
-                const drawn = validActions[Math.floor(Math.random() * validActions.length)];
+                var drawn = validActions[Math.floor(Math.random() * validActions.length)];
                 document.getElementById('cardText').innerText = drawn.text;
-                document.getElementById('cardCategoryTag').innerText = `CATEGORIA: ${drawn.category ? drawn.category.toUpperCase() : 'GENERALE'}`;
+                document.getElementById('cardCategoryTag').innerText = "CATEGORIA: " + (drawn.category ? drawn.category.toUpperCase() : 'GENERALE');
             } else {
                 document.getElementById('cardText').innerText = "[Nessuna azione disponibile per questo ruolo. Gira di nuovo la ruota.]";
                 document.getElementById('cardCategoryTag').innerText = "CATEGORIA: INFO";
@@ -832,10 +750,10 @@
         }
 
         function revealCard() {
-            const card = document.getElementById('playingCard');
+            var card = document.getElementById('playingCard');
             if (!card.classList.contains('is-flipped')) {
                 card.classList.add('is-flipped');
-                setTimeout(() => document.getElementById('continueBtn').style.display = 'inline-block', 800);
+                setTimeout(function() { document.getElementById('continueBtn').style.display = 'inline-block'; }, 800);
             }
         }
 
@@ -844,7 +762,7 @@
             actionsCompletedInLevel++;
             if (actionsCompletedInLevel >= ACTIONS_PER_LEVEL) {
                 currentLevelIndex++; actionsCompletedInLevel = 0;
-                if (currentLevelIndex >= roleplayScenarios[currentScenarioId].levels.length) {
+                if (currentLevelIndex >= localDatabaseScenarios[currentScenarioId].levels.length) {
                     document.getElementById('vn-screen').style.display = 'block';
                     document.getElementById('level-indicator').innerText = "Fine Copione";
                     document.getElementById('choices-container').innerHTML = "<h2 style='color: white;'>Il copione è finito.</h2><p style='color: #a996b8;'>Ora le regole le scrivete voi.</p><button class='choice-btn' onclick='location.reload()'>Torna al Menu Principale</button>";
@@ -853,7 +771,7 @@
                 document.getElementById('vn-screen').style.display = 'block'; loadLevelNarrative();
             } else {
                 document.getElementById('vn-screen').style.display = 'block'; document.getElementById('dialogue-box').style.display = 'none';
-                document.getElementById('choices-container').innerHTML = `<button class='choice-btn' onclick='openMinigame()'>Prossima Azione 🎡 (${actionsCompletedInLevel}/${ACTIONS_PER_LEVEL})</button>`;
+                document.getElementById('choices-container').innerHTML = "<button class='choice-btn' onclick='openMinigame()'>Prossima Azione 🎡 (" + actionsCompletedInLevel + "/" + ACTIONS_PER_LEVEL + ")</button>";
             }
         }
     </script>
