@@ -62,7 +62,7 @@
             cursor: pointer; z-index: 100;
         }
 
-        /* PULSANTE MENU PAUSA IN ALTO A SINISTRA DURANTE IL GIOCO */
+        /* PULSANTE MENU PAUSA FISSO IN ALTO A SINISTRA DURANTE IL GIOCO */
         #game-menu-btn {
             display: none; position: fixed; top: 15px; left: 15px; z-index: 999;
             background: rgba(0, 0, 0, 0.75); border: 1px solid #673ab7;
@@ -207,6 +207,7 @@
         .label-claudia { bottom: 25%; right: 65%; transform: rotate(-90deg); }
         #winner-text { font-size: 1.8rem; font-weight: bold; margin-bottom: 1rem; min-height: 2.5rem; opacity: 0; transition: opacity 0.5s; }
 
+        /* STRUTTURA CARTA ADATTIVA CON IMMAGINI TEMATICHE SUL FRONTE */
         .card-container { 
             width: 92vw; max-width: 480px; min-height: 440px; 
             margin: 1rem auto; position: relative;
@@ -221,10 +222,10 @@
             padding: 25px 20px; text-align: center;
         }
         .card-front { 
-            background: linear-gradient(135deg, #2a1b38, #170f1f); border: 2px solid #673ab7; 
-            cursor: pointer; justify-content: center; display: flex;
+            background: linear-gradient(rgba(10,6,13,0.5), rgba(10,6,13,0.85)), url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80') center/cover;
+            border: 2px solid #673ab7; cursor: pointer; justify-content: center; display: flex; transition: background 0.3s;
         }
-        .card-front::after { content: "SVELA L'AZIONE 🎴"; font-size: 1.5rem; font-weight: bold; color: rgba(255,255,255,0.9); letter-spacing: 1px; }
+        .card-front::after { content: "SVELA L'AZIONE 🎴"; font-size: 1.5rem; font-weight: bold; color: #ffffff; text-shadow: 0 2px 10px rgba(0,0,0,0.9); letter-spacing: 1px; }
         .card-back { 
             background: linear-gradient(135deg, #180e28, #0a060d); border: 2px solid var(--primary-accent);
             display: none;
@@ -254,7 +255,7 @@
     <!-- PULSANTE MENU PAUSA FISSO IN ALTO A SINISTRA -->
     <button id="game-menu-btn" onclick="openPauseModal()">⚙️ Menu</button>
 
-    <!-- MODAL MENU PAUSA (RIPRENDI, SALVA, ESCI) -->
+    <!-- MODAL MENU PAUSA -->
     <div id="pause-modal">
         <div class="pause-box">
             <h2 style="color: var(--primary-accent); margin-bottom: 5px;">Partita in Pausa</h2>
@@ -314,7 +315,7 @@
         <button class="btn btn-context" id="start-sync-btn" style="display:none; background: var(--primary-accent);" onclick="showScreen('scenario-screen')">Entra nel Gioco Sincronizzato</button>
 
         <button class="btn btn-gallery" style="margin-top: 15px;" onclick="openGallery()">📂 Galleria Privata In-App</button>
-        <button class="btn btn-reset" id="btn-reset-game" style="display:none;" onclick="resetGameState()">🔄 Nuova Partita (Resetta)</button>
+        <button class="btn btn-reset" id="btn-reset-game" style="display:none;" onclick="resetGameState()">🔄 Abbandona e Nuova Partita</button>
     </div>
 
     <div id="gallery-screen" class="menu-screen">
@@ -399,7 +400,7 @@
         
         <div class="card-container">
             <div class="card" id="playingCard">
-                <div class="card-face card-front" onclick="handleRevealCardClick()"></div>
+                <div class="card-face card-front" id="cardFrontFace" onclick="handleRevealCardClick()"></div>
                 <div class="card-face card-back">
                     <div class="card-role-label" id="cardRoleLabel">IL RUOLO</div>
                     <div class="card-category-tag" id="cardCategoryTag">CATEGORIA</div>
@@ -416,6 +417,23 @@
 
         const FIXED_ROOM_CODE = "tiziano-claudia-intimo-2026";
 
+        // DIZIONARIO IMMAGINI COPERTINA PER CATEGORIA
+        const CATEGORY_IMAGES = {
+            "DIALOGO": "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=600&q=80",
+            "VOICE": "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=600&q=80",
+            "FOTO": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=600&q=80",
+            "VIDEO": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=600&q=80",
+            "SOFT": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80",
+            "COCCOLE": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80",
+            "ROMANTICO": "https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=600&q=80",
+            "SENSUALE": "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80",
+            "CORAGGIO": "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80",
+            "DOMINAZIONE": "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=600&q=80",
+            "SEX TOYS": "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=600&q=80",
+            "BONDAGE": "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=600&q=80",
+            "DEFAULT": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80"
+        };
+
         var roleplayScenarios = {};
         var currentPlayer = "", currentScenarioId = "", activeCategories = [];
         var mySelectedCategories = [], partnerSelectedCategories = null;
@@ -427,21 +445,9 @@
         var currentDrawnAction = null;
         var unreadChatCount = 0;
 
-        // --- SISTEMA PAUSA / SALVA / ESCI ---
-        function openPauseModal() {
-            document.getElementById('pause-modal').style.display = 'flex';
-        }
-
-        function closePauseModal() {
-            document.getElementById('pause-modal').style.display = 'none';
-        }
-
-        function manualSaveGame() {
-            saveGameState();
-            alert("💾 Partita salvata con successo nella memoria locale!");
-            closePauseModal();
-        }
-
+        function openPauseModal() { document.getElementById('pause-modal').style.display = 'flex'; }
+        function closePauseModal() { document.getElementById('pause-modal').style.display = 'none'; }
+        function manualSaveGame() { saveGameState(); alert("💾 Partita salvata con successo!"); closePauseModal(); }
         function abandonGame() {
             if (confirm("Vuoi davvero abbandonare la partita attuale e tornare al menu iniziale?")) {
                 closePauseModal();
@@ -449,7 +455,6 @@
             }
         }
 
-        // --- SISTEMA PERSISTENZA E RIPRISTINO EXACT STATE ---
         function saveGameState() {
             var state = {
                 currentPlayer: currentPlayer,
@@ -478,9 +483,7 @@
             }
         }
 
-        function resumeSavedGame() {
-            restoreGameState();
-        }
+        function resumeSavedGame() { restoreGameState(); }
 
         function restoreGameState() {
             var saved = localStorage.getItem("ScenariGameState_v3");
@@ -566,11 +569,9 @@
             } catch(e){}
         }
 
-        // --- LIGHTBOX FULLSCREEN ---
         function openLightbox(src, isVideo) {
             var modal = document.getElementById('lightbox-modal');
             var container = document.getElementById('lightbox-container');
-            
             if (isVideo) {
                 container.innerHTML = '<video id="lightbox-content" src="' + src + '" controls autoplay style="max-width:100%; max-height:85vh;"></video>';
             } else {
@@ -586,10 +587,7 @@
             modal.style.display = 'none';
         }
 
-        // --- REGISTRATORE VOCALE IN-APP ---
-        var mediaRecorder = null;
-        var audioChunks = [];
-        var isRecording = false;
+        var mediaRecorder = null, audioChunks = [], isRecording = false;
 
         function toggleAudioRecording() {
             var btn = document.getElementById('btn-record-audio');
@@ -598,11 +596,7 @@
                     .then(function(stream) {
                         mediaRecorder = new MediaRecorder(stream);
                         audioChunks = [];
-                        
-                        mediaRecorder.ondataavailable = function(e) {
-                            if (e.data.size > 0) audioChunks.push(e.data);
-                        };
-
+                        mediaRecorder.ondataavailable = function(e) { if (e.data.size > 0) audioChunks.push(e.data); };
                         mediaRecorder.onstop = function() {
                             var audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
                             var reader = new FileReader();
@@ -610,28 +604,18 @@
                                 var base64Data = reader.result;
                                 appendChatMediaMessage("Tu", base64Data, "audio", "me");
                                 saveMediaToLocalDB(base64Data, "audio", "Nota Vocale", currentPlayer);
-
                                 if (conn && conn.open) {
-                                    conn.send({
-                                        type: "media",
-                                        mediaType: "audio",
-                                        fileData: base64Data,
-                                        category: "Nota Vocale",
-                                        sender: currentPlayer
-                                    });
+                                    conn.send({ type: "media", mediaType: "audio", fileData: base64Data, category: "Nota Vocale", sender: currentPlayer });
                                 }
                             };
                             reader.readAsDataURL(audioBlob);
                         };
-
                         mediaRecorder.start();
                         isRecording = true;
                         btn.innerText = "⏹️ Invia Audio";
                         btn.style.background = "#e91e63";
                     })
-                    .catch(function(err) {
-                        alert("Impossibile accedere al microfono: " + err);
-                    });
+                    .catch(function(err) { alert("Impossibile accedere al microfono: " + err); });
             } else {
                 if (mediaRecorder && mediaRecorder.state !== "inactive") {
                     mediaRecorder.stop();
@@ -643,7 +627,6 @@
             }
         }
 
-        // --- INDEXEDDB ---
         var db = null;
         function initDB() {
             var request = indexedDB.open("ScenariMediaDB", 1);
@@ -661,13 +644,7 @@
             if (!db) return;
             var tx = db.transaction(["media"], "readwrite");
             var store = tx.objectStore("media");
-            store.add({
-                type: type,
-                data: fileData,
-                category: category,
-                sender: sender,
-                timestamp: new Date().toLocaleString()
-            });
+            store.add({ type: type, data: fileData, category: category, sender: sender, timestamp: new Date().toLocaleString() });
         }
 
         function deleteSingleMedia(id) {
@@ -680,7 +657,7 @@
         }
 
         function clearAllGallery() {
-            if (!confirm("⚠️ Se sicuro di voler SVUOTARE tutta la tua Galleria Privata locale? L'azione non può essere annullata.")) return;
+            if (!confirm("⚠️ Se sicuro di voler SVUOTARE tutta la tua Galleria Privata locale?")) return;
             if (!db) return;
             var tx = db.transaction(["media"], "readwrite");
             var store = tx.objectStore("media");
@@ -688,21 +665,17 @@
             tx.oncomplete = function() { loadGalleryContent(); };
         }
 
-        // --- PEERJS LIVE P2P ---
         var peer = null, conn = null;
         function autoConnectP2P(playerName) {
             if (!playerName) return;
             document.getElementById('p2p-status').innerText = "🟡 Connessione al partner in corso...";
-            
             var myPeerId = FIXED_ROOM_CODE + "-" + playerName.toLowerCase();
             var targetPeerId = FIXED_ROOM_CODE + "-" + (playerName === "Tiziano" ? "claudia" : "tiziano");
-            
             peer = new Peer(myPeerId);
             peer.on('open', function(id) {
                 conn = peer.connect(targetPeerId);
                 setupConnEvents();
             });
-
             peer.on('connection', function(c) {
                 conn = c;
                 setupConnEvents();
@@ -717,16 +690,11 @@
                 playNotificationSound();
                 sendP2PCommand({ type: "SYNC_JOIN", player: currentPlayer });
             });
-
-            conn.on('data', function(data) {
-                handleIncomingP2PData(data);
-            });
+            conn.on('data', function(data) { handleIncomingP2PData(data); });
         }
 
         function sendP2PCommand(dataObj) {
-            if (conn && conn.open) {
-                conn.send(dataObj);
-            }
+            if (conn && conn.open) { conn.send(dataObj); }
         }
 
         function handleIncomingP2PData(data) {
@@ -775,8 +743,6 @@
             }
         }
 
-        // --- GESTIONE CATEGORIE PRIVATA E SINCRONIZZATA ---
-
         function submitCategories() {
             var items = document.querySelectorAll('.check-item.active');
             mySelectedCategories = [];
@@ -784,10 +750,7 @@
                 mySelectedCategories.push(items[i].dataset.category);
             }
 
-            if (mySelectedCategories.length === 0) {
-                alert("⚠️ Seleziona almeno una categoria!");
-                return;
-            }
+            if (mySelectedCategories.length === 0) { alert("⚠️ Seleziona almeno una categoria!"); return; }
 
             sendP2PCommand({ type: "SYNC_CATEGORIES_SUBMIT", categories: mySelectedCategories });
             showScreen('waiting-screen');
@@ -811,8 +774,6 @@
             }
         }
 
-        // --- AZIONI DI GIOCO SINCRONIZZATE ---
-
         function handleDialogueClick() {
             nextDialogue(false);
             sendP2PCommand({ type: "SYNC_DIALOGUE_NEXT" });
@@ -825,9 +786,7 @@
 
             if (claudiaHas && !tizianoHas) { victim = "Claudia"; }
             else if (tizianoHas && !claudiaHas) { victim = "Tiziano"; }
-            else {
-                victim = Math.random() < 0.5 ? "Tiziano" : "Claudia";
-            }
+            else { victim = Math.random() < 0.5 ? "Tiziano" : "Claudia"; }
 
             var mazzo = currentLevelActions[victim];
             var randomIndex = Math.floor(Math.random() * mazzo.length);
@@ -1019,6 +978,10 @@
                 document.getElementById('cardText').innerText = currentDrawnAction.text;
                 var cat = currentDrawnAction.category ? currentDrawnAction.category.toUpperCase() : 'GENERALE';
                 document.getElementById('cardCategoryTag').innerText = "CATEGORIA: " + cat;
+
+                // AGGIORNA SFONDO COPERTINA FRONTE CARTA IN BASE ALLA CATEGORIA
+                var bgUrl = CATEGORY_IMAGES[cat] || CATEGORY_IMAGES["DEFAULT"];
+                document.getElementById('cardFrontFace').style.background = "linear-gradient(rgba(10,6,13,0.5), rgba(10,6,13,0.85)), url('" + bgUrl + "') center/cover";
             }
             saveGameState();
         }
@@ -1118,7 +1081,6 @@
             var mini = document.getElementById('minigame-screen'); if (mini) mini.style.display = 'none';
             var cards = document.getElementById('cards-screen'); if (cards) cards.style.display = 'none';
 
-            // Visibilità pulsanti fissi
             var isGamingScreen = (screenId === 'vn-screen' || screenId === 'minigame-screen' || screenId === 'cards-screen');
             document.getElementById('game-menu-btn').style.display = isGamingScreen ? 'block' : 'none';
             document.getElementById('fixed-skip-level-btn').style.display = isGamingScreen ? 'block' : 'none';
