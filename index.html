@@ -202,7 +202,7 @@
     </div>
 
     <script>
-        // Link CSV Pubblici da Google Sheets (formato &output=csv)
+        // Link CSV Diretti da Google Sheets
         const LINK_SCENARI_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1088679208&single=true&output=csv";
         const LINK_COPIONE_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1067890923&single=true&output=csv";
 
@@ -238,15 +238,15 @@
         };
 
         function loadFromGoogleSheets() {
-            const proxy = "https://corsproxy.io/?";
-            
-            // Parametro Anti-Cache dinamico
+            // Parametro Anti-Cache diretto su Google Sheets (senza proxy)
             const cacheBuster = "&_t=" + Date.now();
-            const urlScenari = proxy + encodeURIComponent(LINK_SCENARI_RAW + cacheBuster);
-            const urlCopione = proxy + encodeURIComponent(LINK_COPIONE_RAW + cacheBuster);
+            const urlScenari = LINK_SCENARI_RAW + cacheBuster;
+            const urlCopione = LINK_COPIONE_RAW + cacheBuster;
 
             Papa.parse(urlScenari, {
-                download: true, header: true, skipEmptyLines: true,
+                download: true, 
+                header: true, 
+                skipEmptyLines: true,
                 transformHeader: function(h) { return h.trim(); },
                 complete: function(res) {
                     if (res.data && res.data.length > 0) {
@@ -254,7 +254,8 @@
                         res.data.forEach(function(row) {
                             if (!row.ID_Scenario) return;
                             roleplayScenarios[row.ID_Scenario] = {
-                                title: row.Titolo_Storia, context: row.Contesto_Menu,
+                                title: row.Titolo_Storia, 
+                                context: row.Contesto_Menu,
                                 roles: { "Claudia": row.Ruolo_Claudia, "Tiziano": row.Ruolo_Tiziano },
                                 briefing: { "Claudia": row.Briefing_Claudia, "Tiziano": row.Briefing_Tiziano },
                                 levels: []
@@ -262,7 +263,9 @@
                         });
                         
                         Papa.parse(urlCopione, {
-                            download: true, header: true, skipEmptyLines: true,
+                            download: true, 
+                            header: true, 
+                            skipEmptyLines: true,
                             transformHeader: function(h) { return h.trim(); },
                             complete: function(resCopione) {
                                 resCopione.data.forEach(function(row) {
@@ -282,12 +285,19 @@
                                 });
                                 buildScenarioMenu();
                                 showScreen('selection-screen');
+                            },
+                            error: function(err) {
+                                console.error("Errore Copione:", err);
+                                alert("Errore nel caricamento del Foglio Copione. Controlla la console.");
                             }
                         });
+                    } else {
+                        alert("Il foglio Scenari risulta vuoto o non accessibile.");
                     }
                 },
-                error: function() {
-                    alert("Errore nel caricamento del foglio Google Sheet. Verifica i link inseriti.");
+                error: function(err) {
+                    console.error("Errore Scenari:", err);
+                    alert("Errore nel caricamento del foglio Google Sheet. Verifica che sia pubblicato sul web.");
                 }
             });
         }
