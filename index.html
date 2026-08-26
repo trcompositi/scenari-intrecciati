@@ -79,7 +79,17 @@
         .check-item::before { content: '○'; font-size: 1.4rem; margin-right: 12px; color: #888; }
         .check-item.active::before { content: '●'; color: var(--primary-accent); }
 
-        /* WIDGET LIVE CHAT FLOTTANTE */
+        /* PULSANTE CAMBIO LIVELLO FISSO IN BASSO A SINISTRA */
+        #fixed-skip-level-btn {
+            display: none; position: fixed; bottom: 15px; left: 15px; z-index: 999;
+            background: rgba(233, 30, 99, 0.25); border: 1px solid var(--primary-accent);
+            color: white; border-radius: 50px; padding: 10px 16px;
+            font-weight: bold; font-size: 0.85rem; box-shadow: 0 5px 20px rgba(0,0,0,0.6);
+            cursor: pointer; backdrop-filter: blur(5px); transition: transform 0.2s;
+        }
+        #fixed-skip-level-btn:active { transform: scale(0.95); }
+
+        /* WIDGET LIVE CHAT FLOTTANTE IN BASSO A DESTRA */
         #chat-toggle-btn {
             position: fixed; bottom: 15px; right: 15px; z-index: 999;
             background: linear-gradient(45deg, var(--primary-accent), #673ab7);
@@ -148,10 +158,18 @@
         .gallery-btn-del { color: #ff5252; background: rgba(255, 82, 82, 0.15); border: 1px solid #ff5252; padding: 3px 8px; border-radius: 5px; font-size: 0.75rem; cursor: pointer; }
 
         #vn-screen { display: none; width: 100vw; height: 100vh; position: relative; background-size: cover; background-position: center; }
-        #level-indicator { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.75); border: 1px solid var(--primary-accent); padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; z-index: 10; }
+        
+        /* INDICATORE DI LIVELLO PERSONALIZZATO IN ALTO A DESTRA */
+        #level-indicator { 
+            position: absolute; top: 20px; right: 20px; 
+            background: rgba(0,0,0,0.85); border: 2px solid #4caf50; 
+            padding: 8px 16px; border-radius: 20px; font-weight: bold; 
+            font-size: 0.95rem; z-index: 10; letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
         #choices-container { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; gap: 12px; width: 90%; max-width: 400px; z-index: 10; }
         .choice-btn { background-color: rgba(30, 20, 40, 0.95); border: 2px solid #673ab7; color: white; padding: 15px; border-radius: 10px; font-size: 1rem; cursor: pointer; }
-        .choice-btn-skip { background-color: rgba(233, 30, 99, 0.2); border: 2px solid var(--primary-accent); color: white; }
         
         #dialogue-box { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); width: 95%; max-width: 800px; background-color: var(--box-bg); border: 1px solid #673ab7; border-radius: 15px; padding: 20px; z-index: 5; cursor: pointer; }
         #speaker-name { font-size: 1.2rem; font-weight: bold; margin-bottom: 8px; text-transform: uppercase; }
@@ -210,7 +228,10 @@
         <div id="lightbox-container" onclick="event.stopPropagation();"></div>
     </div>
 
-    <!-- BOTTONE FLOTTANTE LIVE CHAT P2P -->
+    <!-- PULSANTE CAMBIO LIVELLO FISSO IN BASSO A SINISTRA -->
+    <button id="fixed-skip-level-btn" onclick="handleForceNextLevelClick()">⚡ Sali di Livello</button>
+
+    <!-- BOTTONE FLOTTANTE LIVE CHAT P2P IN BASSO A DESTRA -->
     <button id="chat-toggle-btn" onclick="toggleChat()">
         💬 Chat Live <span id="chat-badge">0</span>
     </button>
@@ -311,7 +332,7 @@
     </div>
 
     <div id="vn-screen">
-        <div id="level-indicator">Livello 1</div>
+        <div id="level-indicator">🟢 Livello: EASY</div>
         <div id="choices-container"></div>
         <div id="dialogue-box" onclick="handleDialogueClick()">
             <div id="speaker-name">Nome</div>
@@ -331,7 +352,6 @@
         <div id="winner-text">...</div>
         <button class="btn btn-context" id="spinBtn" onclick="handleSpinWheelClick()">Gira la Ruota</button>
         <button class="btn btn-context" id="nextPhaseBtn" style="display: none;" onclick="handleGoToCardsClick()">Scopri l'Azione</button>
-        <button class="btn btn-context choice-btn-skip" id="skipLevelBtn" style="margin-top: 15px;" onclick="handleForceNextLevelClick()">⚡ Sali al Prossimo Livello</button>
     </div>
 
     <div id="cards-screen">
@@ -365,7 +385,6 @@
         var currentDrawnAction = null;
         var unreadChatCount = 0;
 
-        // --- SISTEMA AUDIO NOTIFICHE NATIVO ---
         function playNotificationSound() {
             try {
                 var ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -460,7 +479,7 @@
             }
         }
 
-        // --- INDEXEDDB E CANCELLAZIONE FILE ---
+        // --- INDEXEDDB ---
         var db = null;
         function initDB() {
             var request = indexedDB.open("ScenariMediaDB", 1);
@@ -493,9 +512,7 @@
             var tx = db.transaction(["media"], "readwrite");
             var store = tx.objectStore("media");
             store.delete(id);
-            tx.oncomplete = function() {
-                loadGalleryContent();
-            };
+            tx.oncomplete = function() { loadGalleryContent(); };
         }
 
         function clearAllGallery() {
@@ -504,9 +521,7 @@
             var tx = db.transaction(["media"], "readwrite");
             var store = tx.objectStore("media");
             store.clear();
-            tx.oncomplete = function() {
-                loadGalleryContent();
-            };
+            tx.oncomplete = function() { loadGalleryContent(); };
         }
 
         // --- PEERJS LIVE P2P ---
@@ -709,6 +724,7 @@
         function startRoleplay(isRemote) {
             showScreen('vn-screen');
             document.getElementById('vn-screen').style.display = 'block';
+            document.getElementById('fixed-skip-level-btn').style.display = 'block'; // Mostra il tasto fisso
             currentLevelIndex = 0; loadLevelNarrative();
             if (!isRemote) sendP2PCommand({ type: "SYNC_START" });
         }
@@ -728,7 +744,18 @@
                 return;
             }
 
-            document.getElementById('level-indicator').innerText = "Livello Intensità: " + levelData.level;
+            // AGGIORNAMENTO DINAMICO INDICATORE DI LIVELLO
+            var levelIndicator = document.getElementById('level-indicator');
+            if (levelData.level === 1) {
+                levelIndicator.innerText = "🟢 Livello: EASY";
+                levelIndicator.style.borderColor = "#4caf50";
+            } else if (levelData.level === 2) {
+                levelIndicator.innerText = "🟡 Livello: SOFT";
+                levelIndicator.style.borderColor = "#ffeb3b";
+            } else {
+                levelIndicator.innerText = "🔴 Livello: HARD";
+                levelIndicator.style.borderColor = "#f44336";
+            }
             
             if (levelData.background && levelData.background.indexOf("http") === 0) {
                 document.getElementById('vn-screen').style.backgroundImage = "url('" + levelData.background + "')";
@@ -756,8 +783,7 @@
             } else {
                 document.getElementById('dialogue-box').style.display = "none";
                 document.getElementById('choices-container').innerHTML = 
-                    "<button class='choice-btn' onclick='openMinigame(false)'>Gira la Ruota dell'Azione 🎡</button>" +
-                    "<button class='choice-btn choice-btn-skip' onclick='handleForceNextLevelClick()'>⚡ Sali al Prossimo Livello</button>";
+                    "<button class='choice-btn' onclick='openMinigame(false)'>Gira la Ruota dell'Azione 🎡</button>";
             }
         }
 
@@ -840,8 +866,7 @@
                 document.getElementById('vn-screen').style.display = 'block'; 
                 document.getElementById('dialogue-box').style.display = 'none';
                 document.getElementById('choices-container').innerHTML = 
-                    "<button class='choice-btn' onclick='openMinigame(false)'>Prossima Azione 🎡 (Rimaste: " + remainingTotal + ")</button>" +
-                    "<button class='choice-btn choice-btn-skip' onclick='handleForceNextLevelClick()'>⚡ Sali al Prossimo Livello</button>";
+                    "<button class='choice-btn' onclick='openMinigame(false)'>Prossima Azione 🎡 (Rimaste: " + remainingTotal + ")</button>";
             } else {
                 advanceToNextLevel(isRemote);
             }
@@ -853,7 +878,9 @@
                 document.getElementById('minigame-screen').style.display = 'none';
                 document.getElementById('cards-screen').style.display = 'none';
                 document.getElementById('vn-screen').style.display = 'block';
+                document.getElementById('fixed-skip-level-btn').style.display = 'none';
                 document.getElementById('level-indicator').innerText = "Fine Copione";
+                document.getElementById('level-indicator').style.borderColor = "#673ab7";
                 document.getElementById('dialogue-box').style.display = 'none';
                 document.getElementById('choices-container').innerHTML = 
                     "<h2 style='color: white;'>Il copione è finito.</h2><p style='color: #a996b8;'>Ora le regole le scrivete voi.</p><button class='choice-btn' onclick='location.reload()'>Torna al Menu Principale</button>";
