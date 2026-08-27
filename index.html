@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- Disabilitazione Cache per i test -->
+    <!-- Disabilitazione Cache aggressiva per i test -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -221,8 +221,8 @@
 
         /* Stile indicatore versione */
         .version-indicator {
-            position: absolute; bottom: 10px; width: 100%; text-align: center; 
-            font-size: 0.75rem; color: #888; font-family: monospace; letter-spacing: 1px;
+            margin-top: 20px; width: 100%; text-align: center; 
+            font-size: 0.8rem; color: #888; font-family: monospace; letter-spacing: 1px;
         }
     </style>
 </head>
@@ -230,7 +230,7 @@
 
     <div id="loader-screen" class="menu-screen active">
         <h1 class="title">Scenari Intrecciati</h1>
-        <p style="color: #a996b8;" id="loader-msg">Sincronizzazione con Google Sheets...</p>
+        <p style="color: #a996b8; padding: 0 20px;" id="loader-msg">Sincronizzazione con Google Sheets in corso...</p>
         <div class="spinner" id="loader-spinner"></div>
     </div>
 
@@ -299,7 +299,7 @@
         <button class="btn btn-gallery" style="margin-top: 15px;" onclick="openGallery()">📂 Galleria Privata In-App</button>
         <button class="btn btn-reset" id="btn-reset-game" style="display:none;" onclick="resetGameState()">🔄 Abbandona e Nuova Partita</button>
         
-        <div class="version-indicator">Versione App: v9.0 (No-Cache)</div>
+        <div class="version-indicator">Versione App: v9.1 (No-Cache)</div>
     </div>
 
     <div id="gallery-screen" class="menu-screen">
@@ -394,7 +394,7 @@
     </div>
 
     <script>
-        // Rimosso il cacheBuster dai link per prevenire l'errore 400 Bad Request dai server di Google
+        // Rimosso il cacheBuster dai link per prevenire blocchi server.
         let LINK_SCENARI_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1088679208&single=true&output=csv";
         let LINK_COPIONE_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1067890923&single=true&output=csv";
 
@@ -448,11 +448,11 @@
                 currentDrawnAction: currentDrawnAction,
                 isCardFlipped: isCardFlipped
             };
-            localStorage.setItem("ScenariGameState_v8", JSON.stringify(state));
+            localStorage.setItem("ScenariGameState_v9", JSON.stringify(state));
         }
 
         function checkSavedGameAvailable() {
-            var saved = localStorage.getItem("ScenariGameState_v8");
+            var saved = localStorage.getItem("ScenariGameState_v9");
             if (saved) {
                 try {
                     var state = JSON.parse(saved);
@@ -467,7 +467,7 @@
         function resumeSavedGame() { restoreGameState(); }
 
         function restoreGameState() {
-            var saved = localStorage.getItem("ScenariGameState_v8");
+            var saved = localStorage.getItem("ScenariGameState_v9");
             if (!saved) return false;
             try {
                 var state = JSON.parse(saved);
@@ -524,7 +524,7 @@
 
         function resetGameState() {
             if (confirm("Vuoi azzerare la partita attuale per iniziarne una nuova?")) {
-                localStorage.removeItem("ScenariGameState_v8");
+                localStorage.removeItem("ScenariGameState_v9");
                 location.reload();
             }
         }
