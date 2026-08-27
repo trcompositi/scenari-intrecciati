@@ -2,7 +2,8 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Meta tag ottimizzato per PWA mobile -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Scenari Intrecciati - Tiziano & Claudia</title>
     
     <!-- Librerie Esterne -->
@@ -19,14 +20,16 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-color); overflow-x: hidden; }
+        /* Evita selezioni di testo accidentali su app mobile */
+        body { background-color: var(--bg-color); color: var(--text-color); overflow-x: hidden; user-select: none; -webkit-user-select: none; }
 
         .menu-screen {
             display: none; 
             flex-direction: column; 
             justify-content: flex-start; 
             align-items: center;
-            min-height: 100vh; 
+            /* Utilizzo 100dvh per evitare problemi con la barra di navigazione su Safari/Chrome Mobile */
+            min-height: 100dvh; 
             background: linear-gradient(145deg, #170f1f, #0a060d); 
             text-align: center;
             padding: 2rem 1rem 5rem 1rem; 
@@ -72,7 +75,7 @@
         #game-menu-btn:active { transform: scale(0.95); }
 
         #pause-modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh;
             background: rgba(10, 6, 13, 0.95); z-index: 2500; justify-content: center;
             align-items: center; flex-direction: column; padding: 20px;
         }
@@ -134,9 +137,12 @@
         }
         #chat-messages {
             flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
+            /* Permette lo scroll solo in quest'area */
+            user-select: text; -webkit-user-select: text; 
         }
         .chat-msg {
             max-width: 85%; padding: 8px 12px; border-radius: 10px; font-size: 0.85rem; line-height: 1.3;
+            word-wrap: break-word;
         }
         .chat-msg.me { align-self: flex-end; background: #673ab7; color: white; }
         .chat-msg.partner { align-self: flex-start; background: #2a1b38; border: 1px solid #673ab7; color: white; }
@@ -151,7 +157,7 @@
         .btn-chat-rec { background: rgba(233, 30, 99, 0.2); border-color: var(--primary-accent); }
 
         #lightbox-modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh;
             background: rgba(0, 0, 0, 0.95); z-index: 2000; justify-content: center;
             align-items: center; padding: 20px;
         }
@@ -176,7 +182,7 @@
         .gallery-actions { display: flex; gap: 10px; width: 100%; justify-content: center; margin-top: 5px; }
         .gallery-btn-del { color: #ff5252; background: rgba(255, 82, 82, 0.15); border: 1px solid #ff5252; padding: 3px 8px; border-radius: 5px; font-size: 0.75rem; cursor: pointer; }
 
-        #vn-screen { display: none; width: 100vw; height: 100vh; position: relative; background-size: cover; background-position: center; }
+        #vn-screen { display: none; width: 100vw; height: 100dvh; position: relative; background-size: cover; background-position: center; }
         
         #level-indicator { 
             position: absolute; top: 20px; right: 20px; 
@@ -193,7 +199,7 @@
         #speaker-name { font-size: 1.2rem; font-weight: bold; margin-bottom: 8px; text-transform: uppercase; }
         #dialogue-text { font-size: 1.1rem; line-height: 1.5; color: #fff; }
 
-        #minigame-screen, #cards-screen { display: none; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; background: radial-gradient(circle, #1a1025 0%, #0a060d 100%); position: relative; padding: 20px 10px 80px 10px; }
+        #minigame-screen, #cards-screen { display: none; flex-direction: column; justify-content: center; align-items: center; min-height: 100dvh; background: radial-gradient(circle, #1a1025 0%, #0a060d 100%); position: relative; padding: 20px 10px 80px 10px; }
         .wheel-container { position: relative; width: 280px; height: 280px; margin-bottom: 1.5rem; }
         .pointer { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 30px solid white; z-index: 10; }
         .wheel { width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(var(--secondary-accent) 0deg 180deg, var(--primary-accent) 180deg 360deg); border: 5px solid #2a1b38; transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99); position: relative; }
@@ -688,7 +694,6 @@
             peer.on('error', function(err) {
                 console.log("P2P Status Info:", err);
                 if (err.type === 'unavailable-id') {
-                    // ID occupato da sessione precedente in sospeso, riconnette senza distruggere
                     attemptConnection(targetPeerId);
                 }
             });
@@ -696,13 +701,23 @@
 
         function attemptConnection(targetPeerId) {
             if (conn && conn.open) return;
+
+            // FIX: Se il client Peer si è scollegato dal server di segnalazione (es. sleep mode), riconnettiamolo.
+            if (peer && peer.disconnected) {
+                peer.reconnect();
+            }
+
             try {
                 conn = peer.connect(targetPeerId, { reliable: true });
                 setupConnEvents();
-            } catch(e){}
+            } catch(e){ console.error(e); }
 
             if (!retryTimer) {
                 retryTimer = setInterval(function() {
+                    // FIX: Verifica persistente dello stato di connessione al signaling server
+                    if (peer && peer.disconnected) {
+                        peer.reconnect();
+                    }
                     if (!conn || !conn.open) {
                         try {
                             conn = peer.connect(targetPeerId, { reliable: true });
@@ -712,7 +727,7 @@
                         clearInterval(retryTimer);
                         retryTimer = null;
                     }
-                }, 2000);
+                }, 2500); // 2.5 secondi
             }
         }
 
@@ -1368,7 +1383,8 @@
                     
                     var mediaHTML = "";
                     var ext = item.type === "image" ? "jpg" : (item.type === "video" ? "mp4" : "mp3");
-                    var fileName = "Scenari_" + item.category + "_" + item.timestamp.replace(/[/, :]/g, "-") + "." + ext;
+                    // FIX: Regex sicura per generare il nome file pulendo /, :, e spazi.
+                    var fileName = "Scenari_" + item.category + "_" + item.timestamp.replace(/[/:,\s]/g, "-") + "." + ext;
 
                     if (item.type === "image") {
                         mediaHTML = '<img src="' + item.data + '" onclick="openLightbox(\'' + item.data + '\', false)">';
