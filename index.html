@@ -251,7 +251,9 @@
             <span>💬 Chat Intima P2P</span>
             <button onclick="toggleChat()" style="background:none; border:none; color:white; font-weight:bold; cursor:pointer;">✕</button>
         </div>
-        <div id="chat-messages"></div>
+        <div id="chat-messages">
+            <div style="font-size:0.75rem; color:#a996b8; text-align:center; margin-bottom: 10px;">Messaggi e media sono cifrati e salvati solo qui.</div>
+        </div>
         <div id="chat-controls">
             <input type="file" id="chat-photo-input" accept="image/*" capture="environment" style="display:none;" onchange="sendChatFile(this, 'image')">
             <input type="file" id="chat-video-input" accept="video/*" capture="environment" style="display:none;" onchange="sendChatFile(this, 'video')">
@@ -276,7 +278,6 @@
         <button class="btn btn-tiziano" id="btn-select-tiziano" onclick="selectPlayer('Tiziano')">Sono Tiziano</button>
         <button class="btn btn-claudia" id="btn-select-claudia" onclick="selectPlayer('Claudia')">Sono Claudia</button>
 
-        <!-- STATO P2P DINAMICO -->
         <div id="p2p-status" style="display:none; width: 100%; max-width: 320px; flex-direction: column; align-items: center; margin-top: 20px; padding: 15px; background: rgba(30,20,40,0.8); border-radius: 10px; border: 1px solid #673ab7; text-align: center; color: #ffeb3b; font-weight: bold; font-size: 0.95rem; line-height: 1.4;">
             🟡 Inizializzazione...
         </div>
@@ -291,7 +292,7 @@
         <button class="back-btn" onclick="showScreen('selection-screen')">← Indietro</button>
         <h1 class="title" style="font-size: 1.8rem;">Galleria Privata</h1>
         <p style="color: #a996b8; font-size: 0.85rem; margin-bottom: 10px;">I file restano nascosti nella memoria dell'app finché non li scarichi.</p>
-        <button class="btn-chat-media" style="background:#ff5252; border:none; padding:8px 15px; margin-bottom:15px;" onclick="clearAllGallery()">🧹 Svuota Tutta la Galleria</button>
+        <button class="btn-chat-media" style="background:#ff5252; border:none; padding:8px 15px; margin-bottom:15px;" onclick="clearAllGallery()">🧹 Svuota Galleria e Chat</button>
         <div id="gallery-grid"></div>
     </div>
 
@@ -315,7 +316,6 @@
         </div>
     </div>
 
-    <!-- SCHERMATA ATTESA CATEGORIE PARTNER -->
     <div id="waiting-screen" class="menu-screen">
         <h1 class="title" style="font-size: 1.8rem;">Sincronizzazione Categorie...</h1>
         <p style="color: #a996b8; margin-top: 20px;" id="waiting-msg">Invio selezione in corso...<br>In attesa della conferma dal partner.</p>
@@ -433,11 +433,11 @@
                 currentDrawnAction: currentDrawnAction,
                 isCardFlipped: isCardFlipped
             };
-            localStorage.setItem("ScenariGameState_v5", JSON.stringify(state));
+            localStorage.setItem("ScenariGameState_v7", JSON.stringify(state));
         }
 
         function checkSavedGameAvailable() {
-            var saved = localStorage.getItem("ScenariGameState_v5");
+            var saved = localStorage.getItem("ScenariGameState_v7");
             if (saved) {
                 try {
                     var state = JSON.parse(saved);
@@ -452,7 +452,7 @@
         function resumeSavedGame() { restoreGameState(); }
 
         function restoreGameState() {
-            var saved = localStorage.getItem("ScenariGameState_v5");
+            var saved = localStorage.getItem("ScenariGameState_v7");
             if (!saved) return false;
             try {
                 var state = JSON.parse(saved);
@@ -509,7 +509,7 @@
 
         function resetGameState() {
             if (confirm("Vuoi azzerare la partita attuale per iniziarne una nuova?")) {
-                localStorage.removeItem("ScenariGameState_v5");
+                localStorage.removeItem("ScenariGameState_v7");
                 location.reload();
             }
         }
@@ -565,9 +565,9 @@
                             reader.onloadend = function() {
                                 var base64Data = reader.result;
                                 appendChatMediaMessage("Tu", base64Data, "audio", "me");
-                                saveMediaToLocalDB(base64Data, "audio", "Nota Vocale", currentPlayer);
+                                saveMediaToLocalDB(base64Data, "audio", "Chat Live", currentPlayer, "me");
                                 if (conn && conn.open) {
-                                    conn.send({ type: "media", mediaType: "audio", fileData: base64Data, category: "Nota Vocale", sender: currentPlayer });
+                                    conn.send({ type: "media", mediaType: "audio", fileData: base64Data, category: "Chat Live", sender: currentPlayer });
                                 }
                             };
                             reader.readAsDataURL(audioBlob);
@@ -589,6 +589,7 @@
             }
         }
 
+        // --- SISTEMA DATABASE LOCALE (INDEXEDDB) UNIFICATO PER MEDIA E TESTO ---
         var db = null;
         function initDB() {
             var request = indexedDB.open("ScenariMediaDB", 1);
@@ -598,15 +599,60 @@
                     db.createObjectStore("media", { keyPath: "id", autoIncrement: true });
                 }
             };
-            request.onsuccess = function(e) { db = e.target.result; };
+            request.onsuccess = function(e) { 
+                db = e.target.result; 
+                loadChatHistory(); // Carica l'intera chat al boot
+            };
         }
         initDB();
 
-        function saveMediaToLocalDB(fileData, type, category, sender) {
+        function saveMediaToLocalDB(fileData, type, category, sender, msgClass) {
             if (!db) return;
             var tx = db.transaction(["media"], "readwrite");
             var store = tx.objectStore("media");
-            store.add({ type: type, data: fileData, category: category, sender: sender, timestamp: new Date().toLocaleString() });
+            store.add({ type: type, data: fileData, category: category, sender: sender, msgClass: msgClass || "", timestamp: new Date().toLocaleString() });
+        }
+
+        function saveTextToLocalDB(text, sender, msgClass) {
+            if (!db) return;
+            var tx = db.transaction(["media"], "readwrite");
+            var store = tx.objectStore("media");
+            store.add({ type: "chat_text", data: text, category: "Chat Live", sender: sender, msgClass: msgClass, timestamp: new Date().toLocaleString() });
+        }
+
+        function loadChatHistory() {
+            if (!db) return;
+            var tx = db.transaction(["media"], "readonly");
+            var store = tx.objectStore("media");
+            var request = store.getAll();
+            request.onsuccess = function() {
+                var items = request.result;
+                var box = document.getElementById('chat-messages');
+                box.innerHTML = '<div style="font-size:0.75rem; color:#a996b8; text-align:center; margin-bottom:10px;">Messaggi e media sono cifrati e salvati solo qui.</div>';
+                
+                items.forEach(function(item) {
+                    if (item.category === "Chat Live" || item.type === "chat_text") {
+                        var div = document.createElement('div');
+                        div.className = "chat-msg " + item.msgClass;
+                        
+                        if (item.type === "chat_text") {
+                            div.innerHTML = "<strong>" + item.sender + ":</strong> " + item.data;
+                        } else {
+                            var mediaHTML = "";
+                            if (item.type === "image") {
+                                mediaHTML = '<img src="' + item.data + '" onclick="openLightbox(\'' + item.data + '\', false)">';
+                            } else if (item.type === "video") {
+                                mediaHTML = '<video src="' + item.data + '" controls onclick="openLightbox(\'' + item.data + '\', true)"></video>';
+                            } else if (item.type === "audio") {
+                                mediaHTML = '<audio src="' + item.data + '" controls style="width:100%;"></audio>';
+                            }
+                            div.innerHTML = "<strong>" + item.sender + ":</strong><br>" + mediaHTML;
+                        }
+                        box.appendChild(div);
+                    }
+                });
+                box.scrollTop = box.scrollHeight;
+            };
         }
 
         function deleteSingleMedia(id) {
@@ -615,21 +661,22 @@
             var tx = db.transaction(["media"], "readwrite");
             var store = tx.objectStore("media");
             store.delete(id);
-            tx.oncomplete = function() { loadGalleryContent(); };
+            tx.oncomplete = function() { loadGalleryContent(); loadChatHistory(); };
         }
 
         function clearAllGallery() {
-            if (!confirm("⚠️ Se sicuro di voler SVUOTARE tutta la tua Galleria Privata locale?")) return;
+            if (!confirm("⚠️ Se sicuro di voler SVUOTARE tutta la tua cronologia Chat e Galleria Privata?")) return;
             if (!db) return;
             var tx = db.transaction(["media"], "readwrite");
             var store = tx.objectStore("media");
             store.clear();
-            tx.oncomplete = function() { loadGalleryContent(); };
+            tx.oncomplete = function() { loadGalleryContent(); loadChatHistory(); };
         }
 
         // --- MOTORE P2P: AUTO-PAIRING INVISIBILE E NAT-TRAVERSAL (STUN SERVERS) ---
         const SECRET_ROOM_ID = "tizclau-auth-9988";
-        var peer = null, conn = null, retryTimer = null, pingInterval = null, watchdogInterval = null;
+        var peer = null, conn = null, pingInterval = null, watchdogInterval = null;
+        var connectionTimeout = null;
         var lastSignalTime = Date.now();
 
         function selectPlayer(name) { 
@@ -652,13 +699,12 @@
 
             if (peer) { peer.destroy(); }
 
-            // Configurazione con Server STUN gratuiti di Google e Twilio per superare blocchi di rete 4G/5G
+            // Configurazione con Server STUN gratuiti di Google per superare blocchi di rete
             peer = new Peer(myId, {
                 config: {
                     'iceServers': [
                         { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'stun:global.stun.twilio.com:3478' }
+                        { urls: 'stun:stun1.l.google.com:19302' }
                     ]
                 }
             });
@@ -668,7 +714,6 @@
             });
 
             peer.on('connection', function(c) {
-                // Gestione sovrapposizioni: chiudi la nuova se ne abbiamo già una attiva e aperta
                 if (conn && conn.open) {
                     setTimeout(function() { c.close(); }, 500);
                     return;
@@ -680,10 +725,8 @@
             peer.on('error', function(err) {
                 console.log("P2P Error:", err);
                 if (err.type === 'peer-unavailable') {
-                    // Partner non online. Riprovo in background.
-                    if (!retryTimer) attemptConnection(targetId);
+                    attemptConnection(targetId);
                 } else if (err.type === 'unavailable-id') {
-                    // Timeout o ghost id. Forza il riavvio.
                     setTimeout(function() { autoConnectP2P(name); }, 3000);
                 }
             });
@@ -707,29 +750,19 @@
                 setupConnEvents();
             } catch(e) {}
 
-            if (!retryTimer) {
-                retryTimer = setInterval(function() {
-                    if (peer && peer.disconnected) {
-                        peer.reconnect();
-                        return;
-                    }
-                    if (conn && conn.open) {
-                        clearInterval(retryTimer);
-                        retryTimer = null;
-                    } else {
-                        if (conn) { try { conn.close(); } catch(e){} }
-                        conn = peer.connect(targetId, { reliable: true });
-                        setupConnEvents();
-                    }
-                }, 5000); // Intervallo esteso a 5 sec per dare respiro al setup WebRTC su rete mobile
-            }
+            if (connectionTimeout) clearTimeout(connectionTimeout);
+            connectionTimeout = setTimeout(function() {
+                if (conn && !conn.open) {
+                    attemptConnection(targetId);
+                }
+            }, 6000); 
         }
 
         function setupConnEvents() {
             if (!conn) return;
 
             var onOpen = function() {
-                if (retryTimer) { clearInterval(retryTimer); retryTimer = null; }
+                if (connectionTimeout) { clearTimeout(connectionTimeout); connectionTimeout = null; }
                 lastSignalTime = Date.now();
                 var statusEl = document.getElementById('p2p-status');
                 statusEl.style.color = "#4caf50";
@@ -774,6 +807,7 @@
         function handleDisconnect() {
             if (pingInterval) { clearInterval(pingInterval); pingInterval = null; }
             if (watchdogInterval) { clearInterval(watchdogInterval); watchdogInterval = null; }
+            if (connectionTimeout) { clearTimeout(connectionTimeout); connectionTimeout = null; }
             if (conn) { conn.close(); conn = null; }
 
             var statusEl = document.getElementById('p2p-status');
@@ -800,10 +834,11 @@
             if (data.type === "text") {
                 playNotificationSound();
                 appendChatMessage(data.sender, data.text, "partner");
+                saveTextToLocalDB(data.text, data.sender, "partner"); // Salvataggio DB
                 notifyChatBadge();
             } else if (data.type === "media") {
                 playNotificationSound();
-                saveMediaToLocalDB(data.fileData, data.mediaType, data.category, data.sender);
+                saveMediaToLocalDB(data.fileData, data.mediaType, data.category, data.sender, "partner"); // Salvataggio DB
                 appendChatMediaMessage(data.sender, data.fileData, data.mediaType, "partner");
                 notifyChatBadge();
             } else if (data.type === "SYNC_SCENARIO_SELECT") {
@@ -1308,6 +1343,8 @@
             if (!txt) return;
 
             appendChatMessage("Tu", txt, "me");
+            saveTextToLocalDB(txt, "Tu", "me"); // Salvataggio DB
+            
             if (conn && conn.open) {
                 conn.send({ type: "text", text: txt, sender: currentPlayer });
             }
@@ -1333,7 +1370,7 @@
                 var mediaType = file.type.startsWith("image") ? "image" : (file.type.startsWith("video") ? "video" : "audio");
                 
                 appendChatMediaMessage("Tu", base64Data, mediaType, "me");
-                saveMediaToLocalDB(base64Data, mediaType, "Chat Live", currentPlayer);
+                saveMediaToLocalDB(base64Data, mediaType, "Chat Live", currentPlayer, "me"); // Salvataggio DB
 
                 if (conn && conn.open) {
                     conn.send({
@@ -1383,12 +1420,15 @@
 
             request.onsuccess = function() {
                 var items = request.result;
-                if (!items || items.length === 0) {
+                // Filtra escludendo i messaggi di testo dalla galleria visiva
+                var mediaItems = items.filter(item => item.type !== "chat_text");
+
+                if (!mediaItems || mediaItems.length === 0) {
                     grid.innerHTML = "<p style='color:#a996b8; grid-column: 1/-1;'>Nessun file presente nella Galleria Privata.</p>";
                     return;
                 }
                 grid.innerHTML = "";
-                items.reverse().forEach(function(item) {
+                mediaItems.reverse().forEach(function(item) {
                     var div = document.createElement('div');
                     div.className = "gallery-card";
                     
