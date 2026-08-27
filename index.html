@@ -3,6 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- Disabilitazione Cache per i test -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
     <title>Scenari Intrecciati - Tiziano & Claudia</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -212,6 +218,12 @@
         .card-role-label { font-size: 1.1rem; text-transform: uppercase; margin-bottom: 8px; font-weight: bold; letter-spacing: 1px; }
         .card-category-tag { font-size: 0.8rem; background: rgba(103, 58, 183, 0.4); border: 1px solid #673ab7; padding: 4px 12px; border-radius: 20px; margin-bottom: 15px; color: #d1c4db; font-weight: bold; }
         #cardText { font-size: 1.25rem; line-height: 1.6; color: #ffffff; font-weight: 500; margin-bottom: 15px; }
+
+        /* Stile indicatore versione */
+        .version-indicator {
+            position: absolute; bottom: 10px; width: 100%; text-align: center; 
+            font-size: 0.75rem; color: #888; font-family: monospace; letter-spacing: 1px;
+        }
     </style>
 </head>
 <body>
@@ -219,7 +231,7 @@
     <div id="loader-screen" class="menu-screen active">
         <h1 class="title">Scenari Intrecciati</h1>
         <p style="color: #a996b8;" id="loader-msg">Sincronizzazione con Google Sheets...</p>
-        <div class="spinner"></div>
+        <div class="spinner" id="loader-spinner"></div>
     </div>
 
     <!-- LIGHTBOX FULLSCREEN MODAL -->
@@ -286,6 +298,8 @@
         <button class="btn btn-context" id="start-sync-btn" style="display:none; margin-top: 15px; background: var(--primary-accent);" onclick="showScreen('scenario-screen')">Entra nel Gioco Sincronizzato</button>
         <button class="btn btn-gallery" style="margin-top: 15px;" onclick="openGallery()">📂 Galleria Privata In-App</button>
         <button class="btn btn-reset" id="btn-reset-game" style="display:none;" onclick="resetGameState()">🔄 Abbandona e Nuova Partita</button>
+        
+        <div class="version-indicator">Versione App: v9.0 (No-Cache)</div>
     </div>
 
     <div id="gallery-screen" class="menu-screen">
@@ -380,6 +394,7 @@
     </div>
 
     <script>
+        // Rimosso il cacheBuster dai link per prevenire l'errore 400 Bad Request dai server di Google
         let LINK_SCENARI_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1088679208&single=true&output=csv";
         let LINK_COPIONE_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1067890923&single=true&output=csv";
 
@@ -590,7 +605,6 @@
             }
         }
 
-        // --- SISTEMA DATABASE LOCALE (INDEXEDDB) UNIFICATO CON TIMESTAMPING ---
         var db = null;
         function initDB() {
             var request = indexedDB.open("ScenariMediaDB", 1);
@@ -668,7 +682,6 @@
             tx.oncomplete = function() { loadGalleryContent(); loadChatHistory(); };
         }
 
-        // --- MOTORE P2P: AUTO-PAIRING E SINCRONIZZAZIONE DIFFERENZIALE CHAT ---
         const SECRET_ROOM_ID = "tizclau-auth-9988";
         var peer = null, conn = null, pingInterval = null, watchdogInterval = null;
         var connectionTimeout = null;
@@ -1053,11 +1066,14 @@
             const urlScenari = LINK_SCENARI_RAW;
             const urlCopione = LINK_COPIONE_RAW;
             var loaderMsg = document.getElementById('loader-msg');
+            var loaderSpinner = document.getElementById('loader-spinner');
 
             Papa.parse(urlScenari, {
                 download: true, header: true, skipEmptyLines: true,
                 error: function(err) { 
-                    loaderMsg.innerHTML = "🔴 Errore di rete: Impossibile leggere Scenari.<br><small>Verifica i link o assicurati di non aprire il file localmente (file://).</small>"; 
+                    loaderSpinner.style.display = 'none';
+                    loaderMsg.style.color = '#ff5252';
+                    loaderMsg.innerHTML = "🔴 Errore di rete: Impossibile scaricare 'Scenari'.<br><small>1. Assicurati che i link CSV siano pubblici.<br>2. Se sei su PC, non aprire il file localmente ma usa un server locale.</small>"; 
                 },
                 complete: function(res) {
                     if (res.data && res.data.length > 0) {
@@ -1076,7 +1092,9 @@
                         Papa.parse(urlCopione, {
                             download: true, header: true, skipEmptyLines: true,
                             error: function(err) { 
-                                loaderMsg.innerHTML = "🔴 Errore di rete: Impossibile leggere il Copione."; 
+                                loaderSpinner.style.display = 'none';
+                                loaderMsg.style.color = '#ff5252';
+                                loaderMsg.innerHTML = "🔴 Errore di rete: Impossibile scaricare 'Copione'.<br><small>Verifica i permessi del foglio Google.</small>"; 
                             },
                             complete: function(resCopione) {
                                 if (resCopione.data && resCopione.data.length > 0) {
@@ -1103,12 +1121,16 @@
                                         showScreen('selection-screen');
                                     }
                                 } else {
-                                    loaderMsg.innerHTML = "🔴 Errore: Il file Copione è vuoto o bloccato.";
+                                    loaderSpinner.style.display = 'none';
+                                    loaderMsg.style.color = '#ff5252';
+                                    loaderMsg.innerHTML = "🔴 Errore: Il file 'Copione' è vuoto o bloccato da Google.";
                                 }
                             }
                         });
                     } else {
-                        loaderMsg.innerHTML = "🔴 Errore: Il file Scenari è vuoto o bloccato.";
+                        loaderSpinner.style.display = 'none';
+                        loaderMsg.style.color = '#ff5252';
+                        loaderMsg.innerHTML = "🔴 Errore: Il file 'Scenari' è vuoto o bloccato da Google.";
                     }
                 }
             });
