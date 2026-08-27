@@ -276,15 +276,15 @@
         <button class="btn btn-tiziano" id="btn-select-tiziano" onclick="selectPlayer('Tiziano')">Sono Tiziano</button>
         <button class="btn btn-claudia" id="btn-select-claudia" onclick="selectPlayer('Claudia')">Sono Claudia</button>
 
-        <!-- PANNELLO CONNESSIONE DINAMICO PIN -->
+        <!-- PANNELLO CONNESSIONE DINAMICO PIN CON UI STACKATA -->
         <div id="connection-panel" style="display:none; width: 100%; max-width: 320px; flex-direction: column; align-items: center; margin-top: 20px; padding: 15px; background: rgba(30,20,40,0.8); border-radius: 10px; border: 1px solid #673ab7;">
             <button class="btn btn-resume" style="width:100%; margin-bottom: 10px;" onclick="createRoom()">➕ Crea Nuova Stanza (Host)</button>
             <p style="margin: 5px 0; font-size: 0.9rem; color: #a996b8;">oppure unisciti alla sua:</p>
-            <div style="display:flex; gap:10px; width: 100%; margin-top: 5px;">
-                <input type="text" id="pin-input" placeholder="PIN" maxlength="4" style="flex:1; padding:10px; text-align:center; border-radius:5px; border:1px solid #673ab7; background:#000; color:white; font-size:1.2rem; font-weight:bold;">
-                <button class="btn btn-context" style="width:auto; margin:0; padding: 10px 20px;" onclick="joinRoom()">Unisciti</button>
+            <div style="display:flex; flex-direction:column; gap:10px; width: 100%; margin-top: 10px;">
+                <input type="text" id="pin-input" placeholder="Inserisci PIN a 4 cifre" maxlength="4" style="width:100%; padding:12px; text-align:center; border-radius:5px; border:1px solid #673ab7; background:#000; color:white; font-size:1.1rem; font-weight:bold;">
+                <button class="btn btn-context" style="width:100%; margin:0;" onclick="joinRoom()">Unisciti alla Stanza</button>
             </div>
-            <div id="p2p-status" style="margin-top: 15px; font-weight: bold; color: #e91e63; font-size: 0.9rem;"></div>
+            <div id="p2p-status" style="margin-top: 15px; font-weight: bold; color: #e91e63; font-size: 0.9rem; text-align:center; min-height:1.2rem;"></div>
         </div>
 
         <button class="btn btn-resume" id="btn-resume-game" style="display:none; margin-top: 20px;" onclick="resumeSavedGame()">▶️ Riprendi Partita Salvata</button>
@@ -640,7 +640,7 @@
             tx.oncomplete = function() { loadGalleryContent(); };
         }
 
-        // --- MOTORE P2P: ACCOPPIAMENTO ASIMMETRICO TRAMITE PIN DINAMICO ---
+        // --- MOTORE P2P: ACCOPPIAMENTO ASIMMETRICO BLINDATO ---
         var peer = null, conn = null, retryTimer = null, pingInterval = null, watchdogInterval = null;
         var sessionPIN = "", networkRole = "";
         var lastSignalTime = Date.now();
@@ -657,7 +657,6 @@
             if (!currentPlayer) return;
             sessionPIN = Math.floor(1000 + Math.random() * 9000).toString();
             networkRole = "host";
-            document.getElementById('p2p-status').innerHTML = "🟡 Stanza creata! Il tuo PIN è: <span style='font-size:1.6rem; color:white;'>" + sessionPIN + "</span><br><span style='color:#a996b8; font-weight:normal;'>Comunicalo al partner per farlo unire.</span>";
             initPeer("host", sessionPIN);
             saveGameState();
         }
@@ -668,7 +667,6 @@
             if(pin.length !== 4) { alert("Inserisci un PIN valido di 4 cifre."); return; }
             sessionPIN = pin;
             networkRole = "guest";
-            document.getElementById('p2p-status').innerText = "🟡 Connessione al PIN " + sessionPIN + "...";
             initPeer("guest", sessionPIN);
             saveGameState();
         }
@@ -678,16 +676,24 @@
             var targetPeerId = "scenari-" + pin + "-" + (currentPlayer === "Tiziano" ? "claudia" : "tiziano");
 
             if (peer) { peer.destroy(); }
+            
+            // Messaggio di stato temporaneo
+            document.getElementById('p2p-status').innerText = "🟡 Connessione al server...";
+            document.getElementById('p2p-status').style.color = "#ffeb3b";
+            
             peer = new Peer(myPeerId);
 
             peer.on('open', function(id) {
                 if (role === "guest") {
+                    document.getElementById('p2p-status').innerText = "🟡 Ricerca dell'Host (PIN: " + pin + ")...";
                     attemptConnection(targetPeerId);
+                } else {
+                    // Mostriamo il PIN solo dopo che l'Host è effettivamente online sul server PeerJS
+                    document.getElementById('p2p-status').innerHTML = "🟡 Stanza creata! Il tuo PIN è: <br><span style='font-size:2rem; color:white; display:block; margin: 10px 0;'>" + pin + "</span><span style='color:#a996b8; font-weight:normal;'>Comunicalo al partner per farlo unire.</span>";
                 }
             });
 
             peer.on('connection', function(c) {
-                // Host riceve la connessione dal Guest
                 if (conn && conn.open) {
                     setTimeout(function() { c.close(); }, 500);
                     return;
@@ -698,8 +704,11 @@
 
             peer.on('error', function(err) {
                 console.log("P2P Error:", err);
-                if ((err.type === 'peer-unavailable' || err.type === 'unavailable-id') && role === "guest") {
-                    document.getElementById('p2p-status').innerText = "🔴 Host non trovato. Ricerca in corso...";
+                if (err.type === 'unavailable-id') {
+                    document.getElementById('p2p-status').innerText = "🔴 PIN già in uso o bloccato. Ricrea la stanza.";
+                    document.getElementById('p2p-status').style.color = "#ff5252";
+                } else if (err.type === 'peer-unavailable' && role === "guest") {
+                    document.getElementById('p2p-status').innerText = "🟡 Host non trovato. Riprovo...";
                     if (!retryTimer) attemptConnection(targetPeerId);
                 }
             });
@@ -707,6 +716,13 @@
 
         function attemptConnection(targetPeerId) {
             if (conn && conn.open) return;
+            
+            // Pulisce connessioni fantasma prima di ritentare
+            if (conn) { 
+                try { conn.close(); } catch(e){} 
+                conn = null; 
+            }
+
             if (peer && peer.disconnected) peer.reconnect();
 
             try {
@@ -716,24 +732,27 @@
 
             if (!retryTimer) {
                 retryTimer = setInterval(function() {
-                    if (peer && peer.disconnected) peer.reconnect();
-                    if (!conn || !conn.open) {
-                        try {
-                            conn = peer.connect(targetPeerId, { reliable: true });
-                            setupConnEvents();
-                        } catch(e){}
-                    } else {
+                    if (peer && peer.disconnected) {
+                        peer.reconnect();
+                        return; // Attende la riconnessione al server
+                    }
+                    if (conn && conn.open) {
                         clearInterval(retryTimer);
                         retryTimer = null;
+                    } else {
+                        // Forza chiusura e ri-aggancio
+                        if (conn) { try { conn.close(); } catch(e){} }
+                        conn = peer.connect(targetPeerId, { reliable: true });
+                        setupConnEvents();
                     }
-                }, 2500);
+                }, 3000);
             }
         }
 
         function setupConnEvents() {
             if (!conn) return;
 
-            conn.on('open', function() {
+            var onOpen = function() {
                 if (retryTimer) { clearInterval(retryTimer); retryTimer = null; }
                 lastSignalTime = Date.now();
                 document.getElementById('p2p-status').style.color = "#4caf50";
@@ -758,7 +777,14 @@
                 if (mySelectedCategories.length > 0 && partnerSelectedCategories === null) {
                     sendP2PCommand({ type: "SYNC_CATEGORIES_SUBMIT", categories: mySelectedCategories });
                 }
-            });
+            };
+
+            // Fix Race Condition: a volte l'evento 'open' scatta prima che possiamo metterci in ascolto
+            if (conn.open) {
+                onOpen();
+            } else {
+                conn.on('open', onOpen);
+            }
 
             conn.on('data', function(data) {
                 lastSignalTime = Date.now();
