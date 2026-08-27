@@ -281,7 +281,7 @@
             <button class="btn btn-resume" style="width:100%; margin-bottom: 10px;" onclick="createRoom()">➕ Crea Nuova Stanza (Host)</button>
             <p style="margin: 5px 0; font-size: 0.9rem; color: #a996b8;">oppure unisciti alla sua:</p>
             <div style="display:flex; flex-direction:column; gap:10px; width: 100%; margin-top: 10px;">
-                <input type="text" id="pin-input" placeholder="Inserisci PIN a 4 cifre" maxlength="4" style="width:100%; padding:12px; text-align:center; border-radius:5px; border:1px solid #673ab7; background:#000; color:white; font-size:1.1rem; font-weight:bold;">
+                <input type="text" id="pin-input" placeholder="Inserisci PIN (4 cifre)" maxlength="4" style="width:100%; padding:12px; text-align:center; border-radius:5px; border:1px solid #673ab7; background:#000; color:white; font-size:1.1rem; font-weight:bold;">
                 <button class="btn btn-context" style="width:100%; margin:0;" onclick="joinRoom()">Unisciti alla Stanza</button>
             </div>
             <div id="p2p-status" style="margin-top: 15px; font-weight: bold; color: #e91e63; font-size: 0.9rem; text-align:center; min-height:1.2rem;"></div>
@@ -640,10 +640,11 @@
             tx.oncomplete = function() { loadGalleryContent(); };
         }
 
-        // --- MOTORE P2P: ACCOPPIAMENTO ASIMMETRICO BLINDATO ---
-        var peer = null, conn = null, retryTimer = null, pingInterval = null, watchdogInterval = null;
+        // --- MOTORE P2P: ACCOPPIAMENTO ASIMMETRICO BLINDATO CON TIMEOUT SINGOLO ---
+        var peer = null, conn = null, pingInterval = null, watchdogInterval = null;
         var sessionPIN = "", networkRole = "";
         var lastSignalTime = Date.now();
+        var connectionTimeout = null;
 
         function selectPlayer(name) { 
             currentPlayer = name; 
@@ -672,12 +673,12 @@
         }
 
         function initPeer(role, pin) {
-            var myPeerId = "scenari-" + pin + "-" + currentPlayer.toLowerCase();
-            var targetPeerId = "scenari-" + pin + "-" + (currentPlayer === "Tiziano" ? "claudia" : "tiziano");
+            // Aggiunto namespace esclusivo per evitare conflitti globali
+            var myPeerId = "scn26-" + pin + "-" + currentPlayer.toLowerCase();
+            var targetPeerId = "scn26-" + pin + "-" + (currentPlayer === "Tiziano" ? "claudia" : "tiziano");
 
             if (peer) { peer.destroy(); }
             
-            // Messaggio di stato temporaneo
             document.getElementById('p2p-status').innerText = "🟡 Connessione al server...";
             document.getElementById('p2p-status').style.color = "#ffeb3b";
             
@@ -688,7 +689,6 @@
                     document.getElementById('p2p-status').innerText = "🟡 Ricerca dell'Host (PIN: " + pin + ")...";
                     attemptConnection(targetPeerId);
                 } else {
-                    // Mostriamo il PIN solo dopo che l'Host è effettivamente online sul server PeerJS
                     document.getElementById('p2p-status').innerHTML = "🟡 Stanza creata! Il tuo PIN è: <br><span style='font-size:2rem; color:white; display:block; margin: 10px 0;'>" + pin + "</span><span style='color:#a996b8; font-weight:normal;'>Comunicalo al partner per farlo unire.</span>";
                 }
             });
@@ -709,7 +709,7 @@
                     document.getElementById('p2p-status').style.color = "#ff5252";
                 } else if (err.type === 'peer-unavailable' && role === "guest") {
                     document.getElementById('p2p-status').innerText = "🟡 Host non trovato. Riprovo...";
-                    if (!retryTimer) attemptConnection(targetPeerId);
+                    setTimeout(function() { attemptConnection(targetPeerId); }, 2500);
                 }
             });
         }
@@ -717,43 +717,37 @@
         function attemptConnection(targetPeerId) {
             if (conn && conn.open) return;
             
-            // Pulisce connessioni fantasma prima di ritentare
+            if (peer && peer.disconnected) {
+                peer.reconnect();
+                return;
+            }
+
+            // Pulisce l'oggetto connessione prima di forzare il nuovo tentativo
             if (conn) { 
                 try { conn.close(); } catch(e){} 
                 conn = null; 
             }
-
-            if (peer && peer.disconnected) peer.reconnect();
 
             try {
                 conn = peer.connect(targetPeerId, { reliable: true });
                 setupConnEvents();
             } catch(e) {}
 
-            if (!retryTimer) {
-                retryTimer = setInterval(function() {
-                    if (peer && peer.disconnected) {
-                        peer.reconnect();
-                        return; // Attende la riconnessione al server
-                    }
-                    if (conn && conn.open) {
-                        clearInterval(retryTimer);
-                        retryTimer = null;
-                    } else {
-                        // Forza chiusura e ri-aggancio
-                        if (conn) { try { conn.close(); } catch(e){} }
-                        conn = peer.connect(targetPeerId, { reliable: true });
-                        setupConnEvents();
-                    }
-                }, 3000);
-            }
+            // Usa un timeout singolo e ricorsivo invece di un intervallo spietato.
+            // Attende 6 secondi permettendo a WebRTC di raccogliere gli indirizzi IP mobili prima di disconnettersi.
+            if (connectionTimeout) clearTimeout(connectionTimeout);
+            connectionTimeout = setTimeout(function() {
+                if (conn && !conn.open) {
+                    attemptConnection(targetPeerId);
+                }
+            }, 6000); 
         }
 
         function setupConnEvents() {
             if (!conn) return;
 
             var onOpen = function() {
-                if (retryTimer) { clearInterval(retryTimer); retryTimer = null; }
+                if (connectionTimeout) { clearTimeout(connectionTimeout); connectionTimeout = null; }
                 lastSignalTime = Date.now();
                 document.getElementById('p2p-status').style.color = "#4caf50";
                 document.getElementById('p2p-status').innerText = "🟢 Partner Connesso! Entrambi pronti.";
@@ -767,7 +761,7 @@
 
                 if (watchdogInterval) clearInterval(watchdogInterval);
                 watchdogInterval = setInterval(function() {
-                    if (Date.now() - lastSignalTime > 8000) {
+                    if (Date.now() - lastSignalTime > 10000) { 
                         console.warn("Watchdog: Rilevato timeout, riavvio connessione.");
                         handleDisconnect();
                     }
@@ -779,7 +773,7 @@
                 }
             };
 
-            // Fix Race Condition: a volte l'evento 'open' scatta prima che possiamo metterci in ascolto
+            // Esegue subito se la connessione è già aperta, altrimenti attende l'evento
             if (conn.open) {
                 onOpen();
             } else {
@@ -798,6 +792,7 @@
         function handleDisconnect() {
             if (pingInterval) { clearInterval(pingInterval); pingInterval = null; }
             if (watchdogInterval) { clearInterval(watchdogInterval); watchdogInterval = null; }
+            if (connectionTimeout) { clearTimeout(connectionTimeout); connectionTimeout = null; }
             if (conn) { conn.close(); conn = null; }
 
             var statusEl = document.getElementById('p2p-status');
@@ -806,8 +801,10 @@
                 statusEl.innerText = "🔴 Connessione persa. Riconnessione automatica in corso...";
             }
 
-            var targetPeerId = "scenari-" + sessionPIN + "-" + (currentPlayer === "Tiziano" ? "claudia" : "tiziano");
-            if (networkRole === "guest") attemptConnection(targetPeerId);
+            var targetPeerId = "scn26-" + sessionPIN + "-" + (currentPlayer === "Tiziano" ? "claudia" : "tiziano");
+            if (networkRole === "guest") {
+                setTimeout(function() { attemptConnection(targetPeerId); }, 2000);
+            }
         }
 
         function sendP2PCommand(dataObj) {
