@@ -602,7 +602,7 @@
             };
             request.onsuccess = function(e) { 
                 db = e.target.result; 
-                loadChatHistory(); // Carica l'intera chat al boot
+                loadChatHistory();
             };
         }
         initDB();
@@ -778,7 +778,6 @@
                     sendP2PCommand({ type: "SYNC_CATEGORIES_SUBMIT", categories: mySelectedCategories });
                 }
                 
-                // AVVIA LA SINCRONIZZAZIONE DIFFERENZIALE CHAT
                 syncChatWithPartner();
             };
 
@@ -817,7 +816,6 @@
             if (conn && conn.open) { conn.send(dataObj); }
         }
 
-        // CHIEDE AL PARTNER I MESSAGGI MANCANTI
         function syncChatWithPartner() {
             if (!db) return;
             var tx = db.transaction(["media"], "readonly");
@@ -843,7 +841,6 @@
             }
             if (data.type === "PONG") return;
 
-            // RICEZIONE RICHIESTA DI SINCRONIZZAZIONE DIFFERENZIALE
             if (data.type === "SYNC_CHAT_REQ") {
                 if (!db) return;
                 var tx = db.transaction(["media"], "readonly");
@@ -864,7 +861,6 @@
                 return;
             }
 
-            // RICEZIONE PACCHETTO MESSAGGI MANCANTI
             if (data.type === "SYNC_CHAT_RES") {
                 data.messages.forEach(function(msg) {
                     saveToLocalDB(msg.type, msg.data, msg.category, msg.sender, "partner", msg.epoch);
@@ -878,7 +874,6 @@
                 return;
             }
 
-            // NORMALE RICEZIONE LIVE
             if (data.type === "text") {
                 playNotificationSound();
                 appendChatMessage(data.sender, data.text, "partner");
@@ -1018,7 +1013,6 @@
 
             request.onsuccess = function() {
                 var items = request.result;
-                // Filtra escludendo i messaggi di testo dalla galleria visiva
                 var mediaItems = items.filter(item => item.type !== "chat_text");
 
                 if (!mediaItems || mediaItems.length === 0) {
@@ -1053,6 +1047,71 @@
                     grid.appendChild(div);
                 });
             };
+        }
+
+        function loadFromGoogleSheets() {
+            const urlScenari = LINK_SCENARI_RAW;
+            const urlCopione = LINK_COPIONE_RAW;
+            var loaderMsg = document.getElementById('loader-msg');
+
+            Papa.parse(urlScenari, {
+                download: true, header: true, skipEmptyLines: true,
+                error: function(err) { 
+                    loaderMsg.innerHTML = "🔴 Errore di rete: Impossibile leggere Scenari.<br><small>Verifica i link o assicurati di non aprire il file localmente (file://).</small>"; 
+                },
+                complete: function(res) {
+                    if (res.data && res.data.length > 0) {
+                        roleplayScenarios = {};
+                        res.data.forEach(function(row) {
+                            if (!row.ID_Scenario) return;
+                            roleplayScenarios[row.ID_Scenario] = {
+                                title: row.Titolo_Storia, 
+                                context: row.Contesto_Menu,
+                                roles: { "Claudia": row.Ruolo_Claudia, "Tiziano": row.Ruolo_Tiziano },
+                                briefing: { "Claudia": row.Briefing_Claudia, "Tiziano": row.Briefing_Tiziano },
+                                levels: []
+                            };
+                        });
+                        
+                        Papa.parse(urlCopione, {
+                            download: true, header: true, skipEmptyLines: true,
+                            error: function(err) { 
+                                loaderMsg.innerHTML = "🔴 Errore di rete: Impossibile leggere il Copione."; 
+                            },
+                            complete: function(resCopione) {
+                                if (resCopione.data && resCopione.data.length > 0) {
+                                    resCopione.data.forEach(function(row) {
+                                        let id = row.ID_Scenario;
+                                        if (!id || !roleplayScenarios[id]) return;
+                                        let lvlIndex = parseInt(row.Livello) - 1;
+                                        if (isNaN(lvlIndex)) return;
+                                        if (!roleplayScenarios[id].levels[lvlIndex]) {
+                                            let bg = row.Sfondo_URL ? row.Sfondo_URL.trim() : "#000";
+                                            roleplayScenarios[id].levels[lvlIndex] = { level: lvlIndex + 1, background: bg, introDialogues: [], actions: [] };
+                                        }
+                                        if (row.Tipo === "Dialogo") {
+                                            roleplayScenarios[id].levels[lvlIndex].introDialogues.push({ speaker: row.Chi_Parla_o_Agisce, text: row.Testo });
+                                        } else if (row.Tipo === "Azione") {
+                                            roleplayScenarios[id].levels[lvlIndex].actions.push({ actor: row.Chi_Parla_o_Agisce, text: row.Testo, category: row.Categoria });
+                                        }
+                                    });
+                                    buildScenarioMenu();
+                                    checkSavedGameAvailable();
+                                    
+                                    var restored = restoreGameState();
+                                    if (!restored) {
+                                        showScreen('selection-screen');
+                                    }
+                                } else {
+                                    loaderMsg.innerHTML = "🔴 Errore: Il file Copione è vuoto o bloccato.";
+                                }
+                            }
+                        });
+                    } else {
+                        loaderMsg.innerHTML = "🔴 Errore: Il file Scenari è vuoto o bloccato.";
+                    }
+                }
+            });
         }
     </script>
 </body>
