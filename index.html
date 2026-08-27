@@ -2,7 +2,6 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <!-- Meta tag ottimizzato per PWA mobile -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Scenari Intrecciati - Tiziano & Claudia</title>
     
@@ -20,7 +19,6 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        /* Evita selezioni di testo accidentali su app mobile */
         body { background-color: var(--bg-color); color: var(--text-color); overflow-x: hidden; user-select: none; -webkit-user-select: none; }
 
         .menu-screen {
@@ -28,7 +26,6 @@
             flex-direction: column; 
             justify-content: flex-start; 
             align-items: center;
-            /* Utilizzo 100dvh per evitare problemi con la barra di navigazione su Safari/Chrome Mobile */
             min-height: 100dvh; 
             background: linear-gradient(145deg, #170f1f, #0a060d); 
             text-align: center;
@@ -137,7 +134,6 @@
         }
         #chat-messages {
             flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
-            /* Permette lo scroll solo in quest'area */
             user-select: text; -webkit-user-select: text; 
         }
         .chat-msg {
@@ -356,7 +352,7 @@
     <div id="briefing-screen" class="menu-screen">
         <button class="back-btn" onclick="showScreen('customize-screen')">← Indietro</button>
         <h1 class="title" style="font-size: 1.8rem;">Il Vostro Copione</h1>
-        <p style="margin-bottom: 20px; color: #a996b8;">Leggete attentamente chi siete prima di iniziare.</p>
+        <p style="margin-bottom: 20px; color: #a996b8;">Leggete attentamente chiState chi siete prima di iniziare.</p>
         <div class="checklist-container">
             <div class="briefing-box" style="border-color: var(--primary-accent);">
                 <div class="briefing-title" style="color: var(--primary-accent);" id="briefing-title-claudia">CLAUDIA</div>
@@ -665,21 +661,21 @@
             tx.oncomplete = function() { loadGalleryContent(); };
         }
 
-        // --- MOTORE P2P ULTRA-STABILE (PING/PONG + RECONNECT LOOP) ---
-        var peer = null, conn = null, retryTimer = null, pingInterval = null;
+        // --- MOTORE P2P BULLETPROOF (Risoluzione Race Condition e Watchdog) ---
+        var peer = null, conn = null, retryTimer = null, pingInterval = null, watchdogInterval = null;
+        var lastSignalTime = Date.now();
 
         function autoConnectP2P(playerName) {
             if (!playerName) return;
             document.getElementById('p2p-status').innerText = "🟡 Connessione alla rete P2P...";
-            
             var myPeerId = FIXED_ROOM_CODE + "-" + playerName.toLowerCase();
             var targetPeerId = FIXED_ROOM_CODE + "-" + (playerName === "Tiziano" ? "claudia" : "tiziano");
-            
+
             if (peer && !peer.destroyed) {
                 attemptConnection(targetPeerId);
                 return;
             }
-            
+
             peer = new Peer(myPeerId);
             peer.on('open', function(id) {
                 document.getElementById('p2p-status').innerText = "🟡 In attesa del partner...";
@@ -687,37 +683,35 @@
             });
 
             peer.on('connection', function(c) {
+                // EVITA LA RACE CONDITION: se abbiamo già una connessione attiva, scarta questa in entrata
+                if (conn && conn.open) {
+                    setTimeout(function() { c.close(); }, 500);
+                    return;
+                }
                 conn = c;
                 setupConnEvents();
             });
 
             peer.on('error', function(err) {
                 console.log("P2P Status Info:", err);
-                if (err.type === 'unavailable-id') {
-                    attemptConnection(targetPeerId);
+                if (err.type === 'unavailable-id' || err.type === 'peer-unavailable') {
+                    if (!retryTimer) attemptConnection(targetPeerId);
                 }
             });
         }
 
         function attemptConnection(targetPeerId) {
             if (conn && conn.open) return;
-
-            // FIX: Se il client Peer si è scollegato dal server di segnalazione (es. sleep mode), riconnettiamolo.
-            if (peer && peer.disconnected) {
-                peer.reconnect();
-            }
+            if (peer && peer.disconnected) peer.reconnect();
 
             try {
                 conn = peer.connect(targetPeerId, { reliable: true });
                 setupConnEvents();
-            } catch(e){ console.error(e); }
+            } catch(e) {}
 
             if (!retryTimer) {
                 retryTimer = setInterval(function() {
-                    // FIX: Verifica persistente dello stato di connessione al signaling server
-                    if (peer && peer.disconnected) {
-                        peer.reconnect();
-                    }
+                    if (peer && peer.disconnected) peer.reconnect();
                     if (!conn || !conn.open) {
                         try {
                             conn = peer.connect(targetPeerId, { reliable: true });
@@ -727,42 +721,63 @@
                         clearInterval(retryTimer);
                         retryTimer = null;
                     }
-                }, 2500); // 2.5 secondi
+                }, 2500);
             }
         }
 
         function setupConnEvents() {
             if (!conn) return;
+
             conn.on('open', function() {
                 if (retryTimer) { clearInterval(retryTimer); retryTimer = null; }
+                lastSignalTime = Date.now();
                 document.getElementById('p2p-status').style.color = "#4caf50";
                 document.getElementById('p2p-status').innerText = "🟢 Partner Connesso! Entrambi pronti.";
                 document.getElementById('start-sync-btn').style.display = "inline-block";
-                playNotificationSound();
 
-                // PING/PONG CONTINUO PER EVITARE DISCONNESSIONI IN INATTIVITÀ
-                if (!pingInterval) {
-                    pingInterval = setInterval(function() {
-                        if (conn && conn.open) {
-                            conn.send({ type: "PING" });
-                        }
-                    }, 3000);
-                }
+                // HEARTBEAT PING
+                if (pingInterval) clearInterval(pingInterval);
+                pingInterval = setInterval(function() {
+                    if (conn && conn.open) conn.send({ type: "PING" });
+                }, 2500);
+
+                // WATCHDOG (Rileva Disconnessioni Silenti da Standby Mobile)
+                if (watchdogInterval) clearInterval(watchdogInterval);
+                watchdogInterval = setInterval(function() {
+                    if (Date.now() - lastSignalTime > 8000) {
+                        console.warn("Watchdog: Rilevato timeout silente, riavvio connessione.");
+                        handleDisconnect();
+                    }
+                }, 3000);
 
                 sendP2PCommand({ type: "SYNC_JOIN", player: currentPlayer });
-
                 if (mySelectedCategories.length > 0 && partnerSelectedCategories === null) {
                     sendP2PCommand({ type: "SYNC_CATEGORIES_SUBMIT", categories: mySelectedCategories });
                 }
             });
 
-            conn.on('data', function(data) { handleIncomingP2PData(data); });
-            conn.on('close', function() {
-                document.getElementById('p2p-status').style.color = "#e91e63";
-                document.getElementById('p2p-status').innerText = "🔴 Connessione persa. Riconnessione...";
-                if (pingInterval) { clearInterval(pingInterval); pingInterval = null; }
-                attemptConnection(FIXED_ROOM_CODE + "-" + (currentPlayer === "Tiziano" ? "claudia" : "tiziano"));
+            conn.on('data', function(data) {
+                lastSignalTime = Date.now();
+                handleIncomingP2PData(data);
             });
+
+            conn.on('close', function() { handleDisconnect(); });
+            conn.on('error', function(err) { handleDisconnect(); });
+        }
+
+        function handleDisconnect() {
+            if (pingInterval) { clearInterval(pingInterval); pingInterval = null; }
+            if (watchdogInterval) { clearInterval(watchdogInterval); watchdogInterval = null; }
+            if (conn) { conn.close(); conn = null; }
+
+            var statusEl = document.getElementById('p2p-status');
+            if (statusEl) {
+                statusEl.style.color = "#e91e63";
+                statusEl.innerText = "🔴 Connessione persa. Riconnessione automatica in corso...";
+            }
+
+            var targetPeerId = FIXED_ROOM_CODE + "-" + (currentPlayer === "Tiziano" ? "claudia" : "tiziano");
+            attemptConnection(targetPeerId);
         }
 
         function sendP2PCommand(dataObj) {
@@ -1383,7 +1398,6 @@
                     
                     var mediaHTML = "";
                     var ext = item.type === "image" ? "jpg" : (item.type === "video" ? "mp4" : "mp3");
-                    // FIX: Regex sicura per generare il nome file pulendo /, :, e spazi.
                     var fileName = "Scenari_" + item.category + "_" + item.timestamp.replace(/[/:,\s]/g, "-") + "." + ext;
 
                     if (item.type === "image") {
