@@ -276,15 +276,9 @@
         <button class="btn btn-tiziano" id="btn-select-tiziano" onclick="selectPlayer('Tiziano')">Sono Tiziano</button>
         <button class="btn btn-claudia" id="btn-select-claudia" onclick="selectPlayer('Claudia')">Sono Claudia</button>
 
-        <!-- PANNELLO CONNESSIONE DINAMICO PIN CON UI STACKATA -->
-        <div id="connection-panel" style="display:none; width: 100%; max-width: 320px; flex-direction: column; align-items: center; margin-top: 20px; padding: 15px; background: rgba(30,20,40,0.8); border-radius: 10px; border: 1px solid #673ab7;">
-            <button class="btn btn-resume" style="width:100%; margin-bottom: 10px;" onclick="createRoom()">➕ Crea Nuova Stanza (Host)</button>
-            <p style="margin: 5px 0; font-size: 0.9rem; color: #a996b8;">oppure unisciti alla sua:</p>
-            <div style="display:flex; flex-direction:column; gap:10px; width: 100%; margin-top: 10px;">
-                <input type="text" id="pin-input" placeholder="Inserisci PIN (4 cifre)" maxlength="4" style="width:100%; padding:12px; text-align:center; border-radius:5px; border:1px solid #673ab7; background:#000; color:white; font-size:1.1rem; font-weight:bold;">
-                <button class="btn btn-context" style="width:100%; margin:0;" onclick="joinRoom()">Unisciti alla Stanza</button>
-            </div>
-            <div id="p2p-status" style="margin-top: 15px; font-weight: bold; color: #e91e63; font-size: 0.9rem; text-align:center; min-height:1.2rem;"></div>
+        <!-- STATO P2P DINAMICO -->
+        <div id="p2p-status" style="display:none; width: 100%; max-width: 320px; flex-direction: column; align-items: center; margin-top: 20px; padding: 15px; background: rgba(30,20,40,0.8); border-radius: 10px; border: 1px solid #673ab7; text-align: center; color: #ffeb3b; font-weight: bold; font-size: 0.95rem; line-height: 1.4;">
+            🟡 Inizializzazione...
         </div>
 
         <button class="btn btn-resume" id="btn-resume-game" style="display:none; margin-top: 20px;" onclick="resumeSavedGame()">▶️ Riprendi Partita Salvata</button>
@@ -430,8 +424,6 @@
         function saveGameState() {
             var state = {
                 currentPlayer: currentPlayer,
-                sessionPIN: sessionPIN,
-                networkRole: networkRole,
                 currentScenarioId: currentScenarioId,
                 activeCategories: activeCategories,
                 currentLevelIndex: currentLevelIndex,
@@ -441,11 +433,11 @@
                 currentDrawnAction: currentDrawnAction,
                 isCardFlipped: isCardFlipped
             };
-            localStorage.setItem("ScenariGameState_v4", JSON.stringify(state));
+            localStorage.setItem("ScenariGameState_v5", JSON.stringify(state));
         }
 
         function checkSavedGameAvailable() {
-            var saved = localStorage.getItem("ScenariGameState_v4");
+            var saved = localStorage.getItem("ScenariGameState_v5");
             if (saved) {
                 try {
                     var state = JSON.parse(saved);
@@ -460,14 +452,12 @@
         function resumeSavedGame() { restoreGameState(); }
 
         function restoreGameState() {
-            var saved = localStorage.getItem("ScenariGameState_v4");
+            var saved = localStorage.getItem("ScenariGameState_v5");
             if (!saved) return false;
             try {
                 var state = JSON.parse(saved);
                 if (state.currentPlayer) {
                     currentPlayer = state.currentPlayer;
-                    sessionPIN = state.sessionPIN || "";
-                    networkRole = state.networkRole || "guest";
                     currentScenarioId = state.currentScenarioId;
                     activeCategories = state.activeCategories || [];
                     currentLevelIndex = state.currentLevelIndex || 0;
@@ -479,12 +469,9 @@
 
                     document.getElementById('btn-select-tiziano').disabled = (currentPlayer === 'Claudia');
                     document.getElementById('btn-select-claudia').disabled = (currentPlayer === 'Tiziano');
-                    document.getElementById('connection-panel').style.display = 'flex';
                     document.getElementById('btn-reset-game').style.display = 'inline-block';
                     
-                    if (sessionPIN) {
-                        initPeer(networkRole, sessionPIN);
-                    }
+                    autoConnectP2P(currentPlayer);
 
                     if (currentScenarioId && roleplayScenarios[currentScenarioId]) {
                         var levelData = roleplayScenarios[currentScenarioId].levels[currentLevelIndex];
@@ -522,7 +509,7 @@
 
         function resetGameState() {
             if (confirm("Vuoi azzerare la partita attuale per iniziarne una nuova?")) {
-                localStorage.removeItem("ScenariGameState_v4");
+                localStorage.removeItem("ScenariGameState_v5");
                 location.reload();
             }
         }
@@ -640,60 +627,48 @@
             tx.oncomplete = function() { loadGalleryContent(); };
         }
 
-        // --- MOTORE P2P: ACCOPPIAMENTO ASIMMETRICO BLINDATO CON TIMEOUT SINGOLO ---
-        var peer = null, conn = null, pingInterval = null, watchdogInterval = null;
-        var sessionPIN = "", networkRole = "";
+        // --- MOTORE P2P: AUTO-PAIRING INVISIBILE E NAT-TRAVERSAL (STUN SERVERS) ---
+        const SECRET_ROOM_ID = "tizclau-auth-9988";
+        var peer = null, conn = null, retryTimer = null, pingInterval = null, watchdogInterval = null;
         var lastSignalTime = Date.now();
-        var connectionTimeout = null;
 
         function selectPlayer(name) { 
             currentPlayer = name; 
             document.getElementById('btn-select-tiziano').disabled = (name === 'Claudia');
             document.getElementById('btn-select-claudia').disabled = (name === 'Tiziano');
             document.getElementById('btn-reset-game').style.display = 'inline-block';
-            document.getElementById('connection-panel').style.display = 'flex';
-        }
-
-        function createRoom() {
-            if (!currentPlayer) return;
-            sessionPIN = Math.floor(1000 + Math.random() * 9000).toString();
-            networkRole = "host";
-            initPeer("host", sessionPIN);
             saveGameState();
+            autoConnectP2P(name);
         }
 
-        function joinRoom() {
-            if (!currentPlayer) return;
-            var pin = document.getElementById('pin-input').value.trim();
-            if(pin.length !== 4) { alert("Inserisci un PIN valido di 4 cifre."); return; }
-            sessionPIN = pin;
-            networkRole = "guest";
-            initPeer("guest", sessionPIN);
-            saveGameState();
-        }
-
-        function initPeer(role, pin) {
-            // Aggiunto namespace esclusivo per evitare conflitti globali
-            var myPeerId = "scn26-" + pin + "-" + currentPlayer.toLowerCase();
-            var targetPeerId = "scn26-" + pin + "-" + (currentPlayer === "Tiziano" ? "claudia" : "tiziano");
+        function autoConnectP2P(name) {
+            var statusEl = document.getElementById('p2p-status');
+            statusEl.style.display = 'flex';
+            statusEl.innerHTML = "🟡 Ricerca automatica del partner in corso...<br><span style='font-size:0.8rem; color:#a996b8; margin-top:5px; font-weight:normal;'>L'app si connetterà non appena l'altro dispositivo sarà online.</span>";
+            statusEl.style.color = "#ffeb3b";
+            
+            var myId = SECRET_ROOM_ID + "-" + name.toLowerCase();
+            var targetId = SECRET_ROOM_ID + "-" + (name === "Tiziano" ? "claudia" : "tiziano");
 
             if (peer) { peer.destroy(); }
-            
-            document.getElementById('p2p-status').innerText = "🟡 Connessione al server...";
-            document.getElementById('p2p-status').style.color = "#ffeb3b";
-            
-            peer = new Peer(myPeerId);
 
-            peer.on('open', function(id) {
-                if (role === "guest") {
-                    document.getElementById('p2p-status').innerText = "🟡 Ricerca dell'Host (PIN: " + pin + ")...";
-                    attemptConnection(targetPeerId);
-                } else {
-                    document.getElementById('p2p-status').innerHTML = "🟡 Stanza creata! Il tuo PIN è: <br><span style='font-size:2rem; color:white; display:block; margin: 10px 0;'>" + pin + "</span><span style='color:#a996b8; font-weight:normal;'>Comunicalo al partner per farlo unire.</span>";
+            // Configurazione con Server STUN gratuiti di Google e Twilio per superare blocchi di rete 4G/5G
+            peer = new Peer(myId, {
+                config: {
+                    'iceServers': [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:global.stun.twilio.com:3478' }
+                    ]
                 }
             });
 
+            peer.on('open', function(id) {
+                attemptConnection(targetId);
+            });
+
             peer.on('connection', function(c) {
+                // Gestione sovrapposizioni: chiudi la nuova se ne abbiamo già una attiva e aperta
                 if (conn && conn.open) {
                     setTimeout(function() { c.close(); }, 500);
                     return;
@@ -704,17 +679,17 @@
 
             peer.on('error', function(err) {
                 console.log("P2P Error:", err);
-                if (err.type === 'unavailable-id') {
-                    document.getElementById('p2p-status').innerText = "🔴 PIN già in uso o bloccato. Ricrea la stanza.";
-                    document.getElementById('p2p-status').style.color = "#ff5252";
-                } else if (err.type === 'peer-unavailable' && role === "guest") {
-                    document.getElementById('p2p-status').innerText = "🟡 Host non trovato. Riprovo...";
-                    setTimeout(function() { attemptConnection(targetPeerId); }, 2500);
+                if (err.type === 'peer-unavailable') {
+                    // Partner non online. Riprovo in background.
+                    if (!retryTimer) attemptConnection(targetId);
+                } else if (err.type === 'unavailable-id') {
+                    // Timeout o ghost id. Forza il riavvio.
+                    setTimeout(function() { autoConnectP2P(name); }, 3000);
                 }
             });
         }
 
-        function attemptConnection(targetPeerId) {
+        function attemptConnection(targetId) {
             if (conn && conn.open) return;
             
             if (peer && peer.disconnected) {
@@ -722,35 +697,43 @@
                 return;
             }
 
-            // Pulisce l'oggetto connessione prima di forzare il nuovo tentativo
             if (conn) { 
                 try { conn.close(); } catch(e){} 
                 conn = null; 
             }
 
             try {
-                conn = peer.connect(targetPeerId, { reliable: true });
+                conn = peer.connect(targetId, { reliable: true });
                 setupConnEvents();
             } catch(e) {}
 
-            // Usa un timeout singolo e ricorsivo invece di un intervallo spietato.
-            // Attende 6 secondi permettendo a WebRTC di raccogliere gli indirizzi IP mobili prima di disconnettersi.
-            if (connectionTimeout) clearTimeout(connectionTimeout);
-            connectionTimeout = setTimeout(function() {
-                if (conn && !conn.open) {
-                    attemptConnection(targetPeerId);
-                }
-            }, 6000); 
+            if (!retryTimer) {
+                retryTimer = setInterval(function() {
+                    if (peer && peer.disconnected) {
+                        peer.reconnect();
+                        return;
+                    }
+                    if (conn && conn.open) {
+                        clearInterval(retryTimer);
+                        retryTimer = null;
+                    } else {
+                        if (conn) { try { conn.close(); } catch(e){} }
+                        conn = peer.connect(targetId, { reliable: true });
+                        setupConnEvents();
+                    }
+                }, 5000); // Intervallo esteso a 5 sec per dare respiro al setup WebRTC su rete mobile
+            }
         }
 
         function setupConnEvents() {
             if (!conn) return;
 
             var onOpen = function() {
-                if (connectionTimeout) { clearTimeout(connectionTimeout); connectionTimeout = null; }
+                if (retryTimer) { clearInterval(retryTimer); retryTimer = null; }
                 lastSignalTime = Date.now();
-                document.getElementById('p2p-status').style.color = "#4caf50";
-                document.getElementById('p2p-status').innerText = "🟢 Partner Connesso! Entrambi pronti.";
+                var statusEl = document.getElementById('p2p-status');
+                statusEl.style.color = "#4caf50";
+                statusEl.innerHTML = "🟢 Partner Connesso! Entrambi pronti.";
                 document.getElementById('start-sync-btn').style.display = "inline-block";
                 playNotificationSound();
 
@@ -773,7 +756,6 @@
                 }
             };
 
-            // Esegue subito se la connessione è già aperta, altrimenti attende l'evento
             if (conn.open) {
                 onOpen();
             } else {
@@ -792,19 +774,16 @@
         function handleDisconnect() {
             if (pingInterval) { clearInterval(pingInterval); pingInterval = null; }
             if (watchdogInterval) { clearInterval(watchdogInterval); watchdogInterval = null; }
-            if (connectionTimeout) { clearTimeout(connectionTimeout); connectionTimeout = null; }
             if (conn) { conn.close(); conn = null; }
 
             var statusEl = document.getElementById('p2p-status');
             if (statusEl) {
                 statusEl.style.color = "#e91e63";
-                statusEl.innerText = "🔴 Connessione persa. Riconnessione automatica in corso...";
+                statusEl.innerHTML = "🔴 Connessione persa. Riconnessione automatica in corso...";
             }
 
-            var targetPeerId = "scn26-" + sessionPIN + "-" + (currentPlayer === "Tiziano" ? "claudia" : "tiziano");
-            if (networkRole === "guest") {
-                setTimeout(function() { attemptConnection(targetPeerId); }, 2000);
-            }
+            var targetId = SECRET_ROOM_ID + "-" + (currentPlayer === "Tiziano" ? "claudia" : "tiziano");
+            setTimeout(function() { attemptConnection(targetId); }, 2000);
         }
 
         function sendP2PCommand(dataObj) {
