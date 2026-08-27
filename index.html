@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Scenari Intrecciati - Tiziano & Claudia</title>
     
-    <!-- Librerie Esterne -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
@@ -174,12 +173,10 @@
             padding: 8px; display: flex; flex-direction: column; align-items: center; gap: 5px;
         }
         .gallery-card img, .gallery-card video { width: 100%; height: 110px; object-fit: cover; border-radius: 5px; cursor: pointer; }
-
         .gallery-actions { display: flex; gap: 10px; width: 100%; justify-content: center; margin-top: 5px; }
         .gallery-btn-del { color: #ff5252; background: rgba(255, 82, 82, 0.15); border: 1px solid #ff5252; padding: 3px 8px; border-radius: 5px; font-size: 0.75rem; cursor: pointer; }
 
         #vn-screen { display: none; width: 100vw; height: 100dvh; position: relative; background-size: cover; background-position: center; }
-        
         #level-indicator { 
             position: absolute; top: 20px; right: 20px; 
             background: rgba(0,0,0,0.85); border: 2px solid #4caf50; 
@@ -187,7 +184,6 @@
             font-size: 0.95rem; z-index: 10; letter-spacing: 0.5px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
-
         #choices-container { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; gap: 12px; width: 90%; max-width: 400px; z-index: 10; }
         .choice-btn { background-color: rgba(30, 20, 40, 0.95); border: 2px solid #673ab7; color: white; padding: 15px; border-radius: 10px; font-size: 1rem; cursor: pointer; }
         
@@ -204,28 +200,12 @@
         .label-claudia { bottom: 25%; right: 65%; transform: rotate(-90deg); }
         #winner-text { font-size: 1.8rem; font-weight: bold; margin-bottom: 1rem; min-height: 2.5rem; opacity: 0; transition: opacity 0.5s; }
 
-        .card-container { 
-            width: 92vw; max-width: 480px; min-height: 440px; 
-            margin: 1rem auto; position: relative;
-        }
-        .card { 
-            width: 100%; height: 100%; position: relative; 
-            border-radius: 18px; box-shadow: 0 12px 35px rgba(0,0,0,0.9);
-        }
-        .card-face { 
-            width: 100%; min-height: 440px; border-radius: 18px; 
-            display: flex; flex-direction: column; align-items: center; justify-content: flex-start; 
-            padding: 25px 20px; text-align: center;
-        }
-        .card-front { 
-            background: linear-gradient(rgba(10,6,13,0.5), rgba(10,6,13,0.85)), url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80') center/cover;
-            border: 2px solid #673ab7; cursor: pointer; justify-content: center; display: flex; transition: background 0.3s;
-        }
+        .card-container { width: 92vw; max-width: 480px; min-height: 440px; margin: 1rem auto; position: relative; }
+        .card { width: 100%; height: 100%; position: relative; border-radius: 18px; box-shadow: 0 12px 35px rgba(0,0,0,0.9); }
+        .card-face { width: 100%; min-height: 440px; border-radius: 18px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 25px 20px; text-align: center; }
+        .card-front { background: linear-gradient(rgba(10,6,13,0.5), rgba(10,6,13,0.85)), url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80') center/cover; border: 2px solid #673ab7; cursor: pointer; justify-content: center; display: flex; transition: background 0.3s; }
         .card-front::after { content: "SVELA L'AZIONE 🎴"; font-size: 1.5rem; font-weight: bold; color: #ffffff; text-shadow: 0 2px 10px rgba(0,0,0,0.9); letter-spacing: 1px; }
-        .card-back { 
-            background: linear-gradient(135deg, #180e28, #0a060d); border: 2px solid var(--primary-accent);
-            display: none;
-        }
+        .card-back { background: linear-gradient(135deg, #180e28, #0a060d); border: 2px solid var(--primary-accent); display: none; }
         .card.is-flipped .card-front { display: none; }
         .card.is-flipped .card-back { display: flex; }
 
@@ -248,25 +228,19 @@
         <div id="lightbox-container" onclick="event.stopPropagation();"></div>
     </div>
 
-    <!-- PULSANTE MENU PAUSA FISSO IN ALTO A SINISTRA -->
     <button id="game-menu-btn" onclick="openPauseModal()">⚙️ Menu</button>
 
-    <!-- MODAL MENU PAUSA -->
     <div id="pause-modal">
         <div class="pause-box">
             <h2 style="color: var(--primary-accent); margin-bottom: 5px;">Partita in Pausa</h2>
-            <p style="font-size: 0.85rem; color: #a996b8; margin-bottom: 15px;">Scegli un'azione per continuare o riorganizzare la sessione.</p>
-            
             <button class="btn btn-resume" onclick="closePauseModal()">▶️ Riprendi Gioco</button>
             <button class="btn btn-context" onclick="manualSaveGame()">💾 Salva Partita</button>
             <button class="btn btn-reset" style="margin-top: 5px;" onclick="abandonGame()">🚪 Abbandona e Esci</button>
         </div>
     </div>
 
-    <!-- PULSANTE CAMBIO LIVELLO FISSO IN BASSO A SINISTRA -->
     <button id="fixed-skip-level-btn" onclick="handleForceNextLevelClick()">⚡ Sali di Livello</button>
 
-    <!-- BOTTONE FLOTTANTE LIVE CHAT P2P IN BASSO A DESTRA -->
     <button id="chat-toggle-btn" onclick="toggleChat()">
         💬 Chat Live <span id="chat-badge">0</span>
     </button>
@@ -277,14 +251,11 @@
             <span>💬 Chat Intima P2P</span>
             <button onclick="toggleChat()" style="background:none; border:none; color:white; font-weight:bold; cursor:pointer;">✕</button>
         </div>
-        <div id="chat-messages">
-            <div style="font-size:0.75rem; color:#a996b8; text-align:center;">Messaggi e media inviati risiedono solo sul tuo dispositivo.</div>
-        </div>
+        <div id="chat-messages"></div>
         <div id="chat-controls">
             <input type="file" id="chat-photo-input" accept="image/*" capture="environment" style="display:none;" onchange="sendChatFile(this, 'image')">
             <input type="file" id="chat-video-input" accept="video/*" capture="environment" style="display:none;" onchange="sendChatFile(this, 'video')">
             <input type="file" id="chat-file-input" accept="image/*,video/*,audio/*" style="display:none;" onchange="sendChatFile(this, 'any')">
-
             <div class="chat-btn-row">
                 <button class="btn-chat-media" onclick="document.getElementById('chat-photo-input').click()">📷 Foto</button>
                 <button class="btn-chat-media" onclick="document.getElementById('chat-video-input').click()">🎥 Video</button>
@@ -305,11 +276,19 @@
         <button class="btn btn-tiziano" id="btn-select-tiziano" onclick="selectPlayer('Tiziano')">Sono Tiziano</button>
         <button class="btn btn-claudia" id="btn-select-claudia" onclick="selectPlayer('Claudia')">Sono Claudia</button>
 
-        <div id="p2p-status" style="font-size: 0.9rem; color: #e91e63; margin: 20px 0; font-weight: bold;">🔴 Seleziona chi sei per connetterti al partner</div>
+        <!-- PANNELLO CONNESSIONE DINAMICO PIN -->
+        <div id="connection-panel" style="display:none; width: 100%; max-width: 320px; flex-direction: column; align-items: center; margin-top: 20px; padding: 15px; background: rgba(30,20,40,0.8); border-radius: 10px; border: 1px solid #673ab7;">
+            <button class="btn btn-resume" style="width:100%; margin-bottom: 10px;" onclick="createRoom()">➕ Crea Nuova Stanza (Host)</button>
+            <p style="margin: 5px 0; font-size: 0.9rem; color: #a996b8;">oppure unisciti alla sua:</p>
+            <div style="display:flex; gap:10px; width: 100%; margin-top: 5px;">
+                <input type="text" id="pin-input" placeholder="PIN" maxlength="4" style="flex:1; padding:10px; text-align:center; border-radius:5px; border:1px solid #673ab7; background:#000; color:white; font-size:1.2rem; font-weight:bold;">
+                <button class="btn btn-context" style="width:auto; margin:0; padding: 10px 20px;" onclick="joinRoom()">Unisciti</button>
+            </div>
+            <div id="p2p-status" style="margin-top: 15px; font-weight: bold; color: #e91e63; font-size: 0.9rem;"></div>
+        </div>
 
-        <button class="btn btn-resume" id="btn-resume-game" style="display:none;" onclick="resumeSavedGame()">▶️ Riprendi Partita Salvata</button>
-        <button class="btn btn-context" id="start-sync-btn" style="display:none; background: var(--primary-accent);" onclick="showScreen('scenario-screen')">Entra nel Gioco Sincronizzato</button>
-
+        <button class="btn btn-resume" id="btn-resume-game" style="display:none; margin-top: 20px;" onclick="resumeSavedGame()">▶️ Riprendi Partita Salvata</button>
+        <button class="btn btn-context" id="start-sync-btn" style="display:none; margin-top: 15px; background: var(--primary-accent);" onclick="showScreen('scenario-screen')">Entra nel Gioco Sincronizzato</button>
         <button class="btn btn-gallery" style="margin-top: 15px;" onclick="openGallery()">📂 Galleria Privata In-App</button>
         <button class="btn btn-reset" id="btn-reset-game" style="display:none;" onclick="resetGameState()">🔄 Abbandona e Nuova Partita</button>
     </div>
@@ -352,7 +331,7 @@
     <div id="briefing-screen" class="menu-screen">
         <button class="back-btn" onclick="showScreen('customize-screen')">← Indietro</button>
         <h1 class="title" style="font-size: 1.8rem;">Il Vostro Copione</h1>
-        <p style="margin-bottom: 20px; color: #a996b8;">Leggete attentamente chiState chi siete prima di iniziare.</p>
+        <p style="margin-bottom: 20px; color: #a996b8;">Leggete attentamente chi siete prima di iniziare.</p>
         <div class="checklist-container">
             <div class="briefing-box" style="border-color: var(--primary-accent);">
                 <div class="briefing-title" style="color: var(--primary-accent);" id="briefing-title-claudia">CLAUDIA</div>
@@ -393,7 +372,6 @@
 
     <div id="cards-screen">
         <h2 id="card-turn-title" style="margin-bottom: 1rem; font-size: 1.5rem; color: #a996b8;">Azione per...</h2>
-        
         <div class="card-container">
             <div class="card" id="playingCard">
                 <div class="card-face card-front" id="cardFrontFace" onclick="handleRevealCardClick()"></div>
@@ -410,8 +388,6 @@
     <script>
         let LINK_SCENARI_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1088679208&single=true&output=csv";
         let LINK_COPIONE_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1067890923&single=true&output=csv";
-
-        const FIXED_ROOM_CODE = "tiziano-claudia-intimo-2026";
 
         const CATEGORY_IMAGES = {
             "DIALOGO": "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=600&q=80",
@@ -454,6 +430,8 @@
         function saveGameState() {
             var state = {
                 currentPlayer: currentPlayer,
+                sessionPIN: sessionPIN,
+                networkRole: networkRole,
                 currentScenarioId: currentScenarioId,
                 activeCategories: activeCategories,
                 currentLevelIndex: currentLevelIndex,
@@ -463,11 +441,11 @@
                 currentDrawnAction: currentDrawnAction,
                 isCardFlipped: isCardFlipped
             };
-            localStorage.setItem("ScenariGameState_v3", JSON.stringify(state));
+            localStorage.setItem("ScenariGameState_v4", JSON.stringify(state));
         }
 
         function checkSavedGameAvailable() {
-            var saved = localStorage.getItem("ScenariGameState_v3");
+            var saved = localStorage.getItem("ScenariGameState_v4");
             if (saved) {
                 try {
                     var state = JSON.parse(saved);
@@ -482,12 +460,14 @@
         function resumeSavedGame() { restoreGameState(); }
 
         function restoreGameState() {
-            var saved = localStorage.getItem("ScenariGameState_v3");
+            var saved = localStorage.getItem("ScenariGameState_v4");
             if (!saved) return false;
             try {
                 var state = JSON.parse(saved);
                 if (state.currentPlayer) {
                     currentPlayer = state.currentPlayer;
+                    sessionPIN = state.sessionPIN || "";
+                    networkRole = state.networkRole || "guest";
                     currentScenarioId = state.currentScenarioId;
                     activeCategories = state.activeCategories || [];
                     currentLevelIndex = state.currentLevelIndex || 0;
@@ -499,9 +479,12 @@
 
                     document.getElementById('btn-select-tiziano').disabled = (currentPlayer === 'Claudia');
                     document.getElementById('btn-select-claudia').disabled = (currentPlayer === 'Tiziano');
+                    document.getElementById('connection-panel').style.display = 'flex';
                     document.getElementById('btn-reset-game').style.display = 'inline-block';
                     
-                    autoConnectP2P(currentPlayer);
+                    if (sessionPIN) {
+                        initPeer(networkRole, sessionPIN);
+                    }
 
                     if (currentScenarioId && roleplayScenarios[currentScenarioId]) {
                         var levelData = roleplayScenarios[currentScenarioId].levels[currentLevelIndex];
@@ -515,22 +498,18 @@
                         }
 
                         showScreen(currentScreenId);
+                        
+                        var isGaming = (currentScreenId === 'vn-screen' || currentScreenId === 'minigame-screen' || currentScreenId === 'cards-screen');
+                        if (isGaming) {
+                            document.getElementById('game-menu-btn').style.display = 'block';
+                            document.getElementById('fixed-skip-level-btn').style.display = 'block';
+                        }
 
-                        if (currentScreenId === 'vn-screen') {
-                            document.getElementById('game-menu-btn').style.display = 'block';
-                            document.getElementById('fixed-skip-level-btn').style.display = 'block';
-                            loadLevelNarrative();
-                        } else if (currentScreenId === 'minigame-screen') {
-                            document.getElementById('game-menu-btn').style.display = 'block';
-                            document.getElementById('fixed-skip-level-btn').style.display = 'block';
-                            openMinigame(true);
-                        } else if (currentScreenId === 'cards-screen') {
-                            document.getElementById('game-menu-btn').style.display = 'block';
-                            document.getElementById('fixed-skip-level-btn').style.display = 'block';
+                        if (currentScreenId === 'vn-screen') { loadLevelNarrative(); } 
+                        else if (currentScreenId === 'minigame-screen') { openMinigame(true); } 
+                        else if (currentScreenId === 'cards-screen') {
                             goToCards(true);
-                            if (isCardFlipped) {
-                                revealCard(true);
-                            }
+                            if (isCardFlipped) revealCard(true);
                         }
                     } else {
                         showScreen('selection-screen');
@@ -543,7 +522,7 @@
 
         function resetGameState() {
             if (confirm("Vuoi azzerare la partita attuale per iniziarne una nuova?")) {
-                localStorage.removeItem("ScenariGameState_v3");
+                localStorage.removeItem("ScenariGameState_v4");
                 location.reload();
             }
         }
@@ -661,29 +640,54 @@
             tx.oncomplete = function() { loadGalleryContent(); };
         }
 
-        // --- MOTORE P2P BULLETPROOF (Risoluzione Race Condition e Watchdog) ---
+        // --- MOTORE P2P: ACCOPPIAMENTO ASIMMETRICO TRAMITE PIN DINAMICO ---
         var peer = null, conn = null, retryTimer = null, pingInterval = null, watchdogInterval = null;
+        var sessionPIN = "", networkRole = "";
         var lastSignalTime = Date.now();
 
-        function autoConnectP2P(playerName) {
-            if (!playerName) return;
-            document.getElementById('p2p-status').innerText = "🟡 Connessione alla rete P2P...";
-            var myPeerId = FIXED_ROOM_CODE + "-" + playerName.toLowerCase();
-            var targetPeerId = FIXED_ROOM_CODE + "-" + (playerName === "Tiziano" ? "claudia" : "tiziano");
+        function selectPlayer(name) { 
+            currentPlayer = name; 
+            document.getElementById('btn-select-tiziano').disabled = (name === 'Claudia');
+            document.getElementById('btn-select-claudia').disabled = (name === 'Tiziano');
+            document.getElementById('btn-reset-game').style.display = 'inline-block';
+            document.getElementById('connection-panel').style.display = 'flex';
+        }
 
-            if (peer && !peer.destroyed) {
-                attemptConnection(targetPeerId);
-                return;
-            }
+        function createRoom() {
+            if (!currentPlayer) return;
+            sessionPIN = Math.floor(1000 + Math.random() * 9000).toString();
+            networkRole = "host";
+            document.getElementById('p2p-status').innerHTML = "🟡 Stanza creata! Il tuo PIN è: <span style='font-size:1.6rem; color:white;'>" + sessionPIN + "</span><br><span style='color:#a996b8; font-weight:normal;'>Comunicalo al partner per farlo unire.</span>";
+            initPeer("host", sessionPIN);
+            saveGameState();
+        }
 
+        function joinRoom() {
+            if (!currentPlayer) return;
+            var pin = document.getElementById('pin-input').value.trim();
+            if(pin.length !== 4) { alert("Inserisci un PIN valido di 4 cifre."); return; }
+            sessionPIN = pin;
+            networkRole = "guest";
+            document.getElementById('p2p-status').innerText = "🟡 Connessione al PIN " + sessionPIN + "...";
+            initPeer("guest", sessionPIN);
+            saveGameState();
+        }
+
+        function initPeer(role, pin) {
+            var myPeerId = "scenari-" + pin + "-" + currentPlayer.toLowerCase();
+            var targetPeerId = "scenari-" + pin + "-" + (currentPlayer === "Tiziano" ? "claudia" : "tiziano");
+
+            if (peer) { peer.destroy(); }
             peer = new Peer(myPeerId);
+
             peer.on('open', function(id) {
-                document.getElementById('p2p-status').innerText = "🟡 In attesa del partner...";
-                attemptConnection(targetPeerId);
+                if (role === "guest") {
+                    attemptConnection(targetPeerId);
+                }
             });
 
             peer.on('connection', function(c) {
-                // EVITA LA RACE CONDITION: se abbiamo già una connessione attiva, scarta questa in entrata
+                // Host riceve la connessione dal Guest
                 if (conn && conn.open) {
                     setTimeout(function() { c.close(); }, 500);
                     return;
@@ -693,8 +697,9 @@
             });
 
             peer.on('error', function(err) {
-                console.log("P2P Status Info:", err);
-                if (err.type === 'unavailable-id' || err.type === 'peer-unavailable') {
+                console.log("P2P Error:", err);
+                if ((err.type === 'peer-unavailable' || err.type === 'unavailable-id') && role === "guest") {
+                    document.getElementById('p2p-status').innerText = "🔴 Host non trovato. Ricerca in corso...";
                     if (!retryTimer) attemptConnection(targetPeerId);
                 }
             });
@@ -734,18 +739,17 @@
                 document.getElementById('p2p-status').style.color = "#4caf50";
                 document.getElementById('p2p-status').innerText = "🟢 Partner Connesso! Entrambi pronti.";
                 document.getElementById('start-sync-btn').style.display = "inline-block";
+                playNotificationSound();
 
-                // HEARTBEAT PING
                 if (pingInterval) clearInterval(pingInterval);
                 pingInterval = setInterval(function() {
                     if (conn && conn.open) conn.send({ type: "PING" });
                 }, 2500);
 
-                // WATCHDOG (Rileva Disconnessioni Silenti da Standby Mobile)
                 if (watchdogInterval) clearInterval(watchdogInterval);
                 watchdogInterval = setInterval(function() {
                     if (Date.now() - lastSignalTime > 8000) {
-                        console.warn("Watchdog: Rilevato timeout silente, riavvio connessione.");
+                        console.warn("Watchdog: Rilevato timeout, riavvio connessione.");
                         handleDisconnect();
                     }
                 }, 3000);
@@ -776,8 +780,8 @@
                 statusEl.innerText = "🔴 Connessione persa. Riconnessione automatica in corso...";
             }
 
-            var targetPeerId = FIXED_ROOM_CODE + "-" + (currentPlayer === "Tiziano" ? "claudia" : "tiziano");
-            attemptConnection(targetPeerId);
+            var targetPeerId = "scenari-" + sessionPIN + "-" + (currentPlayer === "Tiziano" ? "claudia" : "tiziano");
+            if (networkRole === "guest") attemptConnection(targetPeerId);
         }
 
         function sendP2PCommand(dataObj) {
@@ -1138,16 +1142,6 @@
             }
             showScreen('vn-screen');
             loadLevelNarrative();
-        }
-
-        // UTILITIES
-        function selectPlayer(name) { 
-            currentPlayer = name; 
-            document.getElementById('btn-select-tiziano').disabled = (name === 'Claudia');
-            document.getElementById('btn-select-claudia').disabled = (name === 'Tiziano');
-            document.getElementById('btn-reset-game').style.display = 'inline-block';
-            saveGameState();
-            autoConnectP2P(name);
         }
 
         function buildCategoryList() {
