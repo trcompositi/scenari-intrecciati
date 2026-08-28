@@ -288,20 +288,33 @@
     <!-- SELEZIONE GIOCATORE E LOBBY ATTESA -->
     <div id="selection-screen" class="menu-screen">
         <h1 class="title">Scenari Intrecciati</h1>
-        <p style="margin-bottom: 15px;">Chi ha in mano il dispositivo?</p>
-        <button class="btn btn-tiziano" id="btn-select-tiziano" onclick="selectPlayer('Tiziano')">Sono Tiziano</button>
-        <button class="btn btn-claudia" id="btn-select-claudia" onclick="selectPlayer('Claudia')">Sono Claudia</button>
-
-        <div id="p2p-status" style="display:none; width: 100%; max-width: 320px; flex-direction: column; align-items: center; margin-top: 20px; padding: 15px; background: rgba(30,20,40,0.8); border-radius: 10px; border: 1px solid #673ab7; text-align: center; color: #ffeb3b; font-weight: bold; font-size: 0.95rem; line-height: 1.4;">
-            🟡 Inizializzazione...
+        
+        <!-- Modalità Singolo Dispositivo -->
+        <div id="single-device-setup" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+            <p style="margin-bottom: 15px; color: #a996b8;">Siete insieme? Iniziate subito a giocare.</p>
+            <button class="btn btn-resume" style="padding: 20px; font-size: 1.2rem; background: linear-gradient(45deg, #4caf50, #2e7d32);" onclick="startSingleDeviceMode()">🟢 Giochiamo</button>
+            <button class="btn btn-context" style="margin-top: 15px;" onclick="startSyncModeSetup()">Entra nel Gioco Sincronizzato (2 Telefoni)</button>
         </div>
 
+        <!-- Modalità Sincronizzata (Nascosta all'avvio) -->
+        <div id="sync-device-setup" style="display: none; width: 100%; flex-direction: column; align-items: center;">
+            <p style="margin-bottom: 15px;">Chi ha in mano il dispositivo?</p>
+            <button class="btn btn-tiziano" id="btn-select-tiziano" onclick="selectPlayer('Tiziano')">Sono Tiziano</button>
+            <button class="btn btn-claudia" id="btn-select-claudia" onclick="selectPlayer('Claudia')">Sono Claudia</button>
+            
+            <div id="p2p-status" style="display:none; width: 100%; max-width: 320px; flex-direction: column; align-items: center; margin-top: 20px; padding: 15px; background: rgba(30,20,40,0.8); border-radius: 10px; border: 1px solid #673ab7; text-align: center; color: #ffeb3b; font-weight: bold; font-size: 0.95rem; line-height: 1.4;">
+                🟡 Inizializzazione...
+            </div>
+            
+            <button class="btn btn-context" id="start-sync-btn" style="display:none; margin-top: 15px; background: var(--primary-accent);" onclick="showScreen('scenario-screen')">Avvia Partita Sincronizzata</button>
+        </div>
+
+        <!-- Bottoni Comuni -->
         <button class="btn btn-resume" id="btn-resume-game" style="display:none; margin-top: 20px;" onclick="resumeSavedGame()">▶️ Riprendi Partita Salvata</button>
-        <button class="btn btn-context" id="start-sync-btn" style="display:none; margin-top: 15px; background: var(--primary-accent);" onclick="showScreen('scenario-screen')">Entra nel Gioco Sincronizzato</button>
         <button class="btn btn-gallery" style="margin-top: 15px;" onclick="openGallery()">📂 Galleria Privata In-App</button>
         <button class="btn btn-reset" id="btn-reset-game" style="display:none;" onclick="resetGameState()">🔄 Abbandona e Nuova Partita</button>
         
-        <div class="version-indicator">Versione App: v10.1 (Architettura Modulare)</div>
+        <div class="version-indicator">Versione App: v10.2 (Modalità Singolo Telefono)</div>
     </div>
 
     <div id="gallery-screen" class="menu-screen">
@@ -427,6 +440,7 @@
             var currentLevelIndex = 0, currentDialogueIndex = 0, selectedVictim = "", currentRotation = 0;
             var currentScreenId = "selection-screen";
             var isCardFlipped = false;
+            var isSingleDevice = false;
             
             var currentLevelActions = { "Claudia": [], "Tiziano": [] };
             var currentDrawnAction = null;
@@ -545,6 +559,30 @@
                 saveGameState();
             };
 
+            window.startSingleDeviceMode = function() {
+                isSingleDevice = true;
+                var availableScenarios = Object.keys(roleplayScenarios);
+                
+                if (availableScenarios.length > 0) {
+                    // Seleziona in automatico il primo (e unico) scenario disponibile
+                    currentScenarioId = availableScenarios[0]; 
+                    mySelectedCategories = []; 
+                    partnerSelectedCategories = null;
+                    
+                    showScreen('customize-screen');
+                    buildCategoryList();
+                    saveGameState();
+                } else {
+                    alert("⚠️ Nessuno scenario caricato. Verifica il collegamento con Google Sheets.");
+                }
+            };
+
+            window.startSyncModeSetup = function() {
+                isSingleDevice = false;
+                document.getElementById('single-device-setup').style.display = 'none';
+                document.getElementById('sync-device-setup').style.display = 'flex';
+            };
+
             window.selectPlayer = function(name) { 
                 currentPlayer = name; 
                 document.getElementById('btn-select-tiziano').disabled = (name === 'Claudia');
@@ -594,6 +632,7 @@
 
 
             // ==========================================
+            // ==========================================
             // SEZIONE 4: GESTIONE DATI E STATO
             // ==========================================
             function saveGameState() {
@@ -606,7 +645,8 @@
                     currentScreenId: currentScreenId,
                     selectedVictim: selectedVictim,
                     currentDrawnAction: currentDrawnAction,
-                    isCardFlipped: isCardFlipped
+                    isCardFlipped: isCardFlipped,
+                    isSingleDevice: isSingleDevice
                 };
                 localStorage.setItem("ScenariGameState_v10", JSON.stringify(state));
             }
@@ -616,7 +656,7 @@
                 if (saved) {
                     try {
                         var state = JSON.parse(saved);
-                        if (state.currentPlayer && state.currentScenarioId) {
+                        if ((state.currentPlayer || state.isSingleDevice) && state.currentScenarioId) {
                             document.getElementById('btn-resume-game').style.display = 'inline-block';
                             document.getElementById('btn-reset-game').style.display = 'inline-block';
                         }
@@ -631,8 +671,8 @@
                 if (!saved) return false;
                 try {
                     var state = JSON.parse(saved);
-                    if (state.currentPlayer) {
-                        currentPlayer = state.currentPlayer;
+                    if (state.currentPlayer || state.isSingleDevice) {
+                        currentPlayer = state.currentPlayer || "";
                         currentScenarioId = state.currentScenarioId;
                         activeCategories = state.activeCategories || [];
                         currentLevelIndex = state.currentLevelIndex || 0;
@@ -641,12 +681,15 @@
                         selectedVictim = state.selectedVictim || "";
                         currentDrawnAction = state.currentDrawnAction || null;
                         isCardFlipped = state.isCardFlipped || false;
+                        isSingleDevice = state.isSingleDevice || false;
 
-                        document.getElementById('btn-select-tiziano').disabled = (currentPlayer === 'Claudia');
-                        document.getElementById('btn-select-claudia').disabled = (currentPlayer === 'Tiziano');
-                        document.getElementById('btn-reset-game').style.display = 'inline-block';
+                        if (!isSingleDevice) {
+                            document.getElementById('btn-select-tiziano').disabled = (currentPlayer === 'Claudia');
+                            document.getElementById('btn-select-claudia').disabled = (currentPlayer === 'Tiziano');
+                            autoConnectP2P(currentPlayer);
+                        }
                         
-                        autoConnectP2P(currentPlayer);
+                        document.getElementById('btn-reset-game').style.display = 'inline-block';
 
                         if (currentScenarioId && roleplayScenarios[currentScenarioId]) {
                             var levelData = roleplayScenarios[currentScenarioId].levels[currentLevelIndex];
@@ -683,12 +726,14 @@
             }
 
             function manualSaveGame() { saveGameState(); alert("💾 Partita salvata con successo!"); closePauseModal(); }
+            
             function abandonGame() {
                 if (confirm("Vuoi davvero abbandonare la partita attuale e tornare al menu iniziale?")) {
                     closePauseModal();
                     showScreen('selection-screen');
                 }
             }
+            
             function resetGameState() {
                 if (confirm("Vuoi azzerare la partita attuale per iniziarne una nuova?")) {
                     localStorage.removeItem("ScenariGameState_v10");
@@ -1020,22 +1065,28 @@
 
                 if (mySelectedCategories.length === 0) { alert("⚠️ Seleziona almeno una categoria!"); return; }
 
-                showScreen('waiting-screen');
+                if (isSingleDevice) {
+                    // Bypass sincronizzazione P2P
+                    activeCategories = mySelectedCategories;
+                    goToBriefing(false);
+                } else {
+                    // Modalità due telefoni (P2P) originale
+                    showScreen('waiting-screen');
 
-                if (catSyncInterval) clearInterval(catSyncInterval);
-                catSyncInterval = setInterval(function() {
-                    if (partnerSelectedCategories !== null) {
-                        clearInterval(catSyncInterval);
-                        catSyncInterval = null;
-                    } else {
-                        sendP2PCommand({ type: "SYNC_CATEGORIES_SUBMIT", categories: mySelectedCategories });
-                    }
-                }, 1500);
+                    if (catSyncInterval) clearInterval(catSyncInterval);
+                    catSyncInterval = setInterval(function() {
+                        if (partnerSelectedCategories !== null) {
+                            clearInterval(catSyncInterval);
+                            catSyncInterval = null;
+                        } else {
+                            sendP2PCommand({ type: "SYNC_CATEGORIES_SUBMIT", categories: mySelectedCategories });
+                        }
+                    }, 1500);
 
-                sendP2PCommand({ type: "SYNC_CATEGORIES_SUBMIT", categories: mySelectedCategories });
-                checkBothCategoriesSubmitted();
+                    sendP2PCommand({ type: "SYNC_CATEGORIES_SUBMIT", categories: mySelectedCategories });
+                    checkBothCategoriesSubmitted();
+                }
             };
-
             function checkBothCategoriesSubmitted() {
                 if (mySelectedCategories.length > 0 && partnerSelectedCategories !== null) {
                     if (catSyncInterval) { clearInterval(catSyncInterval); catSyncInterval = null; }
