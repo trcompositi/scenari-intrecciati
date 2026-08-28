@@ -141,11 +141,9 @@
         }
         #chat-messages {
             flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
-            user-select: text; -webkit-user-select: text; 
         }
         .chat-msg {
             max-width: 85%; padding: 8px 12px; border-radius: 10px; font-size: 0.85rem; line-height: 1.3;
-            word-wrap: break-word;
         }
         .chat-msg.me { align-self: flex-end; background: #673ab7; color: white; }
         .chat-msg.partner { align-self: flex-start; background: #2a1b38; border: 1px solid #673ab7; color: white; }
@@ -181,10 +179,12 @@
             padding: 8px; display: flex; flex-direction: column; align-items: center; gap: 5px;
         }
         .gallery-card img, .gallery-card video { width: 100%; height: 110px; object-fit: cover; border-radius: 5px; cursor: pointer; }
+
         .gallery-actions { display: flex; gap: 10px; width: 100%; justify-content: center; margin-top: 5px; }
         .gallery-btn-del { color: #ff5252; background: rgba(255, 82, 82, 0.15); border: 1px solid #ff5252; padding: 3px 8px; border-radius: 5px; font-size: 0.75rem; cursor: pointer; }
 
         #vn-screen { display: none; width: 100vw; height: 100dvh; position: relative; background-size: cover; background-position: center; }
+        
         #level-indicator { 
             position: absolute; top: 20px; right: 20px; 
             background: rgba(0,0,0,0.85); border: 2px solid #4caf50; 
@@ -192,6 +192,7 @@
             font-size: 0.95rem; z-index: 10; letter-spacing: 0.5px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
+
         #choices-container { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; gap: 12px; width: 90%; max-width: 400px; z-index: 10; }
         .choice-btn { background-color: rgba(30, 20, 40, 0.95); border: 2px solid #673ab7; color: white; padding: 15px; border-radius: 10px; font-size: 1rem; cursor: pointer; }
         
@@ -208,32 +209,42 @@
         .label-claudia { bottom: 25%; right: 65%; transform: rotate(-90deg); }
         #winner-text { font-size: 1.8rem; font-weight: bold; margin-bottom: 1rem; min-height: 2.5rem; opacity: 0; transition: opacity 0.5s; }
 
-        .card-container { width: 92vw; max-width: 480px; min-height: 440px; margin: 1rem auto; position: relative; }
-        .card { width: 100%; height: 100%; position: relative; border-radius: 18px; box-shadow: 0 12px 35px rgba(0,0,0,0.9); }
-        .card-face { width: 100%; min-height: 440px; border-radius: 18px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 25px 20px; text-align: center; }
-        .card-front { background: linear-gradient(rgba(10,6,13,0.5), rgba(10,6,13,0.85)), url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80') center/cover; border: 2px solid #673ab7; cursor: pointer; justify-content: center; display: flex; transition: background 0.3s; }
+        .card-container { 
+            width: 92vw; max-width: 480px; min-height: 440px; 
+            margin: 1rem auto; position: relative;
+        }
+        .card { 
+            width: 100%; height: 100%; position: relative; 
+            border-radius: 18px; box-shadow: 0 12px 35px rgba(0,0,0,0.9);
+        }
+        .card-face { 
+            width: 100%; min-height: 440px; border-radius: 18px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start; 
+            padding: 25px 20px; text-align: center;
+        }
+        .card-front { 
+            background: linear-gradient(rgba(10,6,13,0.5), rgba(10,6,13,0.85)), url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80') center/cover;
+            border: 2px solid #673ab7; cursor: pointer; justify-content: center; display: flex; transition: background 0.3s;
+        }
         .card-front::after { content: "SVELA L'AZIONE 🎴"; font-size: 1.5rem; font-weight: bold; color: #ffffff; text-shadow: 0 2px 10px rgba(0,0,0,0.9); letter-spacing: 1px; }
-        .card-back { background: linear-gradient(135deg, #180e28, #0a060d); border: 2px solid var(--primary-accent); display: none; }
+        .card-back { 
+            background: linear-gradient(135deg, #180e28, #0a060d); border: 2px solid var(--primary-accent);
+            display: none;
+        }
         .card.is-flipped .card-front { display: none; }
         .card.is-flipped .card-back { display: flex; }
 
         .card-role-label { font-size: 1.1rem; text-transform: uppercase; margin-bottom: 8px; font-weight: bold; letter-spacing: 1px; }
         .card-category-tag { font-size: 0.8rem; background: rgba(103, 58, 183, 0.4); border: 1px solid #673ab7; padding: 4px 12px; border-radius: 20px; margin-bottom: 15px; color: #d1c4db; font-weight: bold; }
         #cardText { font-size: 1.25rem; line-height: 1.6; color: #ffffff; font-weight: 500; margin-bottom: 15px; }
-
-        /* Stile indicatore versione */
-        .version-indicator {
-            margin-top: 20px; width: 100%; text-align: center; 
-            font-size: 0.8rem; color: #888; font-family: monospace; letter-spacing: 1px;
-        }
     </style>
 </head>
 <body>
 
     <div id="loader-screen" class="menu-screen active">
         <h1 class="title">Scenari Intrecciati</h1>
-        <p style="color: #a996b8; padding: 0 20px;" id="loader-msg">Avvio applicazione in corso...</p>
-        <div class="spinner" id="loader-spinner"></div>
+        <p style="color: #a996b8;" id="loader-msg">Sincronizzazione con Google Sheets...</p>
+        <div class="spinner"></div>
     </div>
 
     <!-- LIGHTBOX FULLSCREEN MODAL -->
@@ -242,19 +253,25 @@
         <div id="lightbox-container" onclick="event.stopPropagation();"></div>
     </div>
 
+    <!-- PULSANTE MENU PAUSA FISSO IN ALTO A SINISTRA -->
     <button id="game-menu-btn" onclick="openPauseModal()">⚙️ Menu</button>
 
+    <!-- MODAL MENU PAUSA -->
     <div id="pause-modal">
         <div class="pause-box">
             <h2 style="color: var(--primary-accent); margin-bottom: 5px;">Partita in Pausa</h2>
+            <p style="font-size: 0.85rem; color: #a996b8; margin-bottom: 15px;">Scegli un'azione per continuare o riorganizzare la sessione.</p>
+            
             <button class="btn btn-resume" onclick="closePauseModal()">▶️ Riprendi Gioco</button>
             <button class="btn btn-context" onclick="manualSaveGame()">💾 Salva Partita</button>
             <button class="btn btn-reset" style="margin-top: 5px;" onclick="abandonGame()">🚪 Abbandona e Esci</button>
         </div>
     </div>
 
+    <!-- PULSANTE CAMBIO LIVELLO FISSO IN BASSO A SINISTRA -->
     <button id="fixed-skip-level-btn" onclick="handleForceNextLevelClick()">⚡ Sali di Livello</button>
 
+    <!-- BOTTONE FLOTTANTE LIVE CHAT P2P IN BASSO A DESTRA -->
     <button id="chat-toggle-btn" onclick="toggleChat()">
         💬 Chat Live <span id="chat-badge">0</span>
     </button>
@@ -266,12 +283,13 @@
             <button onclick="toggleChat()" style="background:none; border:none; color:white; font-weight:bold; cursor:pointer;">✕</button>
         </div>
         <div id="chat-messages">
-            <div style="font-size:0.75rem; color:#a996b8; text-align:center; margin-bottom: 10px;">Messaggi e media sono cifrati e salvati solo qui.</div>
+            <div style="font-size:0.75rem; color:#a996b8; text-align:center;">Messaggi e media inviati risiedono solo sul tuo dispositivo.</div>
         </div>
         <div id="chat-controls">
             <input type="file" id="chat-photo-input" accept="image/*" capture="environment" style="display:none;" onchange="sendChatFile(this, 'image')">
             <input type="file" id="chat-video-input" accept="video/*" capture="environment" style="display:none;" onchange="sendChatFile(this, 'video')">
             <input type="file" id="chat-file-input" accept="image/*,video/*,audio/*" style="display:none;" onchange="sendChatFile(this, 'any')">
+
             <div class="chat-btn-row">
                 <button class="btn-chat-media" onclick="document.getElementById('chat-photo-input').click()">📷 Foto</button>
                 <button class="btn-chat-media" onclick="document.getElementById('chat-video-input').click()">🎥 Video</button>
@@ -292,23 +310,20 @@
         <button class="btn btn-tiziano" id="btn-select-tiziano" onclick="selectPlayer('Tiziano')">Sono Tiziano</button>
         <button class="btn btn-claudia" id="btn-select-claudia" onclick="selectPlayer('Claudia')">Sono Claudia</button>
 
-        <div id="p2p-status" style="display:none; width: 100%; max-width: 320px; flex-direction: column; align-items: center; margin-top: 20px; padding: 15px; background: rgba(30,20,40,0.8); border-radius: 10px; border: 1px solid #673ab7; text-align: center; color: #ffeb3b; font-weight: bold; font-size: 0.95rem; line-height: 1.4;">
-            🟡 Inizializzazione...
-        </div>
+        <div id="p2p-status" style="font-size: 0.9rem; color: #e91e63; margin: 20px 0; font-weight: bold;">🔴 Seleziona chi sei per connetterti al partner</div>
 
-        <button class="btn btn-resume" id="btn-resume-game" style="display:none; margin-top: 20px;" onclick="resumeSavedGame()">▶️ Riprendi Partita Salvata</button>
-        <button class="btn btn-context" id="start-sync-btn" style="display:none; margin-top: 15px; background: var(--primary-accent);" onclick="showScreen('scenario-screen')">Entra nel Gioco Sincronizzato</button>
+        <button class="btn btn-resume" id="btn-resume-game" style="display:none;" onclick="resumeSavedGame()">▶️ Riprendi Partita Salvata</button>
+        <button class="btn btn-context" id="start-sync-btn" style="display:none; background: var(--primary-accent);" onclick="showScreen('scenario-screen')">Entra nel Gioco Sincronizzato</button>
+
         <button class="btn btn-gallery" style="margin-top: 15px;" onclick="openGallery()">📂 Galleria Privata In-App</button>
         <button class="btn btn-reset" id="btn-reset-game" style="display:none;" onclick="resetGameState()">🔄 Abbandona e Nuova Partita</button>
-        
-        <div class="version-indicator">Versione App: v10.1 (Architettura Modulare)</div>
     </div>
 
     <div id="gallery-screen" class="menu-screen">
         <button class="back-btn" onclick="showScreen('selection-screen')">← Indietro</button>
         <h1 class="title" style="font-size: 1.8rem;">Galleria Privata</h1>
         <p style="color: #a996b8; font-size: 0.85rem; margin-bottom: 10px;">I file restano nascosti nella memoria dell'app finché non li scarichi.</p>
-        <button class="btn-chat-media" style="background:#ff5252; border:none; padding:8px 15px; margin-bottom:15px;" onclick="clearAllGallery()">🧹 Svuota Galleria e Chat</button>
+        <button class="btn-chat-media" style="background:#ff5252; border:none; padding:8px 15px; margin-bottom:15px;" onclick="clearAllGallery()">🧹 Svuota Tutta la Galleria</button>
         <div id="gallery-grid"></div>
     </div>
 
@@ -332,6 +347,7 @@
         </div>
     </div>
 
+    <!-- SCHERMATA ATTESA CATEGORIE PARTNER -->
     <div id="waiting-screen" class="menu-screen">
         <h1 class="title" style="font-size: 1.8rem;">Sincronizzazione Categorie...</h1>
         <p style="color: #a996b8; margin-top: 20px;" id="waiting-msg">Invio selezione in corso...<br>In attesa della conferma dal partner.</p>
@@ -382,6 +398,7 @@
 
     <div id="cards-screen">
         <h2 id="card-turn-title" style="margin-bottom: 1rem; font-size: 1.5rem; color: #a996b8;">Azione per...</h2>
+        
         <div class="card-container">
             <div class="card" id="playingCard">
                 <div class="card-face card-front" id="cardFrontFace" onclick="handleRevealCardClick()"></div>
@@ -396,1177 +413,1012 @@
     </div>
 
     <script>
-        try {
-            console.log("Inizializzazione App v10.1 (Architettura Modulare) avviata...");
+        let LINK_SCENARI_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1088679208&single=true&output=csv";
+        let LINK_COPIONE_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1067890923&single=true&output=csv";
 
-            // ==========================================
-            // SEZIONE 1: CONFIGURAZIONE E VARIABILI GLOBALI
-            // ==========================================
-            let LINK_SCENARI_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1088679208&single=true&output=csv";
-            let LINK_COPIONE_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1067890923&single=true&output=csv";
+        const FIXED_ROOM_CODE = "tiziano-claudia-intimo-2026";
 
-            const CATEGORY_IMAGES = {
-                "DIALOGO": "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=600&q=80",
-                "VOICE": "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=600&q=80",
-                "FOTO": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=600&q=80",
-                "VIDEO": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=600&q=80",
-                "SOFT": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80",
-                "COCCOLE": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80",
-                "ROMANTICO": "https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=600&q=80",
-                "SENSUALE": "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80",
-                "CORAGGIO": "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80",
-                "DOMINAZIONE": "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=600&q=80",
-                "SEX TOYS": "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=600&q=80",
-                "BONDAGE": "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=600&q=80",
-                "DEFAULT": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80"
+        const CATEGORY_IMAGES = {
+            "DIALOGO": "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=600&q=80",
+            "VOICE": "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=600&q=80",
+            "FOTO": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=600&q=80",
+            "VIDEO": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=600&q=80",
+            "SOFT": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80",
+            "COCCOLE": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80",
+            "ROMANTICO": "https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=600&q=80",
+            "SENSUALE": "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80",
+            "CORAGGIO": "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80",
+            "DOMINAZIONE": "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=600&q=80",
+            "SEX TOYS": "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=600&q=80",
+            "BONDAGE": "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=600&q=80",
+            "DEFAULT": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80"
+        };
+
+        var roleplayScenarios = {};
+        var currentPlayer = "", currentScenarioId = "", activeCategories = [];
+        var mySelectedCategories = [], partnerSelectedCategories = null;
+        var currentLevelIndex = 0, currentDialogueIndex = 0, selectedVictim = "", currentRotation = 0;
+        var lastVictim = "", consecutiveTurns = 0;
+        var currentScreenId = "selection-screen";
+        var isCardFlipped = false;
+        
+        var currentLevelActions = { "Claudia": [], "Tiziano": [] };
+        var currentDrawnAction = null;
+        var unreadChatCount = 0;
+        var catSyncInterval = null;
+
+        function openPauseModal() { document.getElementById('pause-modal').style.display = 'flex'; }
+        function closePauseModal() { document.getElementById('pause-modal').style.display = 'none'; }
+        function manualSaveGame() { saveGameState(); alert("💾 Partita salvata con successo!"); closePauseModal(); }
+        function abandonGame() {
+            if (confirm("Vuoi davvero abbandonare la partita attuale e tornare al menu iniziale?")) {
+                closePauseModal();
+                showScreen('selection-screen');
+            }
+        }
+
+        function saveGameState() {
+            var state = {
+                currentPlayer: currentPlayer,
+                currentScenarioId: currentScenarioId,
+                activeCategories: activeCategories,
+                currentLevelIndex: currentLevelIndex,
+                currentDialogueIndex: currentDialogueIndex,
+                currentScreenId: currentScreenId,
+                selectedVictim: selectedVictim,
+                currentDrawnAction: currentDrawnAction,
+                isCardFlipped: isCardFlipped,
+                lastVictim: lastVictim,
+                consecutiveTurns: consecutiveTurns
             };
+            localStorage.setItem("ScenariGameState_v3", JSON.stringify(state));
+        }
 
-            var roleplayScenarios = {};
-            var currentPlayer = "", currentScenarioId = "", activeCategories = [];
-            var mySelectedCategories = [], partnerSelectedCategories = null;
-            var currentLevelIndex = 0, currentDialogueIndex = 0, selectedVictim = "", currentRotation = 0;
-            var currentScreenId = "selection-screen";
-            var isCardFlipped = false;
-            
-            var currentLevelActions = { "Claudia": [], "Tiziano": [] };
-            var currentDrawnAction = null;
-            var unreadChatCount = 0;
-            var catSyncInterval = null;
-
-
-            // ==========================================
-            // SEZIONE 2: INIZIALIZZAZIONE APP (ONLOAD)
-            // ==========================================
-            window.onload = function() {
-                if (LINK_SCENARI_RAW && LINK_SCENARI_RAW.indexOf("http") === 0) {
-                    loadFromGoogleSheets();
-                }
-            };
-
-            function loadFromGoogleSheets() {
-                const urlScenari = LINK_SCENARI_RAW;
-                const urlCopione = LINK_COPIONE_RAW;
-                var loaderMsg = document.getElementById('loader-msg');
-                var loaderSpinner = document.getElementById('loader-spinner');
-
-                Papa.parse(urlScenari, {
-                    download: true, header: true, skipEmptyLines: true,
-                    error: function(err) { 
-                        loaderSpinner.style.display = 'none';
-                        loaderMsg.style.color = '#ff5252';
-                        loaderMsg.innerHTML = "🔴 Errore di rete: Impossibile scaricare 'Scenari'."; 
-                    },
-                    complete: function(res) {
-                        if (res.data && res.data.length > 0) {
-                            roleplayScenarios = {};
-                            res.data.forEach(function(row) {
-                                if (!row.ID_Scenario) return;
-                                roleplayScenarios[row.ID_Scenario] = {
-                                    title: row.Titolo_Storia, 
-                                    context: row.Contesto_Menu,
-                                    roles: { "Claudia": row.Ruolo_Claudia, "Tiziano": row.Ruolo_Tiziano },
-                                    briefing: { "Claudia": row.Briefing_Claudia, "Tiziano": row.Briefing_Tiziano },
-                                    levels: []
-                                };
-                            });
-                            
-                            Papa.parse(urlCopione, {
-                                download: true, header: true, skipEmptyLines: true,
-                                error: function(err) { 
-                                    loaderSpinner.style.display = 'none';
-                                    loaderMsg.style.color = '#ff5252';
-                                    loaderMsg.innerHTML = "🔴 Errore di rete: Impossibile scaricare 'Copione'."; 
-                                },
-                                complete: function(resCopione) {
-                                    if (resCopione.data && resCopione.data.length > 0) {
-                                        resCopione.data.forEach(function(row) {
-                                            let id = row.ID_Scenario;
-                                            if (!id || !roleplayScenarios[id]) return;
-                                            let lvlIndex = parseInt(row.Livello) - 1;
-                                            if (isNaN(lvlIndex)) return;
-                                            if (!roleplayScenarios[id].levels[lvlIndex]) {
-                                                let bg = row.Sfondo_URL ? row.Sfondo_URL.trim() : "#000";
-                                                roleplayScenarios[id].levels[lvlIndex] = { level: lvlIndex + 1, background: bg, introDialogues: [], actions: [] };
-                                            }
-                                            if (row.Tipo === "Dialogo") {
-                                                roleplayScenarios[id].levels[lvlIndex].introDialogues.push({ speaker: row.Chi_Parla_o_Agisce, text: row.Testo });
-                                            } else if (row.Tipo === "Azione") {
-                                                roleplayScenarios[id].levels[lvlIndex].actions.push({ actor: row.Chi_Parla_o_Agisce, text: row.Testo, category: row.Categoria });
-                                            }
-                                        });
-                                        buildScenarioMenu();
-                                        checkSavedGameAvailable();
-                                        
-                                        var restored = restoreGameState();
-                                        if (!restored) {
-                                            showScreen('selection-screen');
-                                        }
-                                    } else {
-                                        loaderSpinner.style.display = 'none';
-                                        loaderMsg.style.color = '#ff5252';
-                                        loaderMsg.innerHTML = "🔴 Errore: Il file 'Copione' è vuoto.";
-                                    }
-                                }
-                            });
-                        } else {
-                            loaderSpinner.style.display = 'none';
-                            loaderMsg.style.color = '#ff5252';
-                            loaderMsg.innerHTML = "🔴 Errore: Il file 'Scenari' è vuoto.";
-                        }
-                    }
-                });
-            }
-
-
-            // ==========================================
-            // SEZIONE 3: GESTIONE UI E NAVIGAZIONE
-            // ==========================================
-            window.showScreen = function(screenId) {
-                currentScreenId = screenId;
-                var screens = document.querySelectorAll('.menu-screen');
-                for (var i = 0; i < screens.length; i++) {
-                    screens[i].classList.remove('active');
-                    screens[i].style.display = 'none';
-                }
-                
-                var vn = document.getElementById('vn-screen'); if (vn) vn.style.display = 'none';
-                var mini = document.getElementById('minigame-screen'); if (mini) mini.style.display = 'none';
-                var cards = document.getElementById('cards-screen'); if (cards) cards.style.display = 'none';
-
-                var isGamingScreen = (screenId === 'vn-screen' || screenId === 'minigame-screen' || screenId === 'cards-screen');
-                document.getElementById('game-menu-btn').style.display = isGamingScreen ? 'block' : 'none';
-                document.getElementById('fixed-skip-level-btn').style.display = isGamingScreen ? 'block' : 'none';
-
-                var target = document.getElementById(screenId);
-                if (target) {
-                    target.style.display = 'flex';
-                    target.classList.add('active');
-                }
-                saveGameState();
-            };
-
-            window.selectPlayer = function(name) { 
-                currentPlayer = name; 
-                document.getElementById('btn-select-tiziano').disabled = (name === 'Claudia');
-                document.getElementById('btn-select-claudia').disabled = (name === 'Tiziano');
-                document.getElementById('btn-reset-game').style.display = 'inline-block';
-                saveGameState();
-                autoConnectP2P(name);
-            };
-
-            function playNotificationSound() {
-                try {
-                    var ctx = new (window.AudioContext || window.webkitAudioContext)();
-                    var osc = ctx.createOscillator();
-                    var gain = ctx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-                    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.2);
-                    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.start();
-                    osc.stop(ctx.currentTime + 0.3);
-                } catch(e){}
-            }
-
-            function openLightbox(src, isVideo) {
-                var modal = document.getElementById('lightbox-modal');
-                var container = document.getElementById('lightbox-container');
-                if (isVideo) {
-                    container.innerHTML = '<video id="lightbox-content" src="' + src + '" controls autoplay style="max-width:100%; max-height:85vh;"></video>';
-                } else {
-                    container.innerHTML = '<img id="lightbox-content" src="' + src + '" style="max-width:100%; max-height:85vh;">';
-                }
-                modal.style.display = 'flex';
-            }
-
-            function closeLightbox() {
-                var modal = document.getElementById('lightbox-modal');
-                var container = document.getElementById('lightbox-container');
-                container.innerHTML = '';
-                modal.style.display = 'none';
-            }
-
-            function openPauseModal() { document.getElementById('pause-modal').style.display = 'flex'; }
-            function closePauseModal() { document.getElementById('pause-modal').style.display = 'none'; }
-
-
-            // ==========================================
-            // SEZIONE 4: GESTIONE DATI E STATO
-            // ==========================================
-            function saveGameState() {
-                var state = {
-                    currentPlayer: currentPlayer,
-                    currentScenarioId: currentScenarioId,
-                    activeCategories: activeCategories,
-                    currentLevelIndex: currentLevelIndex,
-                    currentDialogueIndex: currentDialogueIndex,
-                    currentScreenId: currentScreenId,
-                    selectedVictim: selectedVictim,
-                    currentDrawnAction: currentDrawnAction,
-                    isCardFlipped: isCardFlipped
-                };
-                localStorage.setItem("ScenariGameState_v10", JSON.stringify(state));
-            }
-
-            function checkSavedGameAvailable() {
-                var saved = localStorage.getItem("ScenariGameState_v10");
-                if (saved) {
-                    try {
-                        var state = JSON.parse(saved);
-                        if (state.currentPlayer && state.currentScenarioId) {
-                            document.getElementById('btn-resume-game').style.display = 'inline-block';
-                            document.getElementById('btn-reset-game').style.display = 'inline-block';
-                        }
-                    } catch(e){}
-                }
-            }
-
-            function resumeSavedGame() { restoreGameState(); }
-
-            function restoreGameState() {
-                var saved = localStorage.getItem("ScenariGameState_v10");
-                if (!saved) return false;
+        function checkSavedGameAvailable() {
+            var saved = localStorage.getItem("ScenariGameState_v3");
+            if (saved) {
                 try {
                     var state = JSON.parse(saved);
-                    if (state.currentPlayer) {
-                        currentPlayer = state.currentPlayer;
-                        currentScenarioId = state.currentScenarioId;
-                        activeCategories = state.activeCategories || [];
-                        currentLevelIndex = state.currentLevelIndex || 0;
-                        currentDialogueIndex = state.currentDialogueIndex || 0;
-                        currentScreenId = state.currentScreenId || "selection-screen";
-                        selectedVictim = state.selectedVictim || "";
-                        currentDrawnAction = state.currentDrawnAction || null;
-                        isCardFlipped = state.isCardFlipped || false;
-
-                        document.getElementById('btn-select-tiziano').disabled = (currentPlayer === 'Claudia');
-                        document.getElementById('btn-select-claudia').disabled = (currentPlayer === 'Tiziano');
+                    if (state.currentPlayer && state.currentScenarioId) {
+                        document.getElementById('btn-resume-game').style.display = 'inline-block';
                         document.getElementById('btn-reset-game').style.display = 'inline-block';
-                        
-                        autoConnectP2P(currentPlayer);
+                    }
+                } catch(e){}
+            }
+        }
 
-                        if (currentScenarioId && roleplayScenarios[currentScenarioId]) {
-                            var levelData = roleplayScenarios[currentScenarioId].levels[currentLevelIndex];
-                            if (levelData) {
-                                currentLevelActions["Claudia"] = levelData.actions.filter(function(a) {
-                                    return a.actor === "Claudia" && activeCategories.indexOf(a.category) !== -1;
-                                });
-                                currentLevelActions["Tiziano"] = levelData.actions.filter(function(a) {
-                                    return a.actor === "Tiziano" && activeCategories.indexOf(a.category) !== -1;
-                                });
-                            }
+        function resumeSavedGame() { restoreGameState(); }
 
-                            showScreen(currentScreenId);
-                            
-                            var isGaming = (currentScreenId === 'vn-screen' || currentScreenId === 'minigame-screen' || currentScreenId === 'cards-screen');
-                            if (isGaming) {
-                                document.getElementById('game-menu-btn').style.display = 'block';
-                                document.getElementById('fixed-skip-level-btn').style.display = 'block';
-                            }
+        function restoreGameState() {
+            var saved = localStorage.getItem("ScenariGameState_v3");
+            if (!saved) return false;
+            try {
+                var state = JSON.parse(saved);
+                if (state.currentPlayer) {
+                    currentPlayer = state.currentPlayer;
+                    currentScenarioId = state.currentScenarioId;
+                    activeCategories = state.activeCategories || [];
+                    currentLevelIndex = state.currentLevelIndex || 0;
+                    currentDialogueIndex = state.currentDialogueIndex || 0;
+                    currentScreenId = state.currentScreenId || "selection-screen";
+                    selectedVictim = state.selectedVictim || "";
+                    currentDrawnAction = state.currentDrawnAction || null;
+                    isCardFlipped = state.isCardFlipped || false;
+                    lastVictim = state.lastVictim || "";
+                    consecutiveTurns = state.consecutiveTurns || 0;
 
-                            if (currentScreenId === 'vn-screen') { loadLevelNarrative(); } 
-                            else if (currentScreenId === 'minigame-screen') { openMinigame(true); } 
-                            else if (currentScreenId === 'cards-screen') {
-                                goToCards(true);
-                                if (isCardFlipped) revealCard(true);
-                            }
-                        } else {
-                            showScreen('selection-screen');
+                    document.getElementById('btn-select-tiziano').disabled = (currentPlayer === 'Claudia');
+                    document.getElementById('btn-select-claudia').disabled = (currentPlayer === 'Tiziano');
+                    document.getElementById('btn-reset-game').style.display = 'inline-block';
+                    
+                    autoConnectP2P(currentPlayer);
+
+                    if (currentScenarioId && roleplayScenarios[currentScenarioId]) {
+                        var levelData = roleplayScenarios[currentScenarioId].levels[currentLevelIndex];
+                        if (levelData) {
+                            currentLevelActions["Claudia"] = levelData.actions.filter(function(a) {
+                                return a.actor === "Claudia" && activeCategories.indexOf(a.category) !== -1;
+                            });
+                            currentLevelActions["Tiziano"] = levelData.actions.filter(function(a) {
+                                return a.actor === "Tiziano" && activeCategories.indexOf(a.category) !== -1;
+                            });
                         }
-                        return true;
-                    }
-                } catch(e) { console.error("Errore ripristino stato:", e); }
-                return false;
-            }
 
-            function manualSaveGame() { saveGameState(); alert("💾 Partita salvata con successo!"); closePauseModal(); }
-            function abandonGame() {
-                if (confirm("Vuoi davvero abbandonare la partita attuale e tornare al menu iniziale?")) {
-                    closePauseModal();
-                    showScreen('selection-screen');
+                        showScreen(currentScreenId);
+
+                        if (currentScreenId === 'vn-screen') {
+                            document.getElementById('game-menu-btn').style.display = 'block';
+                            document.getElementById('fixed-skip-level-btn').style.display = 'block';
+                            loadLevelNarrative();
+                        } else if (currentScreenId === 'minigame-screen') {
+                            document.getElementById('game-menu-btn').style.display = 'block';
+                            document.getElementById('fixed-skip-level-btn').style.display = 'block';
+                            openMinigame(true);
+                        } else if (currentScreenId === 'cards-screen') {
+                            document.getElementById('game-menu-btn').style.display = 'block';
+                            document.getElementById('fixed-skip-level-btn').style.display = 'block';
+                            goToCards(true);
+                            if (isCardFlipped) {
+                                revealCard(true);
+                            }
+                        }
+                    } else {
+                        showScreen('selection-screen');
+                    }
+                    return true;
                 }
+            } catch(e) { console.error("Errore ripristino stato:", e); }
+            return false;
+        }
+
+        function resetGameState() {
+            if (confirm("Vuoi azzerare la partita attuale per iniziarne una nuova?")) {
+                localStorage.removeItem("ScenariGameState_v3");
+                location.reload();
             }
-            function resetGameState() {
-                if (confirm("Vuoi azzerare la partita attuale per iniziarne una nuova?")) {
-                    localStorage.removeItem("ScenariGameState_v10");
-                    location.reload();
+        }
+
+        function playNotificationSound() {
+            try {
+                var ctx = new (window.AudioContext || window.webkitAudioContext)();
+                var osc = ctx.createOscillator();
+                var gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.3);
+            } catch(e){}
+        }
+
+        function openLightbox(src, isVideo) {
+            var modal = document.getElementById('lightbox-modal');
+            var container = document.getElementById('lightbox-container');
+            if (isVideo) {
+                container.innerHTML = '<video id="lightbox-content" src="' + src + '" controls autoplay style="max-width:100%; max-height:85vh;"></video>';
+            } else {
+                container.innerHTML = '<img id="lightbox-content" src="' + src + '" style="max-width:100%; max-height:85vh;">';
+            }
+            modal.style.display = 'flex';
+        }
+
+        function closeLightbox() {
+            var modal = document.getElementById('lightbox-modal');
+            var container = document.getElementById('lightbox-container');
+            container.innerHTML = '';
+            modal.style.display = 'none';
+        }
+
+        var mediaRecorder = null, audioChunks = [], isRecording = false;
+
+        function toggleAudioRecording() {
+            var btn = document.getElementById('btn-record-audio');
+            if (!isRecording) {
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(function(stream) {
+                        mediaRecorder = new MediaRecorder(stream);
+                        audioChunks = [];
+                        mediaRecorder.ondataavailable = function(e) { if (e.data.size > 0) audioChunks.push(e.data); };
+                        mediaRecorder.onstop = function() {
+                            var audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                            var reader = new FileReader();
+                            reader.onloadend = function() {
+                                var base64Data = reader.result;
+                                appendChatMediaMessage("Tu", base64Data, "audio", "me");
+                                saveMediaToLocalDB(base64Data, "audio", "Nota Vocale", currentPlayer);
+                                if (conn && conn.open) {
+                                    conn.send({ type: "media", mediaType: "audio", fileData: base64Data, category: "Nota Vocale", sender: currentPlayer });
+                                }
+                            };
+                            reader.readAsDataURL(audioBlob);
+                        };
+                        mediaRecorder.start();
+                        isRecording = true;
+                        btn.innerText = "⏹️ Invia Audio";
+                        btn.style.background = "#e91e63";
+                    })
+                    .catch(function(err) { alert("Impossibile accedere al microfono: " + err); });
+            } else {
+                if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                    mediaRecorder.stop();
+                    mediaRecorder.stream.getTracks().forEach(track => track.stop());
                 }
+                isRecording = false;
+                btn.innerText = "🎙️ Registra Audio";
+                btn.style.background = "rgba(233, 30, 99, 0.2)";
             }
+        }
 
-
-            // ==========================================
-            // SEZIONE 5: MOTORE P2P E SINCRONIZZAZIONE (NON MODIFICARE)
-            // ==========================================
-            const SECRET_ROOM_ID = "tizclau-auth-9988";
-            var peer = null, conn = null, pingInterval = null, watchdogInterval = null;
-            var connectionTimeout = null;
-            var lastSignalTime = Date.now();
-
-            function autoConnectP2P(name) {
-                var statusEl = document.getElementById('p2p-status');
-                statusEl.style.display = 'flex';
-                statusEl.innerHTML = "🟡 Ricerca automatica del partner in corso...<br><span style='font-size:0.8rem; color:#a996b8; margin-top:5px; font-weight:normal;'>L'app si connetterà non appena l'altro dispositivo sarà online.</span>";
-                statusEl.style.color = "#ffeb3b";
-                
-                var myId = SECRET_ROOM_ID + "-" + name.toLowerCase();
-                var targetId = SECRET_ROOM_ID + "-" + (name === "Tiziano" ? "claudia" : "tiziano");
-
-                if (peer) { peer.destroy(); }
-
-                peer = new Peer(myId, {
-                    config: {
-                        'iceServers': [
-                            { urls: 'stun:stun.l.google.com:19302' },
-                            { urls: 'stun:stun1.l.google.com:19302' }
-                        ]
-                    }
-                });
-
-                peer.on('open', function(id) {
-                    attemptConnection(targetId);
-                });
-
-                peer.on('connection', function(c) {
-                    if (conn && conn.open) {
-                        setTimeout(function() { c.close(); }, 500);
-                        return;
-                    }
-                    conn = c;
-                    setupConnEvents();
-                });
-
-                peer.on('error', function(err) {
-                    console.log("P2P Error:", err);
-                    if (err.type === 'peer-unavailable') {
-                        attemptConnection(targetId);
-                    } else if (err.type === 'unavailable-id') {
-                        setTimeout(function() { autoConnectP2P(name); }, 3000);
-                    }
-                });
-            }
-
-            function attemptConnection(targetId) {
-                if (conn && conn.open) return;
-                if (peer && peer.disconnected) { peer.reconnect(); return; }
-                
-                if (conn) { 
-                    try { conn.close(); } catch(e){} 
-                    conn = null; 
+        var db = null;
+        function initDB() {
+            var request = indexedDB.open("ScenariMediaDB", 1);
+            request.onupgradeneeded = function(e) {
+                db = e.target.result;
+                if (!db.objectStoreNames.contains("media")) {
+                    db.createObjectStore("media", { keyPath: "id", autoIncrement: true });
                 }
+            };
+            request.onsuccess = function(e) { db = e.target.result; };
+        }
+        initDB();
 
-                try {
-                    conn = peer.connect(targetId, { reliable: true });
-                    setupConnEvents();
-                } catch(e) {}
+        function saveMediaToLocalDB(fileData, type, category, sender) {
+            if (!db) return;
+            var tx = db.transaction(["media"], "readwrite");
+            var store = tx.objectStore("media");
+            store.add({ type: type, data: fileData, category: category, sender: sender, timestamp: new Date().toLocaleString() });
+        }
 
-                if (connectionTimeout) clearTimeout(connectionTimeout);
-                connectionTimeout = setTimeout(function() {
-                    if (conn && !conn.open) {
-                        attemptConnection(targetId);
-                    }
-                }, 6000); 
+        function deleteSingleMedia(id) {
+            if (!confirm("Vuoi cancellare definitivamente questo file dalla tua memoria locale?")) return;
+            if (!db) return;
+            var tx = db.transaction(["media"], "readwrite");
+            var store = tx.objectStore("media");
+            store.delete(id);
+            tx.oncomplete = function() { loadGalleryContent(); };
+        }
+
+        function clearAllGallery() {
+            if (!confirm("⚠️ Se sicuro di voler SVUOTARE tutta la tua Galleria Privata locale?")) return;
+            if (!db) return;
+            var tx = db.transaction(["media"], "readwrite");
+            var store = tx.objectStore("media");
+            store.clear();
+            tx.oncomplete = function() { loadGalleryContent(); };
+        }
+
+        // --- MOTORE P2P ULTRA-STABILE (PING/PONG + RECONNECT LOOP) ---
+        var peer = null, conn = null, retryTimer = null, pingInterval = null;
+
+        function autoConnectP2P(playerName) {
+            if (!playerName) return;
+            document.getElementById('p2p-status').innerText = "🟡 Connessione alla rete P2P...";
+            
+            var myPeerId = FIXED_ROOM_CODE + "-" + playerName.toLowerCase();
+            var targetPeerId = FIXED_ROOM_CODE + "-" + (playerName === "Tiziano" ? "claudia" : "tiziano");
+            
+            if (peer && !peer.destroyed) {
+                attemptConnection(targetPeerId);
+                return;
             }
+            
+            peer = new Peer(myPeerId);
+            peer.on('open', function(id) {
+                document.getElementById('p2p-status').innerText = "🟡 In attesa del partner...";
+                attemptConnection(targetPeerId);
+            });
 
-            function setupConnEvents() {
-                if (!conn) return;
+            peer.on('connection', function(c) {
+                conn = c;
+                setupConnEvents();
+            });
 
-                var onOpen = function() {
-                    if (connectionTimeout) { clearTimeout(connectionTimeout); connectionTimeout = null; }
-                    lastSignalTime = Date.now();
-                    var statusEl = document.getElementById('p2p-status');
-                    statusEl.style.color = "#4caf50";
-                    statusEl.innerHTML = "🟢 Partner Connesso! Entrambi pronti.";
-                    document.getElementById('start-sync-btn').style.display = "inline-block";
-                    playNotificationSound();
+            peer.on('error', function(err) {
+                console.log("P2P Status Info:", err);
+                if (err.type === 'unavailable-id') {
+                    // ID occupato da sessione precedente in sospeso, riconnette senza distruggere
+                    attemptConnection(targetPeerId);
+                }
+            });
+        }
 
-                    if (pingInterval) clearInterval(pingInterval);
+        function attemptConnection(targetPeerId) {
+            if (conn && conn.open) return;
+            try {
+                conn = peer.connect(targetPeerId, { reliable: true });
+                setupConnEvents();
+            } catch(e){}
+
+            if (!retryTimer) {
+                retryTimer = setInterval(function() {
+                    if (!conn || !conn.open) {
+                        try {
+                            conn = peer.connect(targetPeerId, { reliable: true });
+                            setupConnEvents();
+                        } catch(e){}
+                    } else {
+                        clearInterval(retryTimer);
+                        retryTimer = null;
+                    }
+                }, 2000);
+            }
+        }
+
+        function setupConnEvents() {
+            if (!conn) return;
+            conn.on('open', function() {
+                if (retryTimer) { clearInterval(retryTimer); retryTimer = null; }
+                document.getElementById('p2p-status').style.color = "#4caf50";
+                document.getElementById('p2p-status').innerText = "🟢 Partner Connesso! Entrambi pronti.";
+                document.getElementById('start-sync-btn').style.display = "inline-block";
+                playNotificationSound();
+
+                // PING/PONG CONTINUO PER EVITARE DISCONNESSIONI IN INATTIVITÀ
+                if (!pingInterval) {
                     pingInterval = setInterval(function() {
-                        if (conn && conn.open) conn.send({ type: "PING" });
-                    }, 2500);
-
-                    if (watchdogInterval) clearInterval(watchdogInterval);
-                    watchdogInterval = setInterval(function() {
-                        if (Date.now() - lastSignalTime > 10000) { 
-                            console.warn("Watchdog: Rilevato timeout, riavvio connessione.");
-                            handleDisconnect();
+                        if (conn && conn.open) {
+                            conn.send({ type: "PING" });
                         }
                     }, 3000);
-
-                    sendP2PCommand({ type: "SYNC_JOIN", player: currentPlayer });
-                    if (mySelectedCategories.length > 0 && partnerSelectedCategories === null) {
-                        sendP2PCommand({ type: "SYNC_CATEGORIES_SUBMIT", categories: mySelectedCategories });
-                    }
-                    
-                    syncChatWithPartner();
-                };
-
-                if (conn.open) {
-                    onOpen();
-                } else {
-                    conn.on('open', onOpen);
                 }
 
-                conn.on('data', function(data) {
-                    lastSignalTime = Date.now();
-                    handleIncomingP2PData(data);
-                });
+                sendP2PCommand({ type: "SYNC_JOIN", player: currentPlayer });
 
-                conn.on('close', function() { handleDisconnect(); });
-                conn.on('error', function(err) { handleDisconnect(); });
-            }
+                if (mySelectedCategories.length > 0 && partnerSelectedCategories === null) {
+                    sendP2PCommand({ type: "SYNC_CATEGORIES_SUBMIT", categories: mySelectedCategories });
+                }
+            });
 
-            function handleDisconnect() {
+            conn.on('data', function(data) { handleIncomingP2PData(data); });
+            conn.on('close', function() {
+                document.getElementById('p2p-status').style.color = "#e91e63";
+                document.getElementById('p2p-status').innerText = "🔴 Connessione persa. Riconnessione...";
                 if (pingInterval) { clearInterval(pingInterval); pingInterval = null; }
-                if (watchdogInterval) { clearInterval(watchdogInterval); watchdogInterval = null; }
-                if (connectionTimeout) { clearTimeout(connectionTimeout); connectionTimeout = null; }
-                if (conn) { conn.close(); conn = null; }
+                attemptConnection(FIXED_ROOM_CODE + "-" + (currentPlayer === "Tiziano" ? "claudia" : "tiziano"));
+            });
+        }
 
-                var statusEl = document.getElementById('p2p-status');
-                if (statusEl) {
-                    statusEl.style.color = "#e91e63";
-                    statusEl.innerHTML = "🔴 Connessione persa. Riconnessione automatica in corso...";
-                }
+        function sendP2PCommand(dataObj) {
+            if (conn && conn.open) { conn.send(dataObj); }
+        }
 
-                var targetId = SECRET_ROOM_ID + "-" + (currentPlayer === "Tiziano" ? "claudia" : "tiziano");
-                setTimeout(function() { attemptConnection(targetId); }, 2000);
+        function handleIncomingP2PData(data) {
+            if (data.type === "PING") {
+                sendP2PCommand({ type: "PONG" });
+                return;
             }
+            if (data.type === "PONG") return;
 
-            function sendP2PCommand(dataObj) {
-                if (conn && conn.open) { conn.send(dataObj); }
-            }
-
-            function syncChatWithPartner() {
-                if (!db) return;
-                var tx = db.transaction(["media"], "readonly");
-                var store = tx.objectStore("media");
-                var request = store.getAll();
-                request.onsuccess = function() {
-                    var items = request.result;
-                    var lastEpoch = 0;
-                    var partnerName = (currentPlayer === "Tiziano") ? "Claudia" : "Tiziano";
-                    items.forEach(function(item) {
-                        if (item.sender === partnerName && item.epoch > lastEpoch) {
-                            lastEpoch = item.epoch;
-                        }
-                    });
-                    sendP2PCommand({ type: "SYNC_CHAT_REQ", lastEpoch: lastEpoch });
-                };
-            }
-
-            function handleIncomingP2PData(data) {
-                if (data.type === "PING") {
-                    sendP2PCommand({ type: "PONG" });
-                    return;
-                }
-                if (data.type === "PONG") return;
-
-                if (data.type === "SYNC_CHAT_REQ") {
-                    if (!db) return;
-                    var tx = db.transaction(["media"], "readonly");
-                    var store = tx.objectStore("media");
-                    var request = store.getAll();
-                    request.onsuccess = function() {
-                        var items = request.result;
-                        var missingMsgs = [];
-                        items.forEach(function(item) {
-                            if (item.sender === currentPlayer && item.epoch > data.lastEpoch) {
-                                missingMsgs.push(item);
-                            }
-                        });
-                        if (missingMsgs.length > 0) {
-                            sendP2PCommand({ type: "SYNC_CHAT_RES", messages: missingMsgs });
-                        }
-                    };
-                    return;
-                }
-
-                if (data.type === "SYNC_CHAT_RES") {
-                    data.messages.forEach(function(msg) {
-                        saveToLocalDB(msg.type, msg.data, msg.category, msg.sender, "partner", msg.epoch);
-                        if (msg.type === "chat_text") {
-                            appendChatMessage(msg.sender, msg.data, "partner");
-                        } else {
-                            appendChatMediaMessage(msg.sender, msg.data, msg.type, "partner");
-                        }
-                        notifyChatBadge();
-                    });
-                    return;
-                }
-
-                if (data.type === "text") {
-                    playNotificationSound();
-                    appendChatMessage(data.sender, data.text, "partner");
-                    saveToLocalDB("chat_text", data.text, "Chat Live", data.sender, "partner", data.epoch);
-                    notifyChatBadge();
-                } else if (data.type === "media") {
-                    playNotificationSound();
-                    saveToLocalDB(data.mediaType, data.fileData, data.category, data.sender, "partner", data.epoch);
-                    appendChatMediaMessage(data.sender, data.fileData, data.mediaType, "partner");
-                    notifyChatBadge();
-                } else if (data.type === "SYNC_SCENARIO_SELECT") {
-                    selectScenario(data.scenarioId, true);
-                } else if (data.type === "SYNC_CATEGORIES_SUBMIT") {
-                    partnerSelectedCategories = data.categories;
-                    sendP2PCommand({ type: "SYNC_CATEGORIES_ACK", categories: mySelectedCategories });
-                    checkBothCategoriesSubmitted();
-                } else if (data.type === "SYNC_CATEGORIES_ACK") {
-                    if (data.categories && data.categories.length > 0) {
-                        partnerSelectedCategories = data.categories;
-                    }
-                    checkBothCategoriesSubmitted();
-                } else if (data.type === "SYNC_BRIEFING") {
-                    goToBriefing(true);
-                } else if (data.type === "SYNC_START") {
-                    startRoleplay(true);
-                } else if (data.type === "SYNC_DIALOGUE_NEXT") {
-                    nextDialogue(true);
-                } else if (data.type === "SYNC_OPEN_MINIGAME") {
-                    openMinigame(true);
-                } else if (data.type === "SYNC_SPIN_WHEEL") {
-                    spinTheWheel(data.victim, data.drawnAction, true);
-                } else if (data.type === "SYNC_GO_CARDS") {
-                    goToCards(true);
-                } else if (data.type === "SYNC_REVEAL_CARD") {
-                    revealCard(true);
-                } else if (data.type === "SYNC_COMPLETE_ACTION") {
-                    completeAction(true);
-                } else if (data.type === "SYNC_NEXT_LEVEL") {
-                    advanceToNextLevel(true);
-                }
-            }
-
-
-            // ==========================================
-            // SEZIONE 6: LOGICA DI GIOCO E SCENARI
-            // ==========================================
-            function buildScenarioMenu() {
-                var container = document.getElementById('scenario-list-container');
-                if (!container) return;
-                container.innerHTML = '';
-                
-                var grouped = {};
-                Object.keys(roleplayScenarios).forEach(function(key) {
-                    var sc = roleplayScenarios[key];
-                    var ctx = sc.context || "Altro";
-                    if (!grouped[ctx]) grouped[ctx] = [];
-                    grouped[ctx].push({ id: key, title: sc.title });
-                });
-
-                Object.keys(grouped).forEach(function(contextName) {
-                    var titleDiv = document.createElement('div');
-                    titleDiv.className = 'checklist-title';
-                    titleDiv.style.cssText = 'color: #fff; border-bottom: 1px solid #444; width: 100%; max-width: 320px; margin-top: 15px; text-transform: uppercase; font-size: 0.95rem; text-align: left; padding-bottom: 4px;';
-                    titleDiv.innerText = contextName;
-                    container.appendChild(titleDiv);
-
-                    grouped[contextName].forEach(function(sc) {
-                        var btn = document.createElement('button');
-                        btn.className = 'btn btn-context';
-                        btn.innerText = sc.title;
-                        btn.onclick = function() { selectScenario(sc.id, false); };
-                        container.appendChild(btn);
-                    });
-                });
-            }
-
-            window.selectScenario = function(scenarioId, isRemote) {
-                currentScenarioId = scenarioId; 
-                mySelectedCategories = []; partnerSelectedCategories = null;
-                showScreen('customize-screen');
-                buildCategoryList();
-                saveGameState();
-                if (!isRemote) sendP2PCommand({ type: "SYNC_SCENARIO_SELECT", scenarioId: scenarioId });
-            };
-
-            function buildCategoryList() {
-                var list = document.getElementById('category-list'); 
-                if (!list) return;
-                list.innerHTML = '';
-                var allCategories = [];
-                
-                roleplayScenarios[currentScenarioId].levels.forEach(function(lvl) {
-                    if (lvl.actions) {
-                        lvl.actions.forEach(function(act) { 
-                            if (act.category && act.category.trim() !== "" && allCategories.indexOf(act.category.trim()) === -1) {
-                                allCategories.push(act.category.trim()); 
-                            }
-                        });
-                    }
-                });
-
-                if (allCategories.length === 0) allCategories.push("Generale");
-
-                allCategories.forEach(function(cat) {
-                    var div = document.createElement('div'); 
-                    div.className = 'check-item active'; 
-                    div.style.flex = "1 1 calc(50% - 10px)"; 
-                    div.style.justifyContent = "center";
-                    div.innerText = cat; 
-                    div.onclick = function() { this.classList.toggle('active'); }; 
-                    div.dataset.category = cat; 
-                    list.appendChild(div);
-                });
-            }
-
-            window.submitCategories = function() {
-                var items = document.querySelectorAll('.check-item.active');
-                mySelectedCategories = [];
-                for (var i = 0; i < items.length; i++) {
-                    mySelectedCategories.push(items[i].dataset.category);
-                }
-
-                if (mySelectedCategories.length === 0) { alert("⚠️ Seleziona almeno una categoria!"); return; }
-
-                showScreen('waiting-screen');
-
-                if (catSyncInterval) clearInterval(catSyncInterval);
-                catSyncInterval = setInterval(function() {
-                    if (partnerSelectedCategories !== null) {
-                        clearInterval(catSyncInterval);
-                        catSyncInterval = null;
-                    } else {
-                        sendP2PCommand({ type: "SYNC_CATEGORIES_SUBMIT", categories: mySelectedCategories });
-                    }
-                }, 1500);
-
-                sendP2PCommand({ type: "SYNC_CATEGORIES_SUBMIT", categories: mySelectedCategories });
+            if (data.type === "text") {
+                playNotificationSound();
+                appendChatMessage(data.sender, data.text, "partner");
+                notifyChatBadge();
+            } else if (data.type === "media") {
+                playNotificationSound();
+                saveMediaToLocalDB(data.fileData, data.mediaType, data.category, data.sender);
+                appendChatMediaMessage(data.sender, data.fileData, data.mediaType, "partner");
+                notifyChatBadge();
+            } else if (data.type === "SYNC_SCENARIO_SELECT") {
+                selectScenario(data.scenarioId, true);
+            } else if (data.type === "SYNC_CATEGORIES_SUBMIT") {
+                partnerSelectedCategories = data.categories;
+                sendP2PCommand({ type: "SYNC_CATEGORIES_ACK", categories: mySelectedCategories });
                 checkBothCategoriesSubmitted();
-            };
+            } else if (data.type === "SYNC_CATEGORIES_ACK") {
+                if (data.categories && data.categories.length > 0) {
+                    partnerSelectedCategories = data.categories;
+                }
+                checkBothCategoriesSubmitted();
+            } else if (data.type === "SYNC_BRIEFING") {
+                goToBriefing(true);
+            } else if (data.type === "SYNC_START") {
+                startRoleplay(true);
+            } else if (data.type === "SYNC_DIALOGUE_NEXT") {
+                nextDialogue(true);
+            } else if (data.type === "SYNC_OPEN_MINIGAME") {
+                openMinigame(true);
+            } else if (data.type === "SYNC_SPIN_WHEEL") {
+                spinTheWheel(data.victim, data.drawnAction, true);
+            } else if (data.type === "SYNC_GO_CARDS") {
+                goToCards(true);
+            } else if (data.type === "SYNC_REVEAL_CARD") {
+                revealCard(true);
+            } else if (data.type === "SYNC_COMPLETE_ACTION") {
+                completeAction(true);
+            } else if (data.type === "SYNC_NEXT_LEVEL") {
+                advanceToNextLevel(true);
+            }
+        }
 
-            function checkBothCategoriesSubmitted() {
-                if (mySelectedCategories.length > 0 && partnerSelectedCategories !== null) {
-                    if (catSyncInterval) { clearInterval(catSyncInterval); catSyncInterval = null; }
+        function notifyChatBadge() {
+            var modal = document.getElementById('chat-modal');
+            if (modal.style.display !== "flex") {
+                unreadChatCount++;
+                var badge = document.getElementById('chat-badge');
+                badge.innerText = unreadChatCount;
+                badge.style.display = "inline";
+            }
+        }
 
-                    activeCategories = mySelectedCategories.filter(function(cat) {
-                        return partnerSelectedCategories.indexOf(cat) !== -1;
+        function submitCategories() {
+            var items = document.querySelectorAll('.check-item.active');
+            mySelectedCategories = [];
+            for (var i = 0; i < items.length; i++) {
+                mySelectedCategories.push(items[i].dataset.category);
+            }
+
+            if (mySelectedCategories.length === 0) { alert("⚠️ Seleziona almeno una categoria!"); return; }
+
+            showScreen('waiting-screen');
+
+            if (catSyncInterval) clearInterval(catSyncInterval);
+            catSyncInterval = setInterval(function() {
+                if (partnerSelectedCategories !== null) {
+                    clearInterval(catSyncInterval);
+                    catSyncInterval = null;
+                } else {
+                    sendP2PCommand({ type: "SYNC_CATEGORIES_SUBMIT", categories: mySelectedCategories });
+                }
+            }, 1500);
+
+            sendP2PCommand({ type: "SYNC_CATEGORIES_SUBMIT", categories: mySelectedCategories });
+            checkBothCategoriesSubmitted();
+        }
+
+        function checkBothCategoriesSubmitted() {
+            if (mySelectedCategories.length > 0 && partnerSelectedCategories !== null) {
+                if (catSyncInterval) { clearInterval(catSyncInterval); catSyncInterval = null; }
+
+                activeCategories = mySelectedCategories.filter(function(cat) {
+                    return partnerSelectedCategories.indexOf(cat) !== -1;
+                });
+
+                if (activeCategories.length === 0) {
+                    alert("⚠️ Nessuna categoria in comune selezionata! Riattivate qualche categoria.");
+                    mySelectedCategories = []; partnerSelectedCategories = null;
+                    showScreen('customize-screen');
+                    return;
+                }
+
+                goToBriefing(false);
+            }
+        }
+
+        function handleDialogueClick() {
+            nextDialogue(false);
+            sendP2PCommand({ type: "SYNC_DIALOGUE_NEXT" });
+        }
+
+        function handleSpinWheelClick() {
+            var claudiaHas = currentLevelActions["Claudia"].length > 0;
+            var tizianoHas = currentLevelActions["Tiziano"].length > 0;
+            var victim = "";
+
+            if (claudiaHas && !tizianoHas) { 
+                victim = "Claudia"; 
+            } else if (tizianoHas && !claudiaHas) { 
+                victim = "Tiziano"; 
+            } else { 
+                if (lastVictim === "Claudia" && consecutiveTurns >= 2) {
+                    victim = "Tiziano";
+                } else if (lastVictim === "Tiziano" && consecutiveTurns >= 2) {
+                    victim = "Claudia";
+                } else {
+                    victim = Math.random() < 0.5 ? "Tiziano" : "Claudia"; 
+                }
+            }
+
+            if (victim === lastVictim) {
+                consecutiveTurns++;
+            } else {
+                lastVictim = victim;
+                consecutiveTurns = 1;
+            }
+
+            var mazzo = currentLevelActions[victim];
+            var randomIndex = Math.floor(Math.random() * mazzo.length);
+            var drawn = mazzo[randomIndex];
+
+            spinTheWheel(victim, drawn, false);
+            sendP2PCommand({ type: "SYNC_SPIN_WHEEL", victim: victim, drawnAction: drawn });
+        }
+
+        function handleGoToCardsClick() {
+            goToCards(false);
+            sendP2PCommand({ type: "SYNC_GO_CARDS" });
+        }
+
+        function handleRevealCardClick() {
+            revealCard(false);
+            sendP2PCommand({ type: "SYNC_REVEAL_CARD" });
+        }
+
+        function handleCompleteActionClick() {
+            if (currentDrawnAction && selectedVictim) {
+                var index = currentLevelActions[selectedVictim].indexOf(currentDrawnAction);
+                if (index !== -1) {
+                    currentLevelActions[selectedVictim].splice(index, 1);
+                }
+            }
+            completeAction(false);
+            sendP2PCommand({ type: "SYNC_COMPLETE_ACTION" });
+        }
+
+        function handleForceNextLevelClick() {
+            if (confirm("Vuoi alzare subito l'intensità e passare al livello successivo su entrambi i telefoni?")) {
+                advanceToNextLevel(false);
+                sendP2PCommand({ type: "SYNC_NEXT_LEVEL" });
+            }
+        }
+
+        function selectScenario(scenarioId, isRemote) {
+            currentScenarioId = scenarioId; 
+            mySelectedCategories = []; partnerSelectedCategories = null;
+            showScreen('customize-screen');
+            buildCategoryList();
+            saveGameState();
+            if (!isRemote) sendP2PCommand({ type: "SYNC_SCENARIO_SELECT", scenarioId: scenarioId });
+        }
+
+        function goToBriefing(isRemote) {
+            var scenario = roleplayScenarios[currentScenarioId];
+            showScreen('briefing-screen');
+            
+            document.getElementById('briefing-title-claudia').innerText = "CLAUDIA: " + scenario.roles["Claudia"];
+            document.getElementById('briefing-title-tiziano').innerText = "TIZIANO: " + scenario.roles["Tiziano"];
+            document.getElementById('briefing-claudia').innerText = scenario.briefing["Claudia"];
+            document.getElementById('briefing-tiziano').innerText = scenario.briefing["Tiziano"];
+
+            saveGameState();
+            if (!isRemote) sendP2PCommand({ type: "SYNC_BRIEFING" });
+        }
+
+        function startRoleplay(isRemote) {
+            showScreen('vn-screen');
+            document.getElementById('game-menu-btn').style.display = 'block';
+            document.getElementById('fixed-skip-level-btn').style.display = 'block';
+            currentLevelIndex = 0; loadLevelNarrative();
+            saveGameState();
+            if (!isRemote) sendP2PCommand({ type: "SYNC_START" });
+        }
+
+        function loadLevelNarrative() {
+            var levelData = roleplayScenarios[currentScenarioId].levels[currentLevelIndex];
+            
+            currentLevelActions["Claudia"] = levelData.actions.filter(function(a) {
+                return a.actor === "Claudia" && activeCategories.indexOf(a.category) !== -1;
+            });
+            currentLevelActions["Tiziano"] = levelData.actions.filter(function(a) {
+                return a.actor === "Tiziano" && activeCategories.indexOf(a.category) !== -1;
+            });
+
+            if (currentLevelActions["Claudia"].length === 0 && currentLevelActions["Tiziano"].length === 0) {
+                advanceToNextLevel(true);
+                return;
+            }
+
+            var levelIndicator = document.getElementById('level-indicator');
+            if (levelData.level === 1) {
+                levelIndicator.innerText = "🟢 Livello: EASY";
+                levelIndicator.style.borderColor = "#4caf50";
+            } else if (levelData.level === 2) {
+                levelIndicator.innerText = "🟡 Livello: SOFT";
+                levelIndicator.style.borderColor = "#ffeb3b";
+            } else {
+                levelIndicator.innerText = "🔴 Livello: HARD";
+                levelIndicator.style.borderColor = "#f44336";
+            }
+            
+            if (levelData.background && levelData.background.indexOf("http") === 0) {
+                document.getElementById('vn-screen').style.backgroundImage = "url('" + levelData.background + "')";
+            } else {
+                document.getElementById('vn-screen').style.backgroundImage = 'none';
+                document.getElementById('vn-screen').style.backgroundColor = levelData.background || "#000";
+            }
+            
+            document.getElementById('choices-container').innerHTML = ""; 
+            document.getElementById('dialogue-box').style.display = "block";
+            currentDialogueIndex = 0; showDialogue();
+        }
+
+        function showDialogue() {
+            var levelData = roleplayScenarios[currentScenarioId].levels[currentLevelIndex];
+            if (currentDialogueIndex < levelData.introDialogues.length) {
+                var line = levelData.introDialogues[currentDialogueIndex];
+                document.getElementById('speaker-name').innerText = line.speaker;
+                document.getElementById('dialogue-text').innerText = line.text;
+                
+                var color = "var(--primary-accent)"; 
+                if (line.speaker === roleplayScenarios[currentScenarioId].roles["Tiziano"] || line.speaker === "Tiziano") color = "var(--secondary-accent)";
+                if (line.speaker === "Narratore") color = "#a996b8";
+                document.getElementById('speaker-name').style.color = color;
+            } else {
+                document.getElementById('dialogue-box').style.display = "none";
+                document.getElementById('choices-container').innerHTML = 
+                    "<button class='choice-btn' onclick='openMinigame(false)'>Gira la Ruota dell'Azione 🎡</button>";
+            }
+        }
+
+        function nextDialogue(isRemote) { 
+            currentDialogueIndex++; 
+            saveGameState();
+            showDialogue(); 
+        }
+
+        function openMinigame(isRemote) {
+            var remainingTotal = currentLevelActions["Claudia"].length + currentLevelActions["Tiziano"].length;
+            if (remainingTotal === 0) {
+                advanceToNextLevel(isRemote);
+                return;
+            }
+
+            showScreen('minigame-screen');
+            document.getElementById('game-menu-btn').style.display = 'block';
+            document.getElementById('fixed-skip-level-btn').style.display = 'block';
+            document.getElementById('spinBtn').style.display = 'block';
+            document.getElementById('nextPhaseBtn').style.display = 'none';
+            document.getElementById('winner-text').style.opacity = 0;
+            
+            document.getElementById('minigame-status-text').innerText = 
+                "Azioni rimaste per questo livello: " + remainingTotal;
+
+            saveGameState();
+            if (!isRemote) sendP2PCommand({ type: "SYNC_OPEN_MINIGAME" });
+        }
+
+        function spinTheWheel(victim, drawnAction, isRemote) {
+            selectedVictim = victim;
+            currentDrawnAction = drawnAction;
+
+            var wheel = document.getElementById('spinWheel');
+            document.getElementById('spinBtn').style.display = 'none';
+            var winnerText = document.getElementById('winner-text');
+            
+            var extraDegrees = (victim === "Tiziano") ? 270 : 90;
+            var randomOffset = Math.floor(Math.random() * 60) - 30;
+            currentRotation += 1440 + extraDegrees + randomOffset; 
+            wheel.style.transform = "rotate(" + currentRotation + "deg)";
+
+            setTimeout(function() {
+                winnerText.style.color = selectedVictim === "Claudia" ? "var(--primary-accent)" : "var(--secondary-accent)";
+                winnerText.innerText = "Tocca a: " + roleplayScenarios[currentScenarioId].roles[selectedVictim];
+                winnerText.style.opacity = 1; 
+                document.getElementById('nextPhaseBtn').style.display = 'block';
+                saveGameState();
+            }, 3000);
+        }
+
+        function goToCards(isRemote) {
+            showScreen('cards-screen');
+            document.getElementById('game-menu-btn').style.display = 'block';
+            document.getElementById('fixed-skip-level-btn').style.display = 'block';
+            document.getElementById('playingCard').classList.remove('is-flipped'); 
+            document.getElementById('continueBtn').style.display = 'none';
+            isCardFlipped = false;
+            
+            var roleName = roleplayScenarios[currentScenarioId].roles[selectedVictim];
+            document.getElementById('card-turn-title').innerText = "Azione per " + roleName;
+            document.getElementById('card-turn-title').style.color = selectedVictim === "Claudia" ? "var(--primary-accent)" : "var(--secondary-accent)";
+            document.getElementById('cardRoleLabel').innerText = "RUOLO: " + roleName.toUpperCase();
+            document.getElementById('cardRoleLabel').style.color = selectedVictim === "Claudia" ? "var(--primary-accent)" : "var(--secondary-accent)";
+            
+            if (currentDrawnAction) {
+                document.getElementById('cardText').innerText = currentDrawnAction.text;
+                var cat = currentDrawnAction.category ? currentDrawnAction.category.toUpperCase() : 'GENERALE';
+                document.getElementById('cardCategoryTag').innerText = "CATEGORIA: " + cat;
+
+                var bgUrl = CATEGORY_IMAGES[cat] || CATEGORY_IMAGES["DEFAULT"];
+                document.getElementById('cardFrontFace').style.background = "linear-gradient(rgba(10,6,13,0.5), rgba(10,6,13,0.85)), url('" + bgUrl + "') center/cover";
+            }
+            saveGameState();
+        }
+
+        function revealCard(isRemote) {
+            var card = document.getElementById('playingCard');
+            if (!card.classList.contains('is-flipped')) {
+                card.classList.add('is-flipped');
+                isCardFlipped = true;
+                setTimeout(function() { document.getElementById('continueBtn').style.display = 'inline-block'; }, 400);
+                saveGameState();
+            }
+        }
+
+        function completeAction(isRemote) {
+            document.getElementById('cards-screen').style.display = 'none';
+            
+            var remainingTotal = currentLevelActions["Claudia"].length + currentLevelActions["Tiziano"].length;
+            if (remainingTotal > 0) {
+                showScreen('vn-screen');
+                document.getElementById('dialogue-box').style.display = 'none';
+                document.getElementById('choices-container').innerHTML = 
+                    "<button class='choice-btn' onclick='openMinigame(false)'>Prossima Azione 🎡 (Rimaste: " + remainingTotal + ")</button>";
+            } else {
+                advanceToNextLevel(isRemote);
+            }
+            saveGameState();
+        }
+
+        function advanceToNextLevel(isRemote) {
+            currentLevelIndex++;
+            saveGameState();
+            if (currentLevelIndex >= roleplayScenarios[currentScenarioId].levels.length) {
+                showScreen('vn-screen');
+                document.getElementById('fixed-skip-level-btn').style.display = 'none';
+                document.getElementById('game-menu-btn').style.display = 'none';
+                document.getElementById('level-indicator').innerText = "Fine Copione";
+                document.getElementById('level-indicator').style.borderColor = "#673ab7";
+                document.getElementById('dialogue-box').style.display = 'none';
+                document.getElementById('choices-container').innerHTML = 
+                    "<h2 style='color: white;'>Il copione è finito.</h2><p style='color: #a996b8;'>Ora le regole le scrivete voi.</p><button class='choice-btn' onclick='resetGameState()'>Torna al Menu Principale</button>";
+                return;
+            }
+            showScreen('vn-screen');
+            loadLevelNarrative();
+        }
+
+        // UTILITIES
+        function selectPlayer(name) { 
+            currentPlayer = name; 
+            document.getElementById('btn-select-tiziano').disabled = (name === 'Claudia');
+            document.getElementById('btn-select-claudia').disabled = (name === 'Tiziano');
+            document.getElementById('btn-reset-game').style.display = 'inline-block';
+            saveGameState();
+            autoConnectP2P(name);
+        }
+
+        function buildCategoryList() {
+            var list = document.getElementById('category-list'); 
+            if (!list) return;
+            list.innerHTML = '';
+            var allCategories = [];
+            
+            roleplayScenarios[currentScenarioId].levels.forEach(function(lvl) {
+                if (lvl.actions) {
+                    lvl.actions.forEach(function(act) { 
+                        if (act.category && act.category.trim() !== "" && allCategories.indexOf(act.category.trim()) === -1) {
+                            allCategories.push(act.category.trim()); 
+                        }
                     });
-
-                    if (activeCategories.length === 0) {
-                        alert("⚠️ Nessuna categoria in comune selezionata! Riattivate qualche categoria.");
-                        mySelectedCategories = []; partnerSelectedCategories = null;
-                        showScreen('customize-screen');
-                        return;
-                    }
-
-                    goToBriefing(false);
                 }
+            });
+
+            if (allCategories.length === 0) allCategories.push("Generale");
+
+            allCategories.forEach(function(cat) {
+                var div = document.createElement('div'); 
+                div.className = 'check-item active'; 
+                div.style.flex = "1 1 calc(50% - 10px)"; 
+                div.style.justifyContent = "center";
+                div.innerText = cat; 
+                div.onclick = function() { this.classList.toggle('active'); }; 
+                div.dataset.category = cat; 
+                list.appendChild(div);
+            });
+        }
+
+        function showScreen(screenId) {
+            currentScreenId = screenId;
+            var screens = document.querySelectorAll('.menu-screen');
+            for (var i = 0; i < screens.length; i++) {
+                screens[i].classList.remove('active');
+                screens[i].style.display = 'none';
             }
+            
+            var vn = document.getElementById('vn-screen'); if (vn) vn.style.display = 'none';
+            var mini = document.getElementById('minigame-screen'); if (mini) mini.style.display = 'none';
+            var cards = document.getElementById('cards-screen'); if (cards) cards.style.display = 'none';
 
-            window.goToBriefing = function(isRemote) {
-                var scenario = roleplayScenarios[currentScenarioId];
-                showScreen('briefing-screen');
-                
-                document.getElementById('briefing-title-claudia').innerText = "CLAUDIA: " + scenario.roles["Claudia"];
-                document.getElementById('briefing-title-tiziano').innerText = "TIZIANO: " + scenario.roles["Tiziano"];
-                document.getElementById('briefing-claudia').innerText = scenario.briefing["Claudia"];
-                document.getElementById('briefing-tiziano').innerText = scenario.briefing["Tiziano"];
+            var isGamingScreen = (screenId === 'vn-screen' || screenId === 'minigame-screen' || screenId === 'cards-screen');
+            document.getElementById('game-menu-btn').style.display = isGamingScreen ? 'block' : 'none';
+            document.getElementById('fixed-skip-level-btn').style.display = isGamingScreen ? 'block' : 'none';
 
-                saveGameState();
-                if (!isRemote) sendP2PCommand({ type: "SYNC_BRIEFING" });
-            };
-
-            window.startRoleplay = function(isRemote) {
-                showScreen('vn-screen');
-                document.getElementById('game-menu-btn').style.display = 'block';
-                document.getElementById('fixed-skip-level-btn').style.display = 'block';
-                currentLevelIndex = 0; loadLevelNarrative();
-                saveGameState();
-                if (!isRemote) sendP2PCommand({ type: "SYNC_START" });
-            };
-
-            function loadLevelNarrative() {
-                var levelData = roleplayScenarios[currentScenarioId].levels[currentLevelIndex];
-                
-                currentLevelActions["Claudia"] = levelData.actions.filter(function(a) {
-                    return a.actor === "Claudia" && activeCategories.indexOf(a.category) !== -1;
-                });
-                currentLevelActions["Tiziano"] = levelData.actions.filter(function(a) {
-                    return a.actor === "Tiziano" && activeCategories.indexOf(a.category) !== -1;
-                });
-
-                if (currentLevelActions["Claudia"].length === 0 && currentLevelActions["Tiziano"].length === 0) {
-                    advanceToNextLevel(true);
-                    return;
-                }
-
-                var levelIndicator = document.getElementById('level-indicator');
-                if (levelData.level === 1) {
-                    levelIndicator.innerText = "🟢 Livello: EASY";
-                    levelIndicator.style.borderColor = "#4caf50";
-                } else if (levelData.level === 2) {
-                    levelIndicator.innerText = "🟡 Livello: SOFT";
-                    levelIndicator.style.borderColor = "#ffeb3b";
-                } else {
-                    levelIndicator.innerText = "🔴 Livello: HARD";
-                    levelIndicator.style.borderColor = "#f44336";
-                }
-                
-                if (levelData.background && levelData.background.indexOf("http") === 0) {
-                    document.getElementById('vn-screen').style.backgroundImage = "url('" + levelData.background + "')";
-                } else {
-                    document.getElementById('vn-screen').style.backgroundImage = 'none';
-                    document.getElementById('vn-screen').style.backgroundColor = levelData.background || "#000";
-                }
-                
-                document.getElementById('choices-container').innerHTML = ""; 
-                document.getElementById('dialogue-box').style.display = "block";
-                currentDialogueIndex = 0; showDialogue();
+            var target = document.getElementById(screenId);
+            if (target) {
+                target.style.display = 'flex';
+                target.classList.add('active');
             }
+            saveGameState();
+        }
 
-            function showDialogue() {
-                var levelData = roleplayScenarios[currentScenarioId].levels[currentLevelIndex];
-                if (currentDialogueIndex < levelData.introDialogues.length) {
-                    var line = levelData.introDialogues[currentDialogueIndex];
-                    document.getElementById('speaker-name').innerText = line.speaker;
-                    document.getElementById('dialogue-text').innerText = line.text;
-                    
-                    var color = "var(--primary-accent)"; 
-                    if (line.speaker === roleplayScenarios[currentScenarioId].roles["Tiziano"] || line.speaker === "Tiziano") color = "var(--secondary-accent)";
-                    if (line.speaker === "Narratore") color = "#a996b8";
-                    document.getElementById('speaker-name').style.color = color;
-                } else {
-                    document.getElementById('dialogue-box').style.display = "none";
-                    document.getElementById('choices-container').innerHTML = 
-                        "<button class='choice-btn' onclick='openMinigame(false)'>Gira la Ruota dell'Azione 🎡</button>";
-                }
+        window.onload = function() {
+            if (LINK_SCENARI_RAW && LINK_SCENARI_RAW.indexOf("http") === 0) {
+                loadFromGoogleSheets();
             }
+        };
 
-            window.handleDialogueClick = function() {
-                nextDialogue(false);
-                sendP2PCommand({ type: "SYNC_DIALOGUE_NEXT" });
-            };
+        function loadFromGoogleSheets() {
+            const cacheBuster = "&_t=" + Date.now();
+            const urlScenari = LINK_SCENARI_RAW + cacheBuster;
+            const urlCopione = LINK_COPIONE_RAW + cacheBuster;
 
-            function nextDialogue(isRemote) { 
-                currentDialogueIndex++; 
-                saveGameState();
-                showDialogue(); 
-            }
-
-            window.openMinigame = function(isRemote) {
-                var remainingTotal = currentLevelActions["Claudia"].length + currentLevelActions["Tiziano"].length;
-                if (remainingTotal === 0) {
-                    advanceToNextLevel(isRemote);
-                    return;
-                }
-
-                showScreen('minigame-screen');
-                document.getElementById('game-menu-btn').style.display = 'block';
-                document.getElementById('fixed-skip-level-btn').style.display = 'block';
-                document.getElementById('spinBtn').style.display = 'block';
-                document.getElementById('nextPhaseBtn').style.display = 'none';
-                document.getElementById('winner-text').style.opacity = 0;
-                
-                document.getElementById('minigame-status-text').innerText = 
-                    "Azioni rimaste per questo livello: " + remainingTotal;
-
-                saveGameState();
-                if (!isRemote) sendP2PCommand({ type: "SYNC_OPEN_MINIGAME" });
-            };
-
-            window.handleSpinWheelClick = function() {
-                var claudiaHas = currentLevelActions["Claudia"].length > 0;
-                var tizianoHas = currentLevelActions["Tiziano"].length > 0;
-                var victim = "";
-
-                if (claudiaHas && !tizianoHas) { victim = "Claudia"; }
-                else if (tizianoHas && !claudiaHas) { victim = "Tiziano"; }
-                else { victim = Math.random() < 0.5 ? "Tiziano" : "Claudia"; }
-
-                var mazzo = currentLevelActions[victim];
-                var randomIndex = Math.floor(Math.random() * mazzo.length);
-                var drawn = mazzo[randomIndex];
-
-                spinTheWheel(victim, drawn, false);
-                sendP2PCommand({ type: "SYNC_SPIN_WHEEL", victim: victim, drawnAction: drawn });
-            };
-
-            function spinTheWheel(victim, drawnAction, isRemote) {
-                selectedVictim = victim;
-                currentDrawnAction = drawnAction;
-
-                var wheel = document.getElementById('spinWheel');
-                document.getElementById('spinBtn').style.display = 'none';
-                var winnerText = document.getElementById('winner-text');
-                
-                var extraDegrees = (victim === "Tiziano") ? 90 : 270;
-                currentRotation += 1440 + extraDegrees; 
-                wheel.style.transform = "rotate(" + currentRotation + "deg)";
-
-                setTimeout(function() {
-                    winnerText.style.color = selectedVictim === "Claudia" ? "var(--primary-accent)" : "var(--secondary-accent)";
-                    winnerText.innerText = "Tocca a: " + roleplayScenarios[currentScenarioId].roles[selectedVictim];
-                    winnerText.style.opacity = 1; 
-                    document.getElementById('nextPhaseBtn').style.display = 'block';
-                    saveGameState();
-                }, 3000);
-            }
-
-            window.handleGoToCardsClick = function() {
-                goToCards(false);
-                sendP2PCommand({ type: "SYNC_GO_CARDS" });
-            };
-
-            function goToCards(isRemote) {
-                showScreen('cards-screen');
-                document.getElementById('game-menu-btn').style.display = 'block';
-                document.getElementById('fixed-skip-level-btn').style.display = 'block';
-                document.getElementById('playingCard').classList.remove('is-flipped'); 
-                document.getElementById('continueBtn').style.display = 'none';
-                isCardFlipped = false;
-                
-                var roleName = roleplayScenarios[currentScenarioId].roles[selectedVictim];
-                document.getElementById('card-turn-title').innerText = "Azione per " + roleName;
-                document.getElementById('card-turn-title').style.color = selectedVictim === "Claudia" ? "var(--primary-accent)" : "var(--secondary-accent)";
-                document.getElementById('cardRoleLabel').innerText = "RUOLO: " + roleName.toUpperCase();
-                document.getElementById('cardRoleLabel').style.color = selectedVictim === "Claudia" ? "var(--primary-accent)" : "var(--secondary-accent)";
-                
-                if (currentDrawnAction) {
-                    document.getElementById('cardText').innerText = currentDrawnAction.text;
-                    var cat = currentDrawnAction.category ? currentDrawnAction.category.toUpperCase() : 'GENERALE';
-                    document.getElementById('cardCategoryTag').innerText = "CATEGORIA: " + cat;
-
-                    var bgUrl = CATEGORY_IMAGES[cat] || CATEGORY_IMAGES["DEFAULT"];
-                    document.getElementById('cardFrontFace').style.background = "linear-gradient(rgba(10,6,13,0.5), rgba(10,6,13,0.85)), url('" + bgUrl + "') center/cover";
-                }
-                saveGameState();
-            }
-
-            window.handleRevealCardClick = function() {
-                revealCard(false);
-                sendP2PCommand({ type: "SYNC_REVEAL_CARD" });
-            };
-
-            function revealCard(isRemote) {
-                var card = document.getElementById('playingCard');
-                if (!card.classList.contains('is-flipped')) {
-                    card.classList.add('is-flipped');
-                    isCardFlipped = true;
-                    setTimeout(function() { document.getElementById('continueBtn').style.display = 'inline-block'; }, 400);
-                    saveGameState();
-                }
-            }
-
-            window.handleCompleteActionClick = function() {
-                if (currentDrawnAction && selectedVictim) {
-                    var index = currentLevelActions[selectedVictim].indexOf(currentDrawnAction);
-                    if (index !== -1) {
-                        currentLevelActions[selectedVictim].splice(index, 1);
-                    }
-                }
-                completeAction(false);
-                sendP2PCommand({ type: "SYNC_COMPLETE_ACTION" });
-            };
-
-            function completeAction(isRemote) {
-                document.getElementById('cards-screen').style.display = 'none';
-                
-                var remainingTotal = currentLevelActions["Claudia"].length + currentLevelActions["Tiziano"].length;
-                if (remainingTotal > 0) {
-                    showScreen('vn-screen');
-                    document.getElementById('dialogue-box').style.display = 'none';
-                    document.getElementById('choices-container').innerHTML = 
-                        "<button class='choice-btn' onclick='openMinigame(false)'>Prossima Azione 🎡 (Rimaste: " + remainingTotal + ")</button>";
-                } else {
-                    advanceToNextLevel(isRemote);
-                }
-                saveGameState();
-            }
-
-            window.handleForceNextLevelClick = function() {
-                if (confirm("Vuoi alzare subito l'intensità e passare al livello successivo su entrambi i telefoni?")) {
-                    advanceToNextLevel(false);
-                    sendP2PCommand({ type: "SYNC_NEXT_LEVEL" });
-                }
-            };
-
-            function advanceToNextLevel(isRemote) {
-                currentLevelIndex++;
-                saveGameState();
-                if (currentLevelIndex >= roleplayScenarios[currentScenarioId].levels.length) {
-                    showScreen('vn-screen');
-                    document.getElementById('fixed-skip-level-btn').style.display = 'none';
-                    document.getElementById('game-menu-btn').style.display = 'none';
-                    document.getElementById('level-indicator').innerText = "Fine Copione";
-                    document.getElementById('level-indicator').style.borderColor = "#673ab7";
-                    document.getElementById('dialogue-box').style.display = 'none';
-                    document.getElementById('choices-container').innerHTML = 
-                        "<h2 style='color: white;'>Il copione è finito.</h2><p style='color: #a996b8;'>Ora le regole le scrivete voi.</p><button class='choice-btn' onclick='resetGameState()'>Torna al Menu Principale</button>";
-                    return;
-                }
-                showScreen('vn-screen');
-                loadLevelNarrative();
-            }
-
-
-            // ==========================================
-            // SEZIONE 7: CHAT LIVE E MEDIA (INDEXEDDB)
-            // ==========================================
-            function initDB() {
-                var request = indexedDB.open("ScenariMediaDB", 1);
-                request.onupgradeneeded = function(e) {
-                    db = e.target.result;
-                    if (!db.objectStoreNames.contains("media")) {
-                        db.createObjectStore("media", { keyPath: "id", autoIncrement: true });
-                    }
-                };
-                request.onsuccess = function(e) { 
-                    db = e.target.result; 
-                    loadChatHistory();
-                };
-            }
-            initDB();
-
-            function saveToLocalDB(type, data, category, sender, msgClass, epoch) {
-                if (!db) return;
-                var tx = db.transaction(["media"], "readwrite");
-                var store = tx.objectStore("media");
-                var ts = epoch ? new Date(epoch).toLocaleString() : new Date().toLocaleString();
-                store.add({ type: type, data: data, category: category, sender: sender, msgClass: msgClass || "", timestamp: ts, epoch: epoch || Date.now() });
-            }
-
-            function loadChatHistory() {
-                if (!db) return;
-                var tx = db.transaction(["media"], "readonly");
-                var store = tx.objectStore("media");
-                var request = store.getAll();
-                request.onsuccess = function() {
-                    var items = request.result;
-                    var box = document.getElementById('chat-messages');
-                    box.innerHTML = '<div style="font-size:0.75rem; color:#a996b8; text-align:center; margin-bottom:10px;">Messaggi e media sono cifrati e salvati solo qui.</div>';
-                    
-                    items.forEach(function(item) {
-                        if (item.category === "Chat Live" || item.type === "chat_text") {
-                            var div = document.createElement('div');
-                            div.className = "chat-msg " + item.msgClass;
-                            
-                            if (item.type === "chat_text") {
-                                div.innerHTML = "<strong>" + item.sender + ":</strong> " + item.data;
-                            } else {
-                                var mediaHTML = "";
-                                if (item.type === "image") {
-                                    mediaHTML = '<img src="' + item.data + '" onclick="openLightbox(\'' + item.data + '\', false)">';
-                                } else if (item.type === "video") {
-                                    mediaHTML = '<video src="' + item.data + '" controls onclick="openLightbox(\'' + item.data + '\', true)"></video>';
-                                } else if (item.type === "audio") {
-                                    mediaHTML = '<audio src="' + item.data + '" controls style="width:100%;"></audio>';
+            Papa.parse(urlScenari, {
+                download: true, header: true, skipEmptyLines: true,
+                transformHeader: function(h) { return h.trim(); },
+                complete: function(res) {
+                    if (res.data && res.data.length > 0) {
+                        roleplayScenarios = {};
+                        res.data.forEach(function(row) {
+                            if (!row.ID_Scenario) return;
+                            roleplayScenarios[row.ID_Scenario] = {
+                                title: row.Titolo_Storia, 
+                                context: row.Contesto_Menu,
+                                roles: { "Claudia": row.Ruolo_Claudia, "Tiziano": row.Ruolo_Tiziano },
+                                briefing: { "Claudia": row.Briefing_Claudia, "Tiziano": row.Briefing_Tiziano },
+                                levels: []
+                            };
+                        });
+                        
+                        Papa.parse(urlCopione, {
+                            download: true, header: true, skipEmptyLines: true,
+                            transformHeader: function(h) { return h.trim(); },
+                            complete: function(resCopione) {
+                                resCopione.data.forEach(function(row) {
+                                    let id = row.ID_Scenario;
+                                    if (!id || !roleplayScenarios[id]) return;
+                                    let lvlIndex = parseInt(row.Livello) - 1;
+                                    if (isNaN(lvlIndex)) return;
+                                    if (!roleplayScenarios[id].levels[lvlIndex]) {
+                                        let bg = row.Sfondo_URL ? row.Sfondo_URL.trim() : "#000";
+                                        roleplayScenarios[id].levels[lvlIndex] = { level: lvlIndex + 1, background: bg, introDialogues: [], actions: [] };
+                                    }
+                                    if (row.Tipo === "Dialogo") {
+                                        roleplayScenarios[id].levels[lvlIndex].introDialogues.push({ speaker: row.Chi_Parla_o_Agisce, text: row.Testo });
+                                    } else if (row.Tipo === "Azione") {
+                                        roleplayScenarios[id].levels[lvlIndex].actions.push({ actor: row.Chi_Parla_o_Agisce, text: row.Testo, category: row.Categoria });
+                                    }
+                                });
+                                buildScenarioMenu();
+                                checkSavedGameAvailable();
+                                
+                                var restored = restoreGameState();
+                                if (!restored) {
+                                    showScreen('selection-screen');
                                 }
-                                div.innerHTML = "<strong>" + item.sender + ":</strong><br>" + mediaHTML;
                             }
-                            box.appendChild(div);
-                        }
-                    });
-                    box.scrollTop = box.scrollHeight;
-                };
-            }
-
-            window.deleteSingleMedia = function(id) {
-                if (!confirm("Vuoi cancellare definitivamente questo file dalla tua memoria locale?")) return;
-                if (!db) return;
-                var tx = db.transaction(["media"], "readwrite");
-                var store = tx.objectStore("media");
-                store.delete(id);
-                tx.oncomplete = function() { loadGalleryContent(); loadChatHistory(); };
-            };
-
-            window.clearAllGallery = function() {
-                if (!confirm("⚠️ Sei sicuro di voler SVUOTARE tutta la tua cronologia Chat e Galleria Privata?")) return;
-                if (!db) return;
-                var tx = db.transaction(["media"], "readwrite");
-                var store = tx.objectStore("media");
-                store.clear();
-                tx.oncomplete = function() { loadGalleryContent(); loadChatHistory(); };
-            };
-
-            window.openGallery = function() {
-                showScreen('gallery-screen');
-                loadGalleryContent();
-            };
-
-            function loadGalleryContent() {
-                var grid = document.getElementById('gallery-grid');
-                grid.innerHTML = "Caricamento...";
-                if (!db) return;
-
-                var tx = db.transaction(["media"], "readonly");
-                var store = tx.objectStore("media");
-                var request = store.getAll();
-
-                request.onsuccess = function() {
-                    var items = request.result;
-                    var mediaItems = items.filter(item => item.type !== "chat_text");
-
-                    if (!mediaItems || mediaItems.length === 0) {
-                        grid.innerHTML = "<p style='color:#a996b8; grid-column: 1/-1;'>Nessun file presente nella Galleria Privata.</p>";
-                        return;
-                    }
-                    grid.innerHTML = "";
-                    mediaItems.reverse().forEach(function(item) {
-                        var div = document.createElement('div');
-                        div.className = "gallery-card";
-                        
-                        var mediaHTML = "";
-                        var ext = item.type === "image" ? "jpg" : (item.type === "video" ? "mp4" : "mp3");
-                        var safeTimestamp = item.timestamp ? item.timestamp.replace(/[/:,\s]/g, "-") : Date.now();
-                        var fileName = "Scenari_" + item.category + "_" + safeTimestamp + "." + ext;
-
-                        if (item.type === "image") {
-                            mediaHTML = '<img src="' + item.data + '" onclick="openLightbox(\'' + item.data + '\', false)">';
-                        } else if (item.type === "video") {
-                            mediaHTML = '<video src="' + item.data + '" controls onclick="openLightbox(\'' + item.data + '\', true)"></video>';
-                        } else {
-                            mediaHTML = '<audio src="' + item.data + '" controls style="width:100%;"></audio>';
-                        }
-
-                        div.innerHTML = mediaHTML + 
-                            '<div style="font-size:0.7rem; color:#d1c4db;">Da: ' + item.sender + '</div>' +
-                            '<div style="font-size:0.65rem; color:#888;">' + item.timestamp + '</div>' +
-                            '<div class="gallery-actions">' +
-                                '<a href="' + item.data + '" download="' + fileName + '" style="font-size:0.75rem; color:var(--primary-accent); text-decoration:none;">💾 Scarica</a>' +
-                                '<button class="gallery-btn-del" onclick="deleteSingleMedia(' + item.id + ')">🗑️ Elimina</button>' +
-                            '</div>';
-                        
-                        grid.appendChild(div);
-                    });
-                };
-            }
-
-            window.toggleChat = function() {
-                var modal = document.getElementById('chat-modal');
-                if (modal.style.display === "flex") {
-                    modal.style.display = "none";
-                } else {
-                    modal.style.display = "flex";
-                    unreadChatCount = 0;
-                    document.getElementById('chat-badge').style.display = "none";
-                }
-            };
-
-            window.sendTextMessage = function() {
-                var input = document.getElementById('chat-text-input');
-                var txt = input.value.trim();
-                if (!txt) return;
-
-                var epoch = Date.now();
-                appendChatMessage("Tu", txt, "me");
-                saveToLocalDB("chat_text", txt, "Chat Live", currentPlayer, "me", epoch); 
-                
-                if (conn && conn.open) {
-                    conn.send({ type: "text", text: txt, sender: currentPlayer, epoch: epoch });
-                }
-                input.value = "";
-            };
-
-            function appendChatMessage(sender, txt, msgClass) {
-                var box = document.getElementById('chat-messages');
-                var div = document.createElement('div');
-                div.className = "chat-msg " + msgClass;
-                div.innerHTML = "<strong>" + sender + ":</strong> " + txt;
-                box.appendChild(div);
-                box.scrollTop = box.scrollHeight;
-            }
-
-            window.sendChatFile = function(input, mediaKind) {
-                if (!input.files || !input.files[0]) return;
-                var file = input.files[0];
-                var reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    var base64Data = e.target.result;
-                    var mediaType = file.type.startsWith("image") ? "image" : (file.type.startsWith("video") ? "video" : "audio");
-                    var epoch = Date.now();
-                    
-                    appendChatMediaMessage("Tu", base64Data, mediaType, "me");
-                    saveToLocalDB(mediaType, base64Data, "Chat Live", currentPlayer, "me", epoch); 
-
-                    if (conn && conn.open) {
-                        conn.send({
-                            type: "media",
-                            mediaType: mediaType,
-                            fileData: base64Data,
-                            category: "Chat Live",
-                            sender: currentPlayer,
-                            epoch: epoch
                         });
                     }
-                };
-                reader.readAsDataURL(file);
-            };
+                }
+            });
+        }
 
-            function appendChatMediaMessage(sender, base64Data, mediaType, msgClass) {
-                var box = document.getElementById('chat-messages');
-                var div = document.createElement('div');
-                div.className = "chat-msg " + msgClass;
+        function buildScenarioMenu() {
+            var container = document.getElementById('scenario-list-container');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            var grouped = {};
+            Object.keys(roleplayScenarios).forEach(function(key) {
+                var sc = roleplayScenarios[key];
+                var ctx = sc.context || "Altro";
+                if (!grouped[ctx]) grouped[ctx] = [];
+                grouped[ctx].push({ id: key, title: sc.title });
+            });
+
+            Object.keys(grouped).forEach(function(contextName) {
+                var titleDiv = document.createElement('div');
+                titleDiv.className = 'checklist-title';
+                titleDiv.style.cssText = 'color: #fff; border-bottom: 1px solid #444; width: 100%; max-width: 320px; margin-top: 15px; text-transform: uppercase; font-size: 0.95rem; text-align: left; padding-bottom: 4px;';
+                titleDiv.innerText = contextName;
+                container.appendChild(titleDiv);
+
+                grouped[contextName].forEach(function(sc) {
+                    var btn = document.createElement('button');
+                    btn.className = 'btn btn-context';
+                    btn.innerText = sc.title;
+                    btn.onclick = function() { selectScenario(sc.id, false); };
+                    container.appendChild(btn);
+                });
+            });
+        }
+
+        function toggleChat() {
+            var modal = document.getElementById('chat-modal');
+            if (modal.style.display === "flex") {
+                modal.style.display = "none";
+            } else {
+                modal.style.display = "flex";
+                unreadChatCount = 0;
+                document.getElementById('chat-badge').style.display = "none";
+            }
+        }
+
+        function sendTextMessage() {
+            var input = document.getElementById('chat-text-input');
+            var txt = input.value.trim();
+            if (!txt) return;
+
+            appendChatMessage("Tu", txt, "me");
+            if (conn && conn.open) {
+                conn.send({ type: "text", text: txt, sender: currentPlayer });
+            }
+            input.value = "";
+        }
+
+        function appendChatMessage(sender, txt, msgClass) {
+            var box = document.getElementById('chat-messages');
+            var div = document.createElement('div');
+            div.className = "chat-msg " + msgClass;
+            div.innerHTML = "<strong>" + sender + ":</strong> " + txt;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function sendChatFile(input, mediaKind) {
+            if (!input.files || !input.files[0]) return;
+            var file = input.files[0];
+            var reader = new FileReader();
+            
+            reader.onload = function(e) {
+                var base64Data = e.target.result;
+                var mediaType = file.type.startsWith("image") ? "image" : (file.type.startsWith("video") ? "video" : "audio");
                 
-                var mediaHTML = "";
-                if (mediaType === "image") {
-                    mediaHTML = '<img src="' + base64Data + '" onclick="openLightbox(\'' + base64Data + '\', false)">';
-                } else if (mediaType === "video") {
-                    mediaHTML = '<video src="' + base64Data + '" controls onclick="openLightbox(\'' + base64Data + '\', true)"></video>';
-                } else {
-                    mediaHTML = '<audio src="' + base64Data + '" controls style="width:100%;"></audio>';
-                }
+                appendChatMediaMessage("Tu", base64Data, mediaType, "me");
+                saveMediaToLocalDB(base64Data, mediaType, "Chat Live", currentPlayer);
 
-                div.innerHTML = "<strong>" + sender + ":</strong><br>" + mediaHTML;
-                box.appendChild(div);
-                box.scrollTop = box.scrollHeight;
-            }
-
-            function notifyChatBadge() {
-                var modal = document.getElementById('chat-modal');
-                if (modal.style.display !== "flex") {
-                    unreadChatCount++;
-                    var badge = document.getElementById('chat-badge');
-                    badge.innerText = unreadChatCount;
-                    badge.style.display = "inline";
-                }
-            }
-
-            window.toggleAudioRecording = function() {
-                var btn = document.getElementById('btn-record-audio');
-                if (!isRecording) {
-                    navigator.mediaDevices.getUserMedia({ audio: true })
-                        .then(function(stream) {
-                            mediaRecorder = new MediaRecorder(stream);
-                            audioChunks = [];
-                            mediaRecorder.ondataavailable = function(e) { if (e.data.size > 0) audioChunks.push(e.data); };
-                            mediaRecorder.onstop = function() {
-                                var audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
-                                var reader = new FileReader();
-                                reader.onloadend = function() {
-                                    var base64Data = reader.result;
-                                    var epoch = Date.now();
-                                    appendChatMediaMessage("Tu", base64Data, "audio", "me");
-                                    saveToLocalDB("audio", base64Data, "Chat Live", currentPlayer, "me", epoch);
-                                    if (conn && conn.open) {
-                                        conn.send({ type: "media", mediaType: "audio", fileData: base64Data, category: "Chat Live", sender: currentPlayer, epoch: epoch });
-                                    }
-                                };
-                                reader.readAsDataURL(audioBlob);
-                            };
-                            mediaRecorder.start();
-                            isRecording = true;
-                            btn.innerText = "⏹️ Invia Audio";
-                            btn.style.background = "#e91e63";
-                        })
-                        .catch(function(err) { alert("Impossibile accedere al microfono: " + err); });
-                } else {
-                    if (mediaRecorder && mediaRecorder.state !== "inactive") {
-                        mediaRecorder.stop();
-                        mediaRecorder.stream.getTracks().forEach(track => track.stop());
-                    }
-                    isRecording = false;
-                    btn.innerText = "🎙️ Registra Audio";
-                    btn.style.background = "rgba(233, 30, 99, 0.2)";
+                if (conn && conn.open) {
+                    conn.send({
+                        type: "media",
+                        mediaType: mediaType,
+                        fileData: base64Data,
+                        category: "Chat Live",
+                        sender: currentPlayer
+                    });
                 }
             };
+            reader.readAsDataURL(file);
+        }
 
-        } catch (e) {
-            console.error("Errore critico durante l'inizializzazione:", e);
-            document.getElementById('loader-msg').innerHTML = "🔴 Errore fatale nello script. Aggiorna la pagina in Incognito o svuota la cache.";
-            document.getElementById('loader-spinner').style.display = 'none';
+        function appendChatMediaMessage(sender, base64Data, mediaType, msgClass) {
+            var box = document.getElementById('chat-messages');
+            var div = document.createElement('div');
+            div.className = "chat-msg " + msgClass;
+            
+            var mediaHTML = "";
+            if (mediaType === "image") {
+                mediaHTML = '<img src="' + base64Data + '" onclick="openLightbox(\'' + base64Data + '\', false)">';
+            } else if (mediaType === "video") {
+                mediaHTML = '<video src="' + base64Data + '" controls onclick="openLightbox(\'' + base64Data + '\', true)"></video>';
+            } else {
+                mediaHTML = '<audio src="' + base64Data + '" controls style="width:100%;"></audio>';
+            }
+
+            div.innerHTML = "<strong>" + sender + ":</strong><br>" + mediaHTML;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function openGallery() {
+            showScreen('gallery-screen');
+            loadGalleryContent();
+        }
+
+        function loadGalleryContent() {
+            var grid = document.getElementById('gallery-grid');
+            grid.innerHTML = "Caricamento...";
+            if (!db) return;
+
+            var tx = db.transaction(["media"], "readonly");
+            var store = tx.objectStore("media");
+            var request = store.getAll();
+
+            request.onsuccess = function() {
+                var items = request.result;
+                if (!items || items.length === 0) {
+                    grid.innerHTML = "<p style='color:#a996b8; grid-column: 1/-1;'>Nessun file presente nella Galleria Privata.</p>";
+                    return;
+                }
+                grid.innerHTML = "";
+                items.reverse().forEach(function(item) {
+                    var div = document.createElement('div');
+                    div.className = "gallery-card";
+                    
+                    var mediaHTML = "";
+                    var ext = item.type === "image" ? "jpg" : (item.type === "video" ? "mp4" : "mp3");
+                    var fileName = "Scenari_" + item.category + "_" + item.timestamp.replace(/[/:,\s]/g, "-") + "." + ext;
+
+                    if (item.type === "image") {
+                        mediaHTML = '<img src="' + item.data + '" onclick="openLightbox(\'' + item.data + '\', false)">';
+                    } else if (item.type === "video") {
+                        mediaHTML = '<video src="' + item.data + '" controls onclick="openLightbox(\'' + item.data + '\', true)"></video>';
+                    } else {
+                        mediaHTML = '<audio src="' + item.data + '" controls style="width:100%;"></audio>';
+                    }
+
+                    div.innerHTML = mediaHTML + 
+                        '<div style="font-size:0.7rem; color:#d1c4db;">Da: ' + item.sender + '</div>' +
+                        '<div style="font-size:0.65rem; color:#888;">' + item.timestamp + '</div>' +
+                        '<div class="gallery-actions">' +
+                            '<a href="' + item.data + '" download="' + fileName + '" style="font-size:0.75rem; color:var(--primary-accent); text-decoration:none;">💾 Scarica</a>' +
+                            '<button class="gallery-btn-del" onclick="deleteSingleMedia(' + item.id + ')">🗑️ Elimina</button>' +
+                        '</div>';
+                    
+                    grid.appendChild(div);
+                });
+            };
         }
     </script>
 </body>
