@@ -458,25 +458,22 @@
         }
 
         function saveGameState() {
-            var state = {
-                currentPlayer: currentPlayer,
-                currentScenarioId: currentScenarioId,
-                activeCategories: activeCategories,
-                currentLevelIndex: currentLevelIndex,
-                currentDialogueIndex: currentDialogueIndex,
-                currentScreenId: currentScreenId,
-                selectedVictim: selectedVictim,
-                currentDrawnAction: currentDrawnAction,
-                isCardFlipped: isCardFlipped,
-                lastVictim: lastVictim,
-                consecutiveTurns: consecutiveTurns,
-                currentRotation: currentRotation // Salva la rotazione della ruota
-            };
-            localStorage.setItem("ScenariGameState_v3", JSON.stringify(state));
+            try {
+                var state = {
+                    currentPlayer: currentPlayer, currentScenarioId: currentScenarioId,
+                    activeCategories: activeCategories, currentLevelIndex: currentLevelIndex,
+                    currentDialogueIndex: currentDialogueIndex, currentScreenId: currentScreenId,
+                    selectedVictim: selectedVictim, currentDrawnAction: currentDrawnAction,
+                    isCardFlipped: isCardFlipped, lastVictim: lastVictim,
+                    consecutiveTurns: consecutiveTurns, currentRotation: currentRotation
+                };
+                localStorage.setItem("ScenariGameState_v3", JSON.stringify(state));
+            } catch (err) { console.warn("Salvataggio locale non disponibile:", err); }
         }
-        
+
         function checkSavedGameAvailable() {
-            var saved = localStorage.getItem("ScenariGameState_v3");
+            var saved = null;
+            try { saved = localStorage.getItem("ScenariGameState_v3"); } catch (e) { return; }
             if (saved) {
                 try {
                     var state = JSON.parse(saved);
@@ -491,7 +488,8 @@
         function resumeSavedGame() { restoreGameState(); }
 
         function restoreGameState() {
-            var saved = localStorage.getItem("ScenariGameState_v3");
+            var saved = null;
+            try { saved = localStorage.getItem("ScenariGameState_v3"); } catch (e) { return false; }
             if (!saved) return false;
             try {
                 var state = JSON.parse(saved);
@@ -510,7 +508,7 @@
                     currentRotation = state.currentRotation || 0; // Ripristina la rotazione
 
                     // Applica immediatamente la rotazione visiva alla ruota salvata
-                    document.getElementById('spinWheel').style.transform = "rotate(" + currentRotation + "deg)";
+                    var savedWheel = document.getElementById('spinWheel'); if (savedWheel) savedWheel.style.transform = "rotate(" + currentRotation + "deg)";
 
                     document.getElementById('btn-select-tiziano').disabled = (currentPlayer === 'Claudia');
                     document.getElementById('btn-select-claudia').disabled = (currentPlayer === 'Tiziano');
@@ -557,7 +555,7 @@
         }
         function resetGameState() {
             if (confirm("Vuoi azzerare la partita attuale per iniziarne una nuova?")) {
-                localStorage.removeItem("ScenariGameState_v3");
+                try { localStorage.removeItem("ScenariGameState_v3"); } catch (e) {}
                 location.reload();
             }
         }
@@ -637,19 +635,25 @@
         }
 
         var db = null;
-        var db = null;
         function initDB() {
-            var request = indexedDB.open("ScenariMediaDB", 1);
-            request.onupgradeneeded = function(e) {
-                db = e.target.result;
-                if (!db.objectStoreNames.contains("media")) {
-                    db.createObjectStore("media", { keyPath: "id", autoIncrement: true });
-                }
-            };
-            request.onsuccess = function(e) { 
-                db = e.target.result; 
-                loadChatHistory(); // Carica i messaggi testuali al refresh
-            };
+            if (!window.indexedDB) {
+                console.warn("IndexedDB non disponibile: galleria/chat locale disattivata.");
+                return;
+            }
+            try {
+                var request = indexedDB.open("ScenariMediaDB", 1);
+                request.onupgradeneeded = function(e) {
+                    db = e.target.result;
+                    if (!db.objectStoreNames.contains("media")) {
+                        db.createObjectStore("media", { keyPath: "id", autoIncrement: true });
+                    }
+                };
+                request.onsuccess = function(e) { db = e.target.result; loadChatHistory(); };
+                request.onerror = function(e) { db = null; console.warn("IndexedDB non disponibile:", e.target && e.target.error); };
+            } catch (err) {
+                db = null;
+                console.warn("Errore inizializzazione IndexedDB:", err);
+            }
         }
         initDB();
 
@@ -810,43 +814,28 @@
         }
 
         function handleIncomingP2PData(data) {
-            if (data.type === "PING") {
-                sendP2PCommand({ type: "PONG" });
-                return;
-            }
+            if (!data || typeof data !== "object") return;
+            if (data.type === "PING") { sendP2PCommand({ type: "PONG" }); return; }
             if (data.type === "PONG") return;
 
             if (data.type === "text") {
                 playNotificationSound();
-                appendChatMessage(data.sender, data.text, "partner");
-                saveToLocalDB(data.text, "chat_text", "Chat Live", data.sender, "partner"); // Salva chat ricevuta
+                appendChatMessage(data.sender || "Partner", data.text || "", "partner");
+                saveToLocalDB(data.text || "", "chat_text", "Chat Live", data.sender || "Partner", "partner");
                 notifyChatBadge();
             } else if (data.type === "media") {
                 playNotificationSound();
-                saveToLocalDB(data.fileData, data.mediaType, data.category, data.sender, "partner"); // Salva media ricevuto
-                appendChatMediaMessage(data.sender, data.fileData, data.mediaType, "partner");
+                saveToLocalDB(data.fileData, data.mediaType, data.category || "Chat Live", data.sender || "Partner", "partner");
+                appendChatMediaMessage(data.sender || "Partner", data.fileData, data.mediaType, "partner");
                 notifyChatBadge();
             } else if (data.type === "SYNC_SCENARIO_SELECT") {
-
-            if (data.type === "text") {
-                playNotificationSound();
-                appendChatMessage(data.sender, data.text, "partner");
-                notifyChatBadge();
-            } else if (data.type === "media") {
-                playNotificationSound();
-                saveMediaToLocalDB(data.fileData, data.mediaType, data.category, data.sender);
-                appendChatMediaMessage(data.sender, data.fileData, data.mediaType, "partner");
-                notifyChatBadge();
-            } else if (data.type === "SYNC_SCENARIO_SELECT") {
-                selectScenario(data.scenarioId, true);
+                if (data.scenarioId && roleplayScenarios[data.scenarioId]) selectScenario(data.scenarioId, true);
             } else if (data.type === "SYNC_CATEGORIES_SUBMIT") {
-                partnerSelectedCategories = data.categories;
+                partnerSelectedCategories = Array.isArray(data.categories) ? data.categories : [];
                 sendP2PCommand({ type: "SYNC_CATEGORIES_ACK", categories: mySelectedCategories });
                 checkBothCategoriesSubmitted();
             } else if (data.type === "SYNC_CATEGORIES_ACK") {
-                if (data.categories && data.categories.length > 0) {
-                    partnerSelectedCategories = data.categories;
-                }
+                if (Array.isArray(data.categories) && data.categories.length > 0) partnerSelectedCategories = data.categories;
                 checkBothCategoriesSubmitted();
             } else if (data.type === "SYNC_BRIEFING") {
                 goToBriefing(true);
@@ -1024,8 +1013,14 @@
         }
 
         function loadLevelNarrative() {
-            var levelData = roleplayScenarios[currentScenarioId].levels[currentLevelIndex];
-            
+            var scenario = roleplayScenarios[currentScenarioId];
+            if (!scenario || !Array.isArray(scenario.levels)) { showScreen('selection-screen'); return; }
+            var levelData = scenario.levels[currentLevelIndex];
+            if (!levelData || !Array.isArray(levelData.actions)) {
+                if (currentLevelIndex >= scenario.levels.length) advanceToNextLevel(true);
+                else showScreen('selection-screen');
+                return;
+            }
             currentLevelActions["Claudia"] = levelData.actions.filter(function(a) {
                 return a.actor === "Claudia" && activeCategories.indexOf(a.category) !== -1;
             });
@@ -1216,8 +1211,10 @@
             list.innerHTML = '';
             var allCategories = [];
             
-            roleplayScenarios[currentScenarioId].levels.forEach(function(lvl) {
-                if (lvl.actions) {
+            var scenario = roleplayScenarios[currentScenarioId];
+            if (!scenario || !Array.isArray(scenario.levels)) return;
+            scenario.levels.forEach(function(lvl) {
+                if (lvl && Array.isArray(lvl.actions)) {
                     lvl.actions.forEach(function(act) { 
                         if (act.category && act.category.trim() !== "" && allCategories.indexOf(act.category.trim()) === -1) {
                             allCategories.push(act.category.trim()); 
@@ -1270,57 +1267,115 @@
             }
         };
 
-        function loadFromGoogleSheets() {
-            const cacheBuster = "&_t=" + Date.now();
-            const urlScenari = LINK_SCENARI_RAW + cacheBuster;
-            const urlCopione = LINK_COPIONE_RAW + cacheBuster;
+        function setLoaderMessage(message, isError) {
+            var loader = document.getElementById("loader-msg");
+            if (loader) { loader.innerHTML = message; loader.style.color = isError ? "#ff8a80" : "#a996b8"; }
+        }
+
+        function showStartupError(message) {
+            setLoaderMessage(message + '<br><button class="btn btn-context" style="margin-top:15px;" onclick="loadFromGoogleSheets(true)">🔄 Riprova</button>', true);
+            var spinner = document.querySelector('#loader-screen .spinner');
+            if (spinner) spinner.style.display = 'none';
+        }
+
+        function loadFromGoogleSheets(isRetry) {
+            if (typeof Papa === "undefined") {
+                showStartupError("Impossibile caricare PapaParse. Controlla la connessione e ricarica la pagina.");
+                return;
+            }
+
+            var cacheBuster = "&_t=" + Date.now();
+            var urlScenari = LINK_SCENARI_RAW + cacheBuster;
+            var urlCopione = LINK_COPIONE_RAW + cacheBuster;
+            var startupFinished = false;
+
+            if (!isRetry) setLoaderMessage("Sincronizzazione con Google Sheets...");
+
+            var timeout = setTimeout(function() {
+                if (!startupFinished) {
+                    startupFinished = true;
+                    showStartupError("Il caricamento dei dati sta impiegando troppo tempo.");
+                }
+            }, 15000);
+
+            function finishWithError(message) {
+                if (startupFinished) return;
+                startupFinished = true;
+                clearTimeout(timeout);
+                showStartupError(message);
+            }
+            function finishSuccess() {
+                if (startupFinished) return;
+                startupFinished = true;
+                clearTimeout(timeout);
+            }
 
             Papa.parse(urlScenari, {
                 download: true, header: true, skipEmptyLines: true,
-                transformHeader: function(h) { return h.trim(); },
+                transformHeader: function(h) { return String(h || "").trim(); },
+                error: function(err) { finishWithError("Errore nel caricamento degli scenari da Google Sheets."); console.error(err); },
                 complete: function(res) {
-                    if (res.data && res.data.length > 0) {
-                        roleplayScenarios = {};
-                        res.data.forEach(function(row) {
-                            if (!row.ID_Scenario) return;
-                            roleplayScenarios[row.ID_Scenario] = {
-                                title: row.Titolo_Storia, 
-                                context: row.Contesto_Menu,
-                                roles: { "Claudia": row.Ruolo_Claudia, "Tiziano": row.Ruolo_Tiziano },
-                                briefing: { "Claudia": row.Briefing_Claudia, "Tiziano": row.Briefing_Tiziano },
-                                levels: []
-                            };
-                        });
-                        
-                        Papa.parse(urlCopione, {
-                            download: true, header: true, skipEmptyLines: true,
-                            transformHeader: function(h) { return h.trim(); },
-                            complete: function(resCopione) {
-                                resCopione.data.forEach(function(row) {
-                                    let id = row.ID_Scenario;
-                                    if (!id || !roleplayScenarios[id]) return;
-                                    let lvlIndex = parseInt(row.Livello) - 1;
-                                    if (isNaN(lvlIndex)) return;
-                                    if (!roleplayScenarios[id].levels[lvlIndex]) {
-                                        let bg = row.Sfondo_URL ? row.Sfondo_URL.trim() : "#000";
-                                        roleplayScenarios[id].levels[lvlIndex] = { level: lvlIndex + 1, background: bg, introDialogues: [], actions: [] };
-                                    }
-                                    if (row.Tipo === "Dialogo") {
-                                        roleplayScenarios[id].levels[lvlIndex].introDialogues.push({ speaker: row.Chi_Parla_o_Agisce, text: row.Testo });
-                                    } else if (row.Tipo === "Azione") {
-                                        roleplayScenarios[id].levels[lvlIndex].actions.push({ actor: row.Chi_Parla_o_Agisce, text: row.Testo, category: row.Categoria });
-                                    }
-                                });
-                                buildScenarioMenu();
-                                checkSavedGameAvailable();
-                                
-                                var restored = restoreGameState();
-                                if (!restored) {
-                                    showScreen('selection-screen');
+                    if (startupFinished) return;
+                    if (!res || !Array.isArray(res.data) || res.data.length === 0) { finishWithError("Google Sheets non ha restituito scenari validi."); return; }
+
+                    roleplayScenarios = {};
+                    res.data.forEach(function(row) {
+                        if (!row || !row.ID_Scenario) return;
+                        roleplayScenarios[row.ID_Scenario] = {
+                            title: row.Titolo_Storia || row.ID_Scenario,
+                            context: row.Contesto_Menu || "Altro",
+                            roles: { "Claudia": row.Ruolo_Claudia || "Claudia", "Tiziano": row.Ruolo_Tiziano || "Tiziano" },
+                            briefing: { "Claudia": row.Briefing_Claudia || "", "Tiziano": row.Briefing_Tiziano || "" },
+                            levels: []
+                        };
+                    });
+
+                    if (Object.keys(roleplayScenarios).length === 0) { finishWithError("Non sono stati trovati scenari validi."); return; }
+
+                    Papa.parse(urlCopione, {
+                        download: true, header: true, skipEmptyLines: true,
+                        transformHeader: function(h) { return String(h || "").trim(); },
+                        error: function(err) { finishWithError("Errore nel caricamento del copione da Google Sheets."); console.error(err); },
+                        complete: function(resCopione) {
+                            if (startupFinished) return;
+                            if (!resCopione || !Array.isArray(resCopione.data)) { finishWithError("Il copione restituito da Google Sheets non è valido."); return; }
+
+                            resCopione.data.forEach(function(row) {
+                                if (!row) return;
+                                var id = row.ID_Scenario;
+                                if (!id || !roleplayScenarios[id]) return;
+                                var lvlIndex = parseInt(row.Livello, 10) - 1;
+                                if (isNaN(lvlIndex) || lvlIndex < 0) return;
+
+                                if (!roleplayScenarios[id].levels[lvlIndex]) {
+                                    roleplayScenarios[id].levels[lvlIndex] = {
+                                        level: lvlIndex + 1,
+                                        background: row.Sfondo_URL ? String(row.Sfondo_URL).trim() : "#000",
+                                        introDialogues: [], actions: []
+                                    };
                                 }
-                            }
-                        });
-                    }
+
+                                var level = roleplayScenarios[id].levels[lvlIndex];
+                                var tipo = String(row.Tipo || "").trim();
+                                var actor = row.Chi_Parla_o_Agisce || "";
+                                var text = row.Testo || "";
+                                var category = row.Categoria ? String(row.Categoria).trim() : "";
+
+                                if (tipo === "Dialogo") level.introDialogues.push({ speaker: actor, text: text });
+                                else if (tipo === "Azione") level.actions.push({ actor: actor, text: text, category: category });
+                            });
+
+                            Object.keys(roleplayScenarios).forEach(function(id) {
+                                roleplayScenarios[id].levels = roleplayScenarios[id].levels.filter(function(level) { return !!level; });
+                            });
+
+                            buildScenarioMenu();
+                            checkSavedGameAvailable();
+                            var restored = restoreGameState();
+                            if (!restored) showScreen('selection-screen');
+                            finishSuccess();
+                        }
+                    });
                 }
             });
         }
