@@ -421,15 +421,17 @@
                 "DEFAULT": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80"
             };
 
-        var roleplayScenarios = {};
-        var currentPlayer = "", currentScenarioId = "", activeCategories = [];
-        var mySelectedCategories = [], partnerSelectedCategories = null;
-        var currentLevelIndex = 0, currentDialogueIndex = 0, selectedVictim = "", currentRotation = 0;
-        var lastVictim = "", consecutiveTurns = 0; // Contatori per limite turni
-        var currentScreenId = "selection-screen";
-        var isCardFlipped = false;
-        
-        var currentLevelActions = { "Claudia": [], "Tiziano": [] };
+            var roleplayScenarios = {};
+            var currentPlayer = "", currentScenarioId = "", activeCategories = [];
+            var mySelectedCategories = [], partnerSelectedCategories = null;
+            var currentLevelIndex = 0, currentDialogueIndex = 0, selectedVictim = "", currentRotation = 0;
+            var currentScreenId = "selection-screen";
+            var isCardFlipped = false;
+            
+            var currentLevelActions = { "Claudia": [], "Tiziano": [] };
+            var currentDrawnAction = null;
+            var unreadChatCount = 0;
+            var catSyncInterval = null;
 
 
             // ==========================================
@@ -595,98 +597,90 @@
             // SEZIONE 4: GESTIONE DATI E STATO
             // ==========================================
             function saveGameState() {
-            var state = {
-                currentPlayer: currentPlayer,
-                currentScenarioId: currentScenarioId,
-                activeCategories: activeCategories,
-                currentLevelIndex: currentLevelIndex,
-                currentDialogueIndex: currentDialogueIndex,
-                currentScreenId: currentScreenId,
-                selectedVictim: selectedVictim,
-                currentDrawnAction: currentDrawnAction,
-                isCardFlipped: isCardFlipped,
-                lastVictim: lastVictim,
-                consecutiveTurns: consecutiveTurns
-            };
-            localStorage.setItem("ScenariGameState_v3", JSON.stringify(state));
-        }
+                var state = {
+                    currentPlayer: currentPlayer,
+                    currentScenarioId: currentScenarioId,
+                    activeCategories: activeCategories,
+                    currentLevelIndex: currentLevelIndex,
+                    currentDialogueIndex: currentDialogueIndex,
+                    currentScreenId: currentScreenId,
+                    selectedVictim: selectedVictim,
+                    currentDrawnAction: currentDrawnAction,
+                    isCardFlipped: isCardFlipped
+                };
+                localStorage.setItem("ScenariGameState_v10", JSON.stringify(state));
+            }
 
-        function checkSavedGameAvailable() {
-            var saved = localStorage.getItem("ScenariGameState_v3");
-            if (saved) {
+            function checkSavedGameAvailable() {
+                var saved = localStorage.getItem("ScenariGameState_v10");
+                if (saved) {
+                    try {
+                        var state = JSON.parse(saved);
+                        if (state.currentPlayer && state.currentScenarioId) {
+                            document.getElementById('btn-resume-game').style.display = 'inline-block';
+                            document.getElementById('btn-reset-game').style.display = 'inline-block';
+                        }
+                    } catch(e){}
+                }
+            }
+
+            function resumeSavedGame() { restoreGameState(); }
+
+            function restoreGameState() {
+                var saved = localStorage.getItem("ScenariGameState_v10");
+                if (!saved) return false;
                 try {
                     var state = JSON.parse(saved);
-                    if (state.currentPlayer && state.currentScenarioId) {
-                        document.getElementById('btn-resume-game').style.display = 'inline-block';
+                    if (state.currentPlayer) {
+                        currentPlayer = state.currentPlayer;
+                        currentScenarioId = state.currentScenarioId;
+                        activeCategories = state.activeCategories || [];
+                        currentLevelIndex = state.currentLevelIndex || 0;
+                        currentDialogueIndex = state.currentDialogueIndex || 0;
+                        currentScreenId = state.currentScreenId || "selection-screen";
+                        selectedVictim = state.selectedVictim || "";
+                        currentDrawnAction = state.currentDrawnAction || null;
+                        isCardFlipped = state.isCardFlipped || false;
+
+                        document.getElementById('btn-select-tiziano').disabled = (currentPlayer === 'Claudia');
+                        document.getElementById('btn-select-claudia').disabled = (currentPlayer === 'Tiziano');
                         document.getElementById('btn-reset-game').style.display = 'inline-block';
-                    }
-                } catch(e){}
-            }
-        }
+                        
+                        autoConnectP2P(currentPlayer);
 
-        function resumeSavedGame() { restoreGameState(); }
-
-        function restoreGameState() {
-            var saved = localStorage.getItem("ScenariGameState_v3");
-            if (!saved) return false;
-            try {
-                var state = JSON.parse(saved);
-                if (state.currentPlayer) {
-                    currentPlayer = state.currentPlayer;
-                    currentScenarioId = state.currentScenarioId;
-                    activeCategories = state.activeCategories || [];
-                    currentLevelIndex = state.currentLevelIndex || 0;
-                    currentDialogueIndex = state.currentDialogueIndex || 0;
-                    currentScreenId = state.currentScreenId || "selection-screen";
-                    selectedVictim = state.selectedVictim || "";
-                    currentDrawnAction = state.currentDrawnAction || null;
-                    isCardFlipped = state.isCardFlipped || false;
-                    lastVictim = state.lastVictim || "";
-                    consecutiveTurns = state.consecutiveTurns || 0;
-
-                    document.getElementById('btn-select-tiziano').disabled = (currentPlayer === 'Claudia');
-                    document.getElementById('btn-select-claudia').disabled = (currentPlayer === 'Tiziano');
-                    document.getElementById('btn-reset-game').style.display = 'inline-block';
-                    
-                    autoConnectP2P(currentPlayer);
-
-                    if (currentScenarioId && roleplayScenarios[currentScenarioId]) {
-                        var levelData = roleplayScenarios[currentScenarioId].levels[currentLevelIndex];
-                        if (levelData) {
-                            currentLevelActions["Claudia"] = levelData.actions.filter(function(a) {
-                                return a.actor === "Claudia" && activeCategories.indexOf(a.category) !== -1;
-                            });
-                            currentLevelActions["Tiziano"] = levelData.actions.filter(function(a) {
-                                return a.actor === "Tiziano" && activeCategories.indexOf(a.category) !== -1;
-                            });
-                        }
-
-                        showScreen(currentScreenId);
-
-                        if (currentScreenId === 'vn-screen') {
-                            document.getElementById('game-menu-btn').style.display = 'block';
-                            document.getElementById('fixed-skip-level-btn').style.display = 'block';
-                            loadLevelNarrative();
-                        } else if (currentScreenId === 'minigame-screen') {
-                            document.getElementById('game-menu-btn').style.display = 'block';
-                            document.getElementById('fixed-skip-level-btn').style.display = 'block';
-                            openMinigame(true);
-                        } else if (currentScreenId === 'cards-screen') {
-                            document.getElementById('game-menu-btn').style.display = 'block';
-                            document.getElementById('fixed-skip-level-btn').style.display = 'block';
-                            goToCards(true);
-                            if (isCardFlipped) {
-                                revealCard(true);
+                        if (currentScenarioId && roleplayScenarios[currentScenarioId]) {
+                            var levelData = roleplayScenarios[currentScenarioId].levels[currentLevelIndex];
+                            if (levelData) {
+                                currentLevelActions["Claudia"] = levelData.actions.filter(function(a) {
+                                    return a.actor === "Claudia" && activeCategories.indexOf(a.category) !== -1;
+                                });
+                                currentLevelActions["Tiziano"] = levelData.actions.filter(function(a) {
+                                    return a.actor === "Tiziano" && activeCategories.indexOf(a.category) !== -1;
+                                });
                             }
+
+                            showScreen(currentScreenId);
+                            
+                            var isGaming = (currentScreenId === 'vn-screen' || currentScreenId === 'minigame-screen' || currentScreenId === 'cards-screen');
+                            if (isGaming) {
+                                document.getElementById('game-menu-btn').style.display = 'block';
+                                document.getElementById('fixed-skip-level-btn').style.display = 'block';
+                            }
+
+                            if (currentScreenId === 'vn-screen') { loadLevelNarrative(); } 
+                            else if (currentScreenId === 'minigame-screen') { openMinigame(true); } 
+                            else if (currentScreenId === 'cards-screen') {
+                                goToCards(true);
+                                if (isCardFlipped) revealCard(true);
+                            }
+                        } else {
+                            showScreen('selection-screen');
                         }
-                    } else {
-                        showScreen('selection-screen');
+                        return true;
                     }
-                    return true;
-                }
-            } catch(e) { console.error("Errore ripristino stato:", e); }
-            return false;
-        }
+                } catch(e) { console.error("Errore ripristino stato:", e); }
+                return false;
+            }
 
             function manualSaveGame() { saveGameState(); alert("💾 Partita salvata con successo!"); closePauseModal(); }
             function abandonGame() {
@@ -1172,66 +1166,43 @@
                 if (!isRemote) sendP2PCommand({ type: "SYNC_OPEN_MINIGAME" });
             };
 
-            function handleSpinWheelClick() {
-            var claudiaHas = currentLevelActions["Claudia"].length > 0;
-            var tizianoHas = currentLevelActions["Tiziano"].length > 0;
-            var victim = "";
+            window.handleSpinWheelClick = function() {
+                var claudiaHas = currentLevelActions["Claudia"].length > 0;
+                var tizianoHas = currentLevelActions["Tiziano"].length > 0;
+                var victim = "";
 
-            if (claudiaHas && !tizianoHas) { 
-                victim = "Claudia"; 
-            } else if (tizianoHas && !claudiaHas) { 
-                victim = "Tiziano"; 
-            } else { 
-                // Limite: garantisce che un giocatore non faccia più di 2 turni consecutivi[cite: 1]
-                if (lastVictim === "Claudia" && consecutiveTurns >= 2) {
-                    victim = "Tiziano";
-                } else if (lastVictim === "Tiziano" && consecutiveTurns >= 2) {
-                    victim = "Claudia";
-                } else {
-                    victim = Math.random() < 0.5 ? "Tiziano" : "Claudia";
-                }
+                if (claudiaHas && !tizianoHas) { victim = "Claudia"; }
+                else if (tizianoHas && !claudiaHas) { victim = "Tiziano"; }
+                else { victim = Math.random() < 0.5 ? "Tiziano" : "Claudia"; }
+
+                var mazzo = currentLevelActions[victim];
+                var randomIndex = Math.floor(Math.random() * mazzo.length);
+                var drawn = mazzo[randomIndex];
+
+                spinTheWheel(victim, drawn, false);
+                sendP2PCommand({ type: "SYNC_SPIN_WHEEL", victim: victim, drawnAction: drawn });
+            };
+
+            function spinTheWheel(victim, drawnAction, isRemote) {
+                selectedVictim = victim;
+                currentDrawnAction = drawnAction;
+
+                var wheel = document.getElementById('spinWheel');
+                document.getElementById('spinBtn').style.display = 'none';
+                var winnerText = document.getElementById('winner-text');
+                
+                var extraDegrees = (victim === "Tiziano") ? 90 : 270;
+                currentRotation += 1440 + extraDegrees; 
+                wheel.style.transform = "rotate(" + currentRotation + "deg)";
+
+                setTimeout(function() {
+                    winnerText.style.color = selectedVictim === "Claudia" ? "var(--primary-accent)" : "var(--secondary-accent)";
+                    winnerText.innerText = "Tocca a: " + roleplayScenarios[currentScenarioId].roles[selectedVictim];
+                    winnerText.style.opacity = 1; 
+                    document.getElementById('nextPhaseBtn').style.display = 'block';
+                    saveGameState();
+                }, 3000);
             }
-
-            // Aggiorna contatore
-            if (victim === lastVictim) {
-                consecutiveTurns++;
-            } else {
-                lastVictim = victim;
-                consecutiveTurns = 1;
-            }
-
-            var mazzo = currentLevelActions[victim];
-            var randomIndex = Math.floor(Math.random() * mazzo.length);
-            var drawn = mazzo[randomIndex];
-
-            spinTheWheel(victim, drawn, false);
-            sendP2PCommand({ type: "SYNC_SPIN_WHEEL", victim: victim, drawnAction: drawn });
-        }
-
-        function spinTheWheel(victim, drawnAction, isRemote) {
-            selectedVictim = victim;
-            currentDrawnAction = drawnAction;
-
-            var wheel = document.getElementById('spinWheel');
-            document.getElementById('spinBtn').style.display = 'none';
-            var winnerText = document.getElementById('winner-text');
-            
-            // Gradi invertiti per rispecchiare la UI (270 per Tiziano, 90 per Claudia)
-            var extraDegrees = (victim === "Tiziano") ? 270 : 90;
-            // Offset casuale (+/- 30 gradi) per un'animazione più realistica
-            var randomOffset = Math.floor(Math.random() * 60) - 30;
-            
-            currentRotation += 1440 + extraDegrees + randomOffset; 
-            wheel.style.transform = "rotate(" + currentRotation + "deg)";
-
-            setTimeout(function() {
-                winnerText.style.color = selectedVictim === "Claudia" ? "var(--primary-accent)" : "var(--secondary-accent)";
-                winnerText.innerText = "Tocca a: " + roleplayScenarios[currentScenarioId].roles[selectedVictim];
-                winnerText.style.opacity = 1; 
-                document.getElementById('nextPhaseBtn').style.display = 'block';
-                saveGameState();
-            }, 3000);
-        }
 
             window.handleGoToCardsClick = function() {
                 goToCards(false);
