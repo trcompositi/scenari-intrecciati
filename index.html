@@ -11,6 +11,7 @@
     
     <title>Scenari Intrecciati - Tiziano & Claudia</title>
     
+    <!-- Librerie Esterne -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
@@ -307,7 +308,7 @@
         <button class="btn btn-gallery" style="margin-top: 15px;" onclick="openGallery()">📂 Galleria Privata In-App</button>
         <button class="btn btn-reset" id="btn-reset-game" style="display:none;" onclick="resetGameState()">🔄 Abbandona e Nuova Partita</button>
         
-        <div class="version-indicator">v10.3</div>
+        <div class="version-indicator">v10.4</div>
     </div>
 
     <div id="gallery-screen" class="menu-screen">
@@ -402,7 +403,7 @@
 
     <script>
         try {
-            console.log("Inizializzazione App v10.3 avviata...");
+            console.log("Inizializzazione App v10.4 avviata...");
 
             let LINK_SCENARI_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1088679208&single=true&output=csv";
             let LINK_COPIONE_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1067890923&single=true&output=csv";
@@ -710,9 +711,9 @@
                 tx.oncomplete = function() { loadGalleryContent(); loadChatHistory(); };
             };
 
-            const SECRET_ROOM_ID = "tizclau-auth-9988";
-            var peer = null, conn = null, pingInterval = null, watchdogInterval = null;
-            var connectionTimeout = null;
+            // --- MOTORE P2P: RITORNO AL LOOP ROBUSTO ---
+            const FIXED_ROOM_CODE = "tiziano-claudia-intimo-2026";
+            var peer = null, conn = null, pingInterval = null, watchdogInterval = null, retryTimer = null;
             var lastSignalTime = Date.now();
 
             window.selectPlayer = function(name) { 
@@ -727,74 +728,67 @@
             function autoConnectP2P(name) {
                 var statusEl = document.getElementById('p2p-status');
                 statusEl.style.display = 'flex';
-                statusEl.innerHTML = "🟡 Ricerca automatica del partner in corso...<br><span style='font-size:0.8rem; color:#a996b8; margin-top:5px; font-weight:normal;'>L'app si connetterà non appena l'altro dispositivo sarà online.</span>";
+                statusEl.innerHTML = "🟡 Ricerca automatica del partner in corso...";
                 statusEl.style.color = "#ffeb3b";
                 updateConnectionDot('yellow');
                 
-                var myId = SECRET_ROOM_ID + "-" + name.toLowerCase();
-                var targetId = SECRET_ROOM_ID + "-" + (name === "Tiziano" ? "claudia" : "tiziano");
+                var myId = FIXED_ROOM_CODE + "-" + name.toLowerCase();
+                var targetId = FIXED_ROOM_CODE + "-" + (name === "Tiziano" ? "claudia" : "tiziano");
 
                 if (peer) { peer.destroy(); }
 
-                peer = new Peer(myId, {
-                    config: {
-                        'iceServers': [
-                            { urls: 'stun:stun.l.google.com:19302' },
-                            { urls: 'stun:stun1.l.google.com:19302' }
-                        ]
-                    }
-                });
+                // Ritorno alla configurazione nativa standard (no override STUN che bloccava il mobile)
+                peer = new Peer(myId);
 
                 peer.on('open', function(id) {
                     attemptConnection(targetId);
                 });
 
                 peer.on('connection', function(c) {
-                    if (conn && conn.open) {
-                        setTimeout(function() { c.close(); }, 500);
-                        return;
-                    }
+                    // Rimosso il blocco anti-doppioni che causava lo "stallo alla messicana"
                     conn = c;
                     setupConnEvents();
                 });
 
                 peer.on('error', function(err) {
                     console.log("P2P Error:", err);
-                    if (err.type === 'peer-unavailable') {
+                    if (err.type === 'unavailable-id') {
                         attemptConnection(targetId);
-                    } else if (err.type === 'unavailable-id') {
-                        setTimeout(function() { autoConnectP2P(name); }, 3000);
                     }
                 });
             }
 
             function attemptConnection(targetId) {
                 if (conn && conn.open) return;
-                if (peer && peer.disconnected) { peer.reconnect(); return; }
                 
-                if (conn) { 
-                    try { conn.close(); } catch(e){} 
-                    conn = null; 
-                }
-
                 try {
                     conn = peer.connect(targetId, { reliable: true });
                     setupConnEvents();
                 } catch(e) {}
 
-                if (connectionTimeout) clearTimeout(connectionTimeout);
-                connectionTimeout = setTimeout(function() {
-                    if (conn && !conn.open) {
-                        attemptConnection(targetId);
-                    }
-                }, 6000); 
+                if (!retryTimer) {
+                    retryTimer = setInterval(function() {
+                        if (peer && peer.disconnected) {
+                            peer.reconnect();
+                        }
+                        if (!conn || !conn.open) {
+                            try {
+                                conn = peer.connect(targetId, { reliable: true });
+                                setupConnEvents();
+                            } catch(e) {}
+                        } else {
+                            clearInterval(retryTimer);
+                            retryTimer = null;
+                        }
+                    }, 2500); // Ritentativo fisso ogni 2.5 secondi
+                }
             }
 
             function setupConnEvents() {
                 if (!conn) return;
 
                 var onOpen = function() {
-                    if (connectionTimeout) { clearTimeout(connectionTimeout); connectionTimeout = null; }
+                    if (retryTimer) { clearInterval(retryTimer); retryTimer = null; }
                     lastSignalTime = Date.now();
                     var statusEl = document.getElementById('p2p-status');
                     statusEl.style.color = "#4caf50";
@@ -811,7 +805,7 @@
                     if (watchdogInterval) clearInterval(watchdogInterval);
                     watchdogInterval = setInterval(function() {
                         if (Date.now() - lastSignalTime > 10000) { 
-                            console.warn("Watchdog: Rilevato timeout, riavvio connessione.");
+                            console.warn("Watchdog: Timeout, chiusura forzata.");
                             handleDisconnect();
                         }
                     }, 3000);
@@ -842,18 +836,17 @@
             function handleDisconnect() {
                 if (pingInterval) { clearInterval(pingInterval); pingInterval = null; }
                 if (watchdogInterval) { clearInterval(watchdogInterval); watchdogInterval = null; }
-                if (connectionTimeout) { clearTimeout(connectionTimeout); connectionTimeout = null; }
                 if (conn) { conn.close(); conn = null; }
 
                 var statusEl = document.getElementById('p2p-status');
                 if (statusEl) {
                     statusEl.style.color = "#e91e63";
-                    statusEl.innerHTML = "🔴 Connessione persa. Riconnessione automatica in corso...";
+                    statusEl.innerHTML = "🔴 Connessione persa. Riconnessione...";
                 }
                 updateConnectionDot('red');
 
-                var targetId = SECRET_ROOM_ID + "-" + (currentPlayer === "Tiziano" ? "claudia" : "tiziano");
-                setTimeout(function() { attemptConnection(targetId); }, 2000);
+                var targetId = FIXED_ROOM_CODE + "-" + (currentPlayer === "Tiziano" ? "claudia" : "tiziano");
+                attemptConnection(targetId);
             }
 
             function sendP2PCommand(dataObj) {
