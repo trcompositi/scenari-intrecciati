@@ -11,7 +11,6 @@
     
     <title>Scenari Intrecciati - Tiziano & Claudia</title>
     
-    <!-- Librerie Esterne -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
@@ -68,7 +67,6 @@
             cursor: pointer; z-index: 100;
         }
 
-        /* PALLINO CONNESSIONE IN ALTO A DESTRA */
         #connection-dot {
             position: fixed; top: 18px; right: 18px; z-index: 3000;
             width: 14px; height: 14px; border-radius: 50%;
@@ -115,7 +113,6 @@
         .check-item::before { content: '○'; font-size: 1.4rem; margin-right: 12px; color: #888; }
         .check-item.active::before { content: '●'; color: var(--primary-accent); }
 
-        /* TASTO SALTA/LIVELLO (IN BASSO A SINISTRA) */
         #fixed-skip-level-btn {
             display: none; position: fixed; bottom: 15px; left: 15px; z-index: 999;
             background: rgba(0, 0, 0, 0.85); border: 2px solid #4caf50;
@@ -222,18 +219,10 @@
         .card-role-label { font-size: 1.1rem; text-transform: uppercase; margin-bottom: 8px; font-weight: bold; letter-spacing: 1px; }
         .card-category-tag { font-size: 0.8rem; background: rgba(103, 58, 183, 0.4); border: 1px solid #673ab7; padding: 4px 12px; border-radius: 20px; margin-bottom: 15px; color: #d1c4db; font-weight: bold; }
         #cardText { font-size: 1.25rem; line-height: 1.6; color: #ffffff; font-weight: 500; margin-bottom: 15px; }
-
-        /* Versione app in basso a sinistra */
-        .version-indicator {
-            position: absolute; bottom: 15px; left: 15px;
-            font-size: 0.8rem; color: #666; font-family: monospace; letter-spacing: 1px;
-            z-index: 100;
-        }
     </style>
 </head>
 <body>
 
-    <!-- Pallino di Stato Connessione (Sempre Visibile in fase di gioco) -->
     <div id="connection-dot" title="Stato Connessione P2P"></div>
 
     <div id="loader-screen" class="menu-screen active">
@@ -259,7 +248,6 @@
         </div>
     </div>
 
-    <!-- PUSANTE SALTA LIVELLO IN BASSO A SINISTRA -->
     <button id="fixed-skip-level-btn" onclick="handleForceNextLevelClick()">⚡ Salta Livello</button>
 
     <button id="chat-toggle-btn" onclick="toggleChat()">
@@ -308,7 +296,7 @@
         <button class="btn btn-gallery" style="margin-top: 15px;" onclick="openGallery()">📂 Galleria Privata In-App</button>
         <button class="btn btn-reset" id="btn-reset-game" style="display:none;" onclick="resetGameState()">🔄 Abbandona e Nuova Partita</button>
         
-        <div class="version-indicator">v10.5</div>
+        <div style="position: absolute; bottom: 15px; left: 15px; font-size: 0.8rem; color: #666; font-family: monospace; z-index: 100;">v10.6</div>
     </div>
 
     <div id="gallery-screen" class="menu-screen">
@@ -403,8 +391,6 @@
 
     <script>
         try {
-            console.log("Inizializzazione App v10.5 avviata...");
-
             let LINK_SCENARI_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1088679208&single=true&output=csv";
             let LINK_COPIONE_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1067890923&single=true&output=csv";
 
@@ -437,19 +423,26 @@
             var unreadChatCount = 0;
             var catSyncInterval = null;
 
+            var currentConnState = null;
             function updateConnectionDot(state) {
+                if (state) currentConnState = state;
                 var dot = document.getElementById('connection-dot');
                 if (!dot) return;
-                dot.style.display = 'block';
-                if (state === 'red') {
-                    dot.style.backgroundColor = '#ff5252';
-                    dot.style.boxShadow = '0 0 10px rgba(255, 82, 82, 0.8)';
-                } else if (state === 'yellow') {
-                    dot.style.backgroundColor = '#ffeb3b';
-                    dot.style.boxShadow = '0 0 10px rgba(255, 235, 59, 0.8)';
-                } else if (state === 'green') {
-                    dot.style.backgroundColor = '#4caf50';
-                    dot.style.boxShadow = '0 0 10px rgba(76, 175, 80, 0.8)';
+
+                if (currentScreenId === 'selection-screen') {
+                    dot.style.display = 'none';
+                } else {
+                    dot.style.display = 'block';
+                    if (currentConnState === 'red') {
+                        dot.style.backgroundColor = '#ff5252';
+                        dot.style.boxShadow = '0 0 10px rgba(255, 82, 82, 0.8)';
+                    } else if (currentConnState === 'yellow') {
+                        dot.style.backgroundColor = '#ffeb3b';
+                        dot.style.boxShadow = '0 0 10px rgba(255, 235, 59, 0.8)';
+                    } else if (currentConnState === 'green') {
+                        dot.style.backgroundColor = '#4caf50';
+                        dot.style.boxShadow = '0 0 10px rgba(76, 175, 80, 0.8)';
+                    }
                 }
             }
 
@@ -476,11 +469,11 @@
                     isCardFlipped: isCardFlipped,
                     turnHistory: turnHistory
                 };
-                localStorage.setItem("ScenariGameState_v105", JSON.stringify(state));
+                localStorage.setItem("ScenariGameState_v10", JSON.stringify(state));
             }
 
             function checkSavedGameAvailable() {
-                var saved = localStorage.getItem("ScenariGameState_v105");
+                var saved = localStorage.getItem("ScenariGameState_v10");
                 if (saved) {
                     try {
                         var state = JSON.parse(saved);
@@ -495,7 +488,7 @@
             window.resumeSavedGame = function() { restoreGameState(); };
 
             function restoreGameState() {
-                var saved = localStorage.getItem("ScenariGameState_v105");
+                var saved = localStorage.getItem("ScenariGameState_v10");
                 if (!saved) return false;
                 try {
                     var state = JSON.parse(saved);
@@ -553,7 +546,7 @@
 
             window.resetGameState = function() {
                 if (confirm("Vuoi azzerare la partita attuale per iniziarne una nuova?")) {
-                    localStorage.removeItem("ScenariGameState_v105");
+                    localStorage.removeItem("ScenariGameState_v10");
                     location.reload();
                 }
             };
@@ -712,8 +705,8 @@
                 tx.oncomplete = function() { loadGalleryContent(); loadChatHistory(); };
             };
 
-            // --- MOTORE P2P: ACCOPPIAMENTO ASIMMETRICO (HOST/GUEST) ---
-            const SECRET_ROOM_ID = "scenari-v105-room";
+            // --- MOTORE P2P: RITORNO AL LOOP BRUTE-FORCE ORIGINALE ---
+            const FIXED_ROOM_CODE = "tiziano-claudia-intimo-2026";
             var peer = null, conn = null, pingInterval = null, watchdogInterval = null, retryTimer = null;
             var lastSignalTime = Date.now();
 
@@ -726,30 +719,28 @@
                 autoConnectP2P(name);
             };
 
-            function autoConnectP2P(name) {
+            function autoConnectP2P(playerName) {
                 var statusEl = document.getElementById('p2p-status');
                 statusEl.style.display = 'flex';
-                statusEl.innerHTML = "🟡 Connessione al server in corso...";
+                statusEl.innerHTML = "🟡 Ricerca automatica del partner in corso...";
                 statusEl.style.color = "#ffeb3b";
                 updateConnectionDot('yellow');
                 
-                var myId = SECRET_ROOM_ID + "-" + name.toLowerCase();
-                var targetId = SECRET_ROOM_ID + "-" + (name === "Tiziano" ? "claudia" : "tiziano");
+                var myPeerId = FIXED_ROOM_CODE + "-" + playerName.toLowerCase();
+                var targetPeerId = FIXED_ROOM_CODE + "-" + (playerName === "Tiziano" ? "claudia" : "tiziano");
 
-                if (peer) { peer.destroy(); }
+                if (peer && !peer.destroyed) {
+                    attemptConnection(targetPeerId);
+                    return;
+                }
 
-                peer = new Peer(myId);
+                peer = new Peer(myPeerId);
 
                 peer.on('open', function(id) {
-                    maintainConnection(targetId, name === "Tiziano");
+                    attemptConnection(targetPeerId);
                 });
 
                 peer.on('connection', function(c) {
-                    // Sicurezza: se Tiziano si sta già connettendo a Claudia, non deve ricevere connessioni di ritorno
-                    if (conn && conn.open) {
-                        setTimeout(function() { c.close(); }, 500);
-                        return;
-                    }
                     conn = c;
                     setupConnEvents();
                 });
@@ -757,46 +748,34 @@
                 peer.on('error', function(err) {
                     console.log("P2P Error:", err);
                     if (err.type === 'unavailable-id') {
-                        statusEl.innerHTML = "🟡 Pulizia server in corso... riprovo.";
-                        setTimeout(function() { autoConnectP2P(name); }, 3000);
+                        attemptConnection(targetPeerId);
                     }
                 });
             }
 
-            // Loop asimmetrico: Solo Tiziano lancia i ping, Claudia ascolta
-            function maintainConnection(targetId, isTiziano) {
-                var statusEl = document.getElementById('p2p-status');
-                if (isTiziano) {
-                    statusEl.innerHTML = "🟡 Ricerca di Claudia in corso...";
-                } else {
-                    statusEl.innerHTML = "🟡 In ascolto di Tiziano...";
-                }
+            function attemptConnection(targetPeerId) {
+                if (conn && conn.open) return;
+                
+                try {
+                    conn = peer.connect(targetPeerId, { reliable: true });
+                    setupConnEvents();
+                } catch(e) {}
 
                 if (!retryTimer) {
                     retryTimer = setInterval(function() {
-                        if (peer && peer.disconnected && !peer.destroyed) {
+                        if (peer && peer.disconnected) {
                             peer.reconnect();
                         }
-
-                        if (conn && conn.open) {
-                            return; // Tutto ok
-                        }
-
-                        if (isTiziano) {
-                            if (conn) { try { conn.close(); } catch(e){} conn = null; }
+                        if (!conn || !conn.open) {
                             try {
-                                conn = peer.connect(targetId, { reliable: true });
+                                conn = peer.connect(targetPeerId, { reliable: true });
                                 setupConnEvents();
                             } catch(e) {}
+                        } else {
+                            clearInterval(retryTimer);
+                            retryTimer = null;
                         }
-                    }, 3500);
-                }
-
-                if (isTiziano) {
-                    try {
-                        conn = peer.connect(targetId, { reliable: true });
-                        setupConnEvents();
-                    } catch(e) {}
+                    }, 2500); 
                 }
             }
 
@@ -804,9 +783,10 @@
                 if (!conn) return;
 
                 var onOpen = function() {
+                    if (retryTimer) { clearInterval(retryTimer); retryTimer = null; }
                     lastSignalTime = Date.now();
                     var statusEl = document.getElementById('p2p-status');
-                    if(statusEl) {
+                    if (statusEl) {
                         statusEl.style.color = "#4caf50";
                         statusEl.innerHTML = "🟢 Partner Connesso! Entrambi pronti.";
                     }
@@ -821,11 +801,11 @@
 
                     if (watchdogInterval) clearInterval(watchdogInterval);
                     watchdogInterval = setInterval(function() {
-                        if (Date.now() - lastSignalTime > 12000) { 
-                            console.warn("Watchdog: Rilevato timeout, chiusura forzata.");
+                        if (Date.now() - lastSignalTime > 10000) { 
+                            console.warn("Watchdog: Rilevato timeout, riavvio connessione.");
                             handleDisconnect();
                         }
-                    }, 4000);
+                    }, 3000);
 
                     sendP2PCommand({ type: "SYNC_JOIN", player: currentPlayer });
                     if (mySelectedCategories.length > 0 && partnerSelectedCategories === null) {
@@ -858,9 +838,12 @@
                 var statusEl = document.getElementById('p2p-status');
                 if (statusEl) {
                     statusEl.style.color = "#e91e63";
-                    statusEl.innerHTML = "🔴 Connessione persa. Riconnessione in corso...";
+                    statusEl.innerHTML = "🔴 Connessione persa. Riconnessione...";
                 }
                 updateConnectionDot('red');
+
+                var targetId = FIXED_ROOM_CODE + "-" + (currentPlayer === "Tiziano" ? "claudia" : "tiziano");
+                attemptConnection(targetId);
             }
 
             function sendP2PCommand(dataObj) {
@@ -1586,6 +1569,8 @@
                     target.style.display = 'flex';
                     target.classList.add('active');
                 }
+                
+                updateConnectionDot(); // Aggiorna visibilità pallino
                 saveGameState();
             };
 
