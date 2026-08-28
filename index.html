@@ -438,6 +438,8 @@
             var currentPlayer = "", currentScenarioId = "", activeCategories = [];
             var mySelectedCategories = [], partnerSelectedCategories = null;
             var currentLevelIndex = 0, currentDialogueIndex = 0, selectedVictim = "", currentRotation = 0;
+            var lastVictim = "", consecutiveTurns = 0; 
+            var currentScreenId = "selection-screen";
             var currentScreenId = "selection-screen";
             var isCardFlipped = false;
             var isSingleDevice = false;
@@ -646,10 +648,37 @@
                     selectedVictim: selectedVictim,
                     currentDrawnAction: currentDrawnAction,
                     isCardFlipped: isCardFlipped,
-                    isSingleDevice: isSingleDevice
+                    isSingleDevice: isSingleDevice,
+                    lastVictim: lastVictim,
+                    consecutiveTurns: consecutiveTurns
                 };
                 localStorage.setItem("ScenariGameState_v10", JSON.stringify(state));
             }
+
+            function restoreGameState() {
+                var saved = localStorage.getItem("ScenariGameState_v10");
+                if (!saved) return false;
+                try {
+                    var state = JSON.parse(saved);
+                    if (state.currentPlayer || state.isSingleDevice) {
+                        currentPlayer = state.currentPlayer || "";
+                        currentScenarioId = state.currentScenarioId;
+                        activeCategories = state.activeCategories || [];
+                        currentLevelIndex = state.currentLevelIndex || 0;
+                        currentDialogueIndex = state.currentDialogueIndex || 0;
+                        currentScreenId = state.currentScreenId || "selection-screen";
+                        selectedVictim = state.selectedVictim || "";
+                        currentDrawnAction = state.currentDrawnAction || null;
+                        isCardFlipped = state.isCardFlipped || false;
+                        isSingleDevice = state.isSingleDevice || false;
+                        lastVictim = state.lastVictim || "";
+                        consecutiveTurns = state.consecutiveTurns || 0;
+
+                        if (!isSingleDevice) {
+                            document.getElementById('btn-select-tiziano').disabled = (currentPlayer === 'Claudia');
+                            document.getElementById('btn-select-claudia').disabled = (currentPlayer === 'Tiziano');
+                            autoConnectP2P(currentPlayer);
+                        }
 
             function checkSavedGameAvailable() {
                 var saved = localStorage.getItem("ScenariGameState_v10");
@@ -1222,9 +1251,29 @@
                 var tizianoHas = currentLevelActions["Tiziano"].length > 0;
                 var victim = "";
 
-                if (claudiaHas && !tizianoHas) { victim = "Claudia"; }
-                else if (tizianoHas && !claudiaHas) { victim = "Tiziano"; }
-                else { victim = Math.random() < 0.5 ? "Tiziano" : "Claudia"; }
+                // Determina chi ha azioni disponibili e applica il limite di 2 turni
+                if (claudiaHas && !tizianoHas) { 
+                    victim = "Claudia"; 
+                } else if (tizianoHas && !claudiaHas) { 
+                    victim = "Tiziano"; 
+                } else { 
+                    // Entrambi hanno azioni: controlla il blocco dei turni consecutivi
+                    if (lastVictim === "Claudia" && consecutiveTurns >= 2) {
+                        victim = "Tiziano";
+                    } else if (lastVictim === "Tiziano" && consecutiveTurns >= 2) {
+                        victim = "Claudia";
+                    } else {
+                        victim = Math.random() < 0.5 ? "Tiziano" : "Claudia";
+                    }
+                }
+
+                // Aggiorna i contatori dei turni
+                if (victim === lastVictim) {
+                    consecutiveTurns++;
+                } else {
+                    lastVictim = victim;
+                    consecutiveTurns = 1;
+                }
 
                 var mazzo = currentLevelActions[victim];
                 var randomIndex = Math.floor(Math.random() * mazzo.length);
@@ -1241,9 +1290,11 @@
                 var wheel = document.getElementById('spinWheel');
                 document.getElementById('spinBtn').style.display = 'none';
                 var winnerText = document.getElementById('winner-text');
+                var extraDegrees = (victim === "Tiziano") ? 270 : 90;
                 
-                var extraDegrees = (victim === "Tiziano") ? 90 : 270;
-                currentRotation += 1440 + extraDegrees; 
+                var randomOffset = Math.floor(Math.random() * 60) - 30;
+                
+                currentRotation += 1440 + extraDegrees + randomOffset; 
                 wheel.style.transform = "rotate(" + currentRotation + "deg)";
 
                 setTimeout(function() {
