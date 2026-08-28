@@ -222,16 +222,17 @@
         .card-category-tag { font-size: 0.8rem; background: rgba(103, 58, 183, 0.4); border: 1px solid #673ab7; padding: 4px 12px; border-radius: 20px; margin-bottom: 15px; color: #d1c4db; font-weight: bold; }
         #cardText { font-size: 1.25rem; line-height: 1.6; color: #ffffff; font-weight: 500; margin-bottom: 15px; }
 
-        /* Versione app bottom left */
+        /* Versione app in basso a sinistra */
         .version-indicator {
             position: absolute; bottom: 15px; left: 15px;
             font-size: 0.8rem; color: #666; font-family: monospace; letter-spacing: 1px;
+            z-index: 100;
         }
     </style>
 </head>
 <body>
 
-    <!-- Pallino di Stato Connessione (Sempre Visibile in fase di gioco) -->
+    <!-- Pallino di Stato Connessione -->
     <div id="connection-dot" title="Stato Connessione P2P"></div>
 
     <div id="loader-screen" class="menu-screen active">
@@ -306,7 +307,7 @@
         <button class="btn btn-gallery" style="margin-top: 15px;" onclick="openGallery()">📂 Galleria Privata In-App</button>
         <button class="btn btn-reset" id="btn-reset-game" style="display:none;" onclick="resetGameState()">🔄 Abbandona e Nuova Partita</button>
         
-        <div class="version-indicator">v10.2</div>
+        <div class="version-indicator">v10.3</div>
     </div>
 
     <div id="gallery-screen" class="menu-screen">
@@ -401,7 +402,7 @@
 
     <script>
         try {
-            console.log("Inizializzazione App v10.2 avviata...");
+            console.log("Inizializzazione App v10.3 avviata...");
 
             let LINK_SCENARI_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1088679208&single=true&output=csv";
             let LINK_COPIONE_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1067890923&single=true&output=csv";
@@ -762,7 +763,6 @@
                     if (err.type === 'peer-unavailable') {
                         attemptConnection(targetId);
                     } else if (err.type === 'unavailable-id') {
-                        statusEl.innerHTML = "🟡 Server occupato. Riprovo in 3s...";
                         setTimeout(function() { autoConnectP2P(name); }, 3000);
                     }
                 });
