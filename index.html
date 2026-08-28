@@ -233,7 +233,7 @@
 </head>
 <body>
 
-    <!-- Pallino di Stato Connessione -->
+    <!-- Pallino di Stato Connessione (Sempre Visibile in fase di gioco) -->
     <div id="connection-dot" title="Stato Connessione P2P"></div>
 
     <div id="loader-screen" class="menu-screen active">
@@ -308,7 +308,7 @@
         <button class="btn btn-gallery" style="margin-top: 15px;" onclick="openGallery()">📂 Galleria Privata In-App</button>
         <button class="btn btn-reset" id="btn-reset-game" style="display:none;" onclick="resetGameState()">🔄 Abbandona e Nuova Partita</button>
         
-        <div class="version-indicator">v10.4</div>
+        <div class="version-indicator">v10.5</div>
     </div>
 
     <div id="gallery-screen" class="menu-screen">
@@ -403,7 +403,7 @@
 
     <script>
         try {
-            console.log("Inizializzazione App v10.4 avviata...");
+            console.log("Inizializzazione App v10.5 avviata...");
 
             let LINK_SCENARI_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1088679208&single=true&output=csv";
             let LINK_COPIONE_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1067890923&single=true&output=csv";
@@ -476,11 +476,11 @@
                     isCardFlipped: isCardFlipped,
                     turnHistory: turnHistory
                 };
-                localStorage.setItem("ScenariGameState_v10", JSON.stringify(state));
+                localStorage.setItem("ScenariGameState_v105", JSON.stringify(state));
             }
 
             function checkSavedGameAvailable() {
-                var saved = localStorage.getItem("ScenariGameState_v10");
+                var saved = localStorage.getItem("ScenariGameState_v105");
                 if (saved) {
                     try {
                         var state = JSON.parse(saved);
@@ -495,7 +495,7 @@
             window.resumeSavedGame = function() { restoreGameState(); };
 
             function restoreGameState() {
-                var saved = localStorage.getItem("ScenariGameState_v10");
+                var saved = localStorage.getItem("ScenariGameState_v105");
                 if (!saved) return false;
                 try {
                     var state = JSON.parse(saved);
@@ -553,7 +553,7 @@
 
             window.resetGameState = function() {
                 if (confirm("Vuoi azzerare la partita attuale per iniziarne una nuova?")) {
-                    localStorage.removeItem("ScenariGameState_v10");
+                    localStorage.removeItem("ScenariGameState_v105");
                     location.reload();
                 }
             };
@@ -634,6 +634,7 @@
                 }
             };
 
+            // --- SISTEMA DATABASE LOCALE ---
             var db = null;
             function initDB() {
                 var request = indexedDB.open("ScenariMediaDB", 1);
@@ -711,8 +712,8 @@
                 tx.oncomplete = function() { loadGalleryContent(); loadChatHistory(); };
             };
 
-            // --- MOTORE P2P: RITORNO AL LOOP ROBUSTO ---
-            const FIXED_ROOM_CODE = "tiziano-claudia-intimo-2026";
+            // --- MOTORE P2P: ACCOPPIAMENTO ASIMMETRICO (HOST/GUEST) ---
+            const SECRET_ROOM_ID = "scenari-v105-room";
             var peer = null, conn = null, pingInterval = null, watchdogInterval = null, retryTimer = null;
             var lastSignalTime = Date.now();
 
@@ -728,24 +729,27 @@
             function autoConnectP2P(name) {
                 var statusEl = document.getElementById('p2p-status');
                 statusEl.style.display = 'flex';
-                statusEl.innerHTML = "🟡 Ricerca automatica del partner in corso...";
+                statusEl.innerHTML = "🟡 Connessione al server in corso...";
                 statusEl.style.color = "#ffeb3b";
                 updateConnectionDot('yellow');
                 
-                var myId = FIXED_ROOM_CODE + "-" + name.toLowerCase();
-                var targetId = FIXED_ROOM_CODE + "-" + (name === "Tiziano" ? "claudia" : "tiziano");
+                var myId = SECRET_ROOM_ID + "-" + name.toLowerCase();
+                var targetId = SECRET_ROOM_ID + "-" + (name === "Tiziano" ? "claudia" : "tiziano");
 
                 if (peer) { peer.destroy(); }
 
-                // Ritorno alla configurazione nativa standard (no override STUN che bloccava il mobile)
                 peer = new Peer(myId);
 
                 peer.on('open', function(id) {
-                    attemptConnection(targetId);
+                    maintainConnection(targetId, name === "Tiziano");
                 });
 
                 peer.on('connection', function(c) {
-                    // Rimosso il blocco anti-doppioni che causava lo "stallo alla messicana"
+                    // Sicurezza: se Tiziano si sta già connettendo a Claudia, non deve ricevere connessioni di ritorno
+                    if (conn && conn.open) {
+                        setTimeout(function() { c.close(); }, 500);
+                        return;
+                    }
                     conn = c;
                     setupConnEvents();
                 });
@@ -753,34 +757,46 @@
                 peer.on('error', function(err) {
                     console.log("P2P Error:", err);
                     if (err.type === 'unavailable-id') {
-                        attemptConnection(targetId);
+                        statusEl.innerHTML = "🟡 Pulizia server in corso... riprovo.";
+                        setTimeout(function() { autoConnectP2P(name); }, 3000);
                     }
                 });
             }
 
-            function attemptConnection(targetId) {
-                if (conn && conn.open) return;
-                
-                try {
-                    conn = peer.connect(targetId, { reliable: true });
-                    setupConnEvents();
-                } catch(e) {}
+            // Loop asimmetrico: Solo Tiziano lancia i ping, Claudia ascolta
+            function maintainConnection(targetId, isTiziano) {
+                var statusEl = document.getElementById('p2p-status');
+                if (isTiziano) {
+                    statusEl.innerHTML = "🟡 Ricerca di Claudia in corso...";
+                } else {
+                    statusEl.innerHTML = "🟡 In ascolto di Tiziano...";
+                }
 
                 if (!retryTimer) {
                     retryTimer = setInterval(function() {
-                        if (peer && peer.disconnected) {
+                        if (peer && peer.disconnected && !peer.destroyed) {
                             peer.reconnect();
                         }
-                        if (!conn || !conn.open) {
+
+                        if (conn && conn.open) {
+                            return; // Tutto ok
+                        }
+
+                        if (isTiziano) {
+                            if (conn) { try { conn.close(); } catch(e){} conn = null; }
                             try {
                                 conn = peer.connect(targetId, { reliable: true });
                                 setupConnEvents();
                             } catch(e) {}
-                        } else {
-                            clearInterval(retryTimer);
-                            retryTimer = null;
                         }
-                    }, 2500); // Ritentativo fisso ogni 2.5 secondi
+                    }, 3500);
+                }
+
+                if (isTiziano) {
+                    try {
+                        conn = peer.connect(targetId, { reliable: true });
+                        setupConnEvents();
+                    } catch(e) {}
                 }
             }
 
@@ -788,11 +804,12 @@
                 if (!conn) return;
 
                 var onOpen = function() {
-                    if (retryTimer) { clearInterval(retryTimer); retryTimer = null; }
                     lastSignalTime = Date.now();
                     var statusEl = document.getElementById('p2p-status');
-                    statusEl.style.color = "#4caf50";
-                    statusEl.innerHTML = "🟢 Partner Connesso! Entrambi pronti.";
+                    if(statusEl) {
+                        statusEl.style.color = "#4caf50";
+                        statusEl.innerHTML = "🟢 Partner Connesso! Entrambi pronti.";
+                    }
                     document.getElementById('start-sync-btn').style.display = "inline-block";
                     updateConnectionDot('green');
                     playNotificationSound();
@@ -804,11 +821,11 @@
 
                     if (watchdogInterval) clearInterval(watchdogInterval);
                     watchdogInterval = setInterval(function() {
-                        if (Date.now() - lastSignalTime > 10000) { 
-                            console.warn("Watchdog: Timeout, chiusura forzata.");
+                        if (Date.now() - lastSignalTime > 12000) { 
+                            console.warn("Watchdog: Rilevato timeout, chiusura forzata.");
                             handleDisconnect();
                         }
-                    }, 3000);
+                    }, 4000);
 
                     sendP2PCommand({ type: "SYNC_JOIN", player: currentPlayer });
                     if (mySelectedCategories.length > 0 && partnerSelectedCategories === null) {
@@ -841,12 +858,9 @@
                 var statusEl = document.getElementById('p2p-status');
                 if (statusEl) {
                     statusEl.style.color = "#e91e63";
-                    statusEl.innerHTML = "🔴 Connessione persa. Riconnessione...";
+                    statusEl.innerHTML = "🔴 Connessione persa. Riconnessione in corso...";
                 }
                 updateConnectionDot('red');
-
-                var targetId = FIXED_ROOM_CODE + "-" + (currentPlayer === "Tiziano" ? "claudia" : "tiziano");
-                attemptConnection(targetId);
             }
 
             function sendP2PCommand(dataObj) {
