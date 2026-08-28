@@ -438,7 +438,7 @@
         var currentPlayer = "", currentScenarioId = "", activeCategories = [];
         var mySelectedCategories = [], partnerSelectedCategories = null;
         var currentLevelIndex = 0, currentDialogueIndex = 0, selectedVictim = "", currentRotation = 0;
-        var lastVictim = "", consecutiveTurns = 0;
+        var lastVictim = "", consecutiveTurns = 0; // Nuovi contatori per i turni
         var currentScreenId = "selection-screen";
         var isCardFlipped = false;
         
@@ -469,11 +469,12 @@
                 currentDrawnAction: currentDrawnAction,
                 isCardFlipped: isCardFlipped,
                 lastVictim: lastVictim,
-                consecutiveTurns: consecutiveTurns
+                consecutiveTurns: consecutiveTurns,
+                currentRotation: currentRotation // Salva la rotazione della ruota
             };
             localStorage.setItem("ScenariGameState_v3", JSON.stringify(state));
         }
-
+        
         function checkSavedGameAvailable() {
             var saved = localStorage.getItem("ScenariGameState_v3");
             if (saved) {
@@ -506,6 +507,10 @@
                     isCardFlipped = state.isCardFlipped || false;
                     lastVictim = state.lastVictim || "";
                     consecutiveTurns = state.consecutiveTurns || 0;
+                    currentRotation = state.currentRotation || 0; // Ripristina la rotazione
+
+                    // Applica immediatamente la rotazione visiva alla ruota salvata
+                    document.getElementById('spinWheel').style.transform = "rotate(" + currentRotation + "deg)";
 
                     document.getElementById('btn-select-tiziano').disabled = (currentPlayer === 'Claudia');
                     document.getElementById('btn-select-claudia').disabled = (currentPlayer === 'Tiziano');
@@ -550,7 +555,6 @@
             } catch(e) { console.error("Errore ripristino stato:", e); }
             return false;
         }
-
         function resetGameState() {
             if (confirm("Vuoi azzerare la partita attuale per iniziarne una nuova?")) {
                 localStorage.removeItem("ScenariGameState_v3");
@@ -609,8 +613,7 @@
                             reader.onloadend = function() {
                                 var base64Data = reader.result;
                                 appendChatMediaMessage("Tu", base64Data, "audio", "me");
-                                saveMediaToLocalDB(base64Data, "audio", "Nota Vocale", currentPlayer);
-                                if (conn && conn.open) {
+                                saveToLocalDB(base64Data, "audio", "Chat Live", "Tu", "me");    if (conn && conn.open) {
                                     conn.send({ type: "media", mediaType: "audio", fileData: base64Data, category: "Nota Vocale", sender: currentPlayer });
                                 }
                             };
@@ -634,6 +637,7 @@
         }
 
         var db = null;
+        var db = null;
         function initDB() {
             var request = indexedDB.open("ScenariMediaDB", 1);
             request.onupgradeneeded = function(e) {
@@ -642,15 +646,54 @@
                     db.createObjectStore("media", { keyPath: "id", autoIncrement: true });
                 }
             };
-            request.onsuccess = function(e) { db = e.target.result; };
+            request.onsuccess = function(e) { 
+                db = e.target.result; 
+                loadChatHistory(); // Carica i messaggi testuali al refresh
+            };
         }
         initDB();
 
-        function saveMediaToLocalDB(fileData, type, category, sender) {
+        function saveToLocalDB(fileData, type, category, sender, msgClass) {
             if (!db) return;
             var tx = db.transaction(["media"], "readwrite");
             var store = tx.objectStore("media");
-            store.add({ type: type, data: fileData, category: category, sender: sender, timestamp: new Date().toLocaleString() });
+            store.add({ type: type, data: fileData, category: category, sender: sender, msgClass: msgClass || "", timestamp: new Date().toLocaleString() });
+        }
+
+        function loadChatHistory() {
+            if (!db) return;
+            var tx = db.transaction(["media"], "readonly");
+            var store = tx.objectStore("media");
+            var request = store.getAll();
+
+            request.onsuccess = function() {
+                var items = request.result;
+                var box = document.getElementById('chat-messages');
+                box.innerHTML = '<div style="font-size:0.75rem; color:#a996b8; text-align:center; margin-bottom: 10px;">Messaggi e media inviati risiedono solo sul tuo dispositivo.</div>';
+                
+                items.forEach(function(item) {
+                    if (item.category === "Chat Live" || item.type === "chat_text") {
+                        var div = document.createElement('div');
+                        div.className = "chat-msg " + (item.msgClass || "partner");
+                        
+                        if (item.type === "chat_text") {
+                            div.innerHTML = "<strong>" + item.sender + ":</strong> " + item.data;
+                        } else {
+                            var mediaHTML = "";
+                            if (item.type === "image") {
+                                mediaHTML = '<img src="' + item.data + '" onclick="openLightbox(\'' + item.data + '\', false)">';
+                            } else if (item.type === "video") {
+                                mediaHTML = '<video src="' + item.data + '" controls onclick="openLightbox(\'' + item.data + '\', true)"></video>';
+                            } else if (item.type === "audio") {
+                                mediaHTML = '<audio src="' + item.data + '" controls style="width:100%;"></audio>';
+                            }
+                            div.innerHTML = "<strong>" + item.sender + ":</strong><br>" + mediaHTML;
+                        }
+                        box.appendChild(div);
+                    }
+                });
+                box.scrollTop = box.scrollHeight;
+            };
         }
 
         function deleteSingleMedia(id) {
@@ -659,7 +702,7 @@
             var tx = db.transaction(["media"], "readwrite");
             var store = tx.objectStore("media");
             store.delete(id);
-            tx.oncomplete = function() { loadGalleryContent(); };
+            tx.oncomplete = function() { loadGalleryContent(); loadChatHistory(); };
         }
 
         function clearAllGallery() {
@@ -668,7 +711,7 @@
             var tx = db.transaction(["media"], "readwrite");
             var store = tx.objectStore("media");
             store.clear();
-            tx.oncomplete = function() { loadGalleryContent(); };
+            tx.oncomplete = function() { loadGalleryContent(); loadChatHistory(); };
         }
 
         // --- MOTORE P2P ULTRA-STABILE (PING/PONG + RECONNECT LOOP) ---
@@ -772,6 +815,18 @@
                 return;
             }
             if (data.type === "PONG") return;
+
+            if (data.type === "text") {
+                playNotificationSound();
+                appendChatMessage(data.sender, data.text, "partner");
+                saveToLocalDB(data.text, "chat_text", "Chat Live", data.sender, "partner"); // Salva chat ricevuta
+                notifyChatBadge();
+            } else if (data.type === "media") {
+                playNotificationSound();
+                saveToLocalDB(data.fileData, data.mediaType, data.category, data.sender, "partner"); // Salva media ricevuto
+                appendChatMediaMessage(data.sender, data.fileData, data.mediaType, "partner");
+                notifyChatBadge();
+            } else if (data.type === "SYNC_SCENARIO_SELECT") {
 
             if (data.type === "text") {
                 playNotificationSound();
@@ -883,6 +938,7 @@
             } else if (tizianoHas && !claudiaHas) { 
                 victim = "Tiziano"; 
             } else { 
+                // Controllo per impedire più di 2 turni consecutivi
                 if (lastVictim === "Claudia" && consecutiveTurns >= 2) {
                     victim = "Tiziano";
                 } else if (lastVictim === "Tiziano" && consecutiveTurns >= 2) {
@@ -892,6 +948,7 @@
                 }
             }
 
+            // Aggiornamento dei contatori
             if (victim === lastVictim) {
                 consecutiveTurns++;
             } else {
@@ -906,7 +963,7 @@
             spinTheWheel(victim, drawn, false);
             sendP2PCommand({ type: "SYNC_SPIN_WHEEL", victim: victim, drawnAction: drawn });
         }
-
+        
         function handleGoToCardsClick() {
             goToCards(false);
             sendP2PCommand({ type: "SYNC_GO_CARDS" });
@@ -1058,8 +1115,11 @@
             document.getElementById('spinBtn').style.display = 'none';
             var winnerText = document.getElementById('winner-text');
             
+            // Gradi invertiti per rispecchiare la UI: 270 per Tiziano, 90 per Claudia
             var extraDegrees = (victim === "Tiziano") ? 270 : 90;
-            var randomOffset = Math.floor(Math.random() * 60) - 30;
+            // Variazione randomica per non fermare la ruota sempre sullo stesso pixel esatto
+            var randomOffset = Math.floor(Math.random() * 60) - 30; 
+
             currentRotation += 1440 + extraDegrees + randomOffset; 
             wheel.style.transform = "rotate(" + currentRotation + "deg)";
 
@@ -1071,7 +1131,7 @@
                 saveGameState();
             }, 3000);
         }
-
+        
         function goToCards(isRemote) {
             showScreen('cards-screen');
             document.getElementById('game-menu-btn').style.display = 'block';
@@ -1312,12 +1372,13 @@
             if (!txt) return;
 
             appendChatMessage("Tu", txt, "me");
+            saveToLocalDB(txt, "chat_text", "Chat Live", "Tu", "me"); // Salva il testo
+
             if (conn && conn.open) {
                 conn.send({ type: "text", text: txt, sender: currentPlayer });
             }
             input.value = "";
         }
-
         function appendChatMessage(sender, txt, msgClass) {
             var box = document.getElementById('chat-messages');
             var div = document.createElement('div');
@@ -1337,7 +1398,7 @@
                 var mediaType = file.type.startsWith("image") ? "image" : (file.type.startsWith("video") ? "video" : "audio");
                 
                 appendChatMediaMessage("Tu", base64Data, mediaType, "me");
-                saveMediaToLocalDB(base64Data, mediaType, "Chat Live", currentPlayer);
+                saveToLocalDB(base64Data, mediaType, "Chat Live", "Tu", "me"); // Salva media inviato
 
                 if (conn && conn.open) {
                     conn.send({
@@ -1376,7 +1437,7 @@
             loadGalleryContent();
         }
 
-        function loadGalleryContent() {
+function loadGalleryContent() {
             var grid = document.getElementById('gallery-grid');
             grid.innerHTML = "Caricamento...";
             if (!db) return;
@@ -1387,12 +1448,14 @@
 
             request.onsuccess = function() {
                 var items = request.result;
-                if (!items || items.length === 0) {
+                var mediaItems = items.filter(item => item.type !== "chat_text"); // Filtra il testo
+                
+                if (!mediaItems || mediaItems.length === 0) {
                     grid.innerHTML = "<p style='color:#a996b8; grid-column: 1/-1;'>Nessun file presente nella Galleria Privata.</p>";
                     return;
                 }
                 grid.innerHTML = "";
-                items.reverse().forEach(function(item) {
+                mediaItems.reverse().forEach(function(item) {
                     var div = document.createElement('div');
                     div.className = "gallery-card";
                     
