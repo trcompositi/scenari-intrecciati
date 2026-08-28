@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- Disabilitazione Cache aggressiva per i test -->
+    <!-- Disabilitazione Cache per i test -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -32,7 +32,6 @@
             flex-direction: column; 
             justify-content: flex-start; 
             align-items: center;
-            min-height: 100vh;
             min-height: 100dvh; 
             background: linear-gradient(145deg, #170f1f, #0a060d); 
             text-align: center;
@@ -67,6 +66,14 @@
             background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
             color: #d1c4db; border-radius: 50px; padding: 8px 16px; font-size: 0.9rem;
             cursor: pointer; z-index: 100;
+        }
+
+        /* PALLINO DI CONNESSIONE AL POSTO DEL MENU IN ALTO A DESTRA */
+        #connection-dot {
+            position: fixed; top: 18px; right: 18px; z-index: 3000;
+            width: 14px; height: 14px; border-radius: 50%;
+            background-color: #ff5252; box-shadow: 0 0 10px rgba(255, 82, 82, 0.8);
+            display: none; transition: background-color 0.4s, box-shadow 0.4s;
         }
 
         #game-menu-btn {
@@ -108,9 +115,10 @@
         .check-item::before { content: '○'; font-size: 1.4rem; margin-right: 12px; color: #888; }
         .check-item.active::before { content: '●'; color: var(--primary-accent); }
 
+        /* TASTO SKIP CHE ORA FUNGE DA INDICATORE LIVELLO */
         #fixed-skip-level-btn {
             display: none; position: fixed; bottom: 15px; left: 15px; z-index: 999;
-            background: rgba(233, 30, 99, 0.25); border: 1px solid var(--primary-accent);
+            background: rgba(0, 0, 0, 0.85); border: 2px solid #4caf50;
             color: white; border-radius: 50px; padding: 10px 16px;
             font-weight: bold; font-size: 0.85rem; box-shadow: 0 5px 20px rgba(0,0,0,0.6);
             cursor: pointer; backdrop-filter: blur(5px); transition: transform 0.2s;
@@ -185,13 +193,7 @@
         .gallery-btn-del { color: #ff5252; background: rgba(255, 82, 82, 0.15); border: 1px solid #ff5252; padding: 3px 8px; border-radius: 5px; font-size: 0.75rem; cursor: pointer; }
 
         #vn-screen { display: none; width: 100vw; height: 100dvh; position: relative; background-size: cover; background-position: center; }
-        #level-indicator { 
-            position: absolute; top: 20px; right: 20px; 
-            background: rgba(0,0,0,0.85); border: 2px solid #4caf50; 
-            padding: 8px 16px; border-radius: 20px; font-weight: bold; 
-            font-size: 0.95rem; z-index: 10; letter-spacing: 0.5px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        }
+
         #choices-container { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; gap: 12px; width: 90%; max-width: 400px; z-index: 10; }
         .choice-btn { background-color: rgba(30, 20, 40, 0.95); border: 2px solid #673ab7; color: white; padding: 15px; border-radius: 10px; font-size: 1rem; cursor: pointer; }
         
@@ -221,7 +223,6 @@
         .card-category-tag { font-size: 0.8rem; background: rgba(103, 58, 183, 0.4); border: 1px solid #673ab7; padding: 4px 12px; border-radius: 20px; margin-bottom: 15px; color: #d1c4db; font-weight: bold; }
         #cardText { font-size: 1.25rem; line-height: 1.6; color: #ffffff; font-weight: 500; margin-bottom: 15px; }
 
-        /* Stile indicatore versione */
         .version-indicator {
             margin-top: 20px; width: 100%; text-align: center; 
             font-size: 0.8rem; color: #888; font-family: monospace; letter-spacing: 1px;
@@ -229,6 +230,9 @@
     </style>
 </head>
 <body>
+
+    <!-- Pallino di Stato Connessione (Sempre Visibile) -->
+    <div id="connection-dot" title="Stato Connessione P2P"></div>
 
     <div id="loader-screen" class="menu-screen active">
         <h1 class="title">Scenari Intrecciati</h1>
@@ -253,7 +257,8 @@
         </div>
     </div>
 
-    <button id="fixed-skip-level-btn" onclick="handleForceNextLevelClick()">⚡ Sali di Livello</button>
+    <!-- PUSANTE SALTA LIVELLO IN BASSO A SINISTRA (SOSTITUISCE L'INDICATORE IN ALTO) -->
+    <button id="fixed-skip-level-btn" onclick="handleForceNextLevelClick()">⚡ Salta Livello</button>
 
     <button id="chat-toggle-btn" onclick="toggleChat()">
         💬 Chat Live <span id="chat-badge">0</span>
@@ -301,7 +306,7 @@
         <button class="btn btn-gallery" style="margin-top: 15px;" onclick="openGallery()">📂 Galleria Privata In-App</button>
         <button class="btn btn-reset" id="btn-reset-game" style="display:none;" onclick="resetGameState()">🔄 Abbandona e Nuova Partita</button>
         
-        <div class="version-indicator">Versione App: v10.0 (Bugfix Sintassi)</div>
+        <div class="version-indicator">Versione App: v10.1 (Anti-Monopolio + UI Update)</div>
     </div>
 
     <div id="gallery-screen" class="menu-screen">
@@ -358,7 +363,6 @@
     </div>
 
     <div id="vn-screen">
-        <div id="level-indicator">🟢 Livello: EASY</div>
         <div id="choices-container"></div>
         <div id="dialogue-box" onclick="handleDialogueClick()">
             <div id="speaker-name">Nome</div>
@@ -396,9 +400,8 @@
     </div>
 
     <script>
-        // Gestione anti-errore per inizializzazione
         try {
-            console.log("Inizializzazione App v10.0 avviata...");
+            console.log("Inizializzazione App v10.1 avviata...");
 
             let LINK_SCENARI_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1088679208&single=true&output=csv";
             let LINK_COPIONE_RAW = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRESfDr_iHqqFhKPnFn7fE9VXsKrQwjkqfsOeXrUPPMt0KHcWZ0FHRnSr16pPUqeYrvdvq7FLkq7YX2/pub?gid=1067890923&single=true&output=csv";
@@ -425,21 +428,39 @@
             var currentLevelIndex = 0, currentDialogueIndex = 0, selectedVictim = "", currentRotation = 0;
             var currentScreenId = "selection-screen";
             var isCardFlipped = false;
+            var turnHistory = []; // Array per prevenire due turni consecutivi
             
             var currentLevelActions = { "Claudia": [], "Tiziano": [] };
             var currentDrawnAction = null;
             var unreadChatCount = 0;
             var catSyncInterval = null;
 
-            function openPauseModal() { document.getElementById('pause-modal').style.display = 'flex'; }
-            function closePauseModal() { document.getElementById('pause-modal').style.display = 'none'; }
-            function manualSaveGame() { saveGameState(); alert("💾 Partita salvata con successo!"); closePauseModal(); }
-            function abandonGame() {
+            // --- CONTROLLO VISIVO PALLINO P2P ---
+            function updateConnectionDot(state) {
+                var dot = document.getElementById('connection-dot');
+                if (!dot) return;
+                dot.style.display = 'block';
+                if (state === 'red') {
+                    dot.style.backgroundColor = '#ff5252';
+                    dot.style.boxShadow = '0 0 10px rgba(255, 82, 82, 0.8)';
+                } else if (state === 'yellow') {
+                    dot.style.backgroundColor = '#ffeb3b';
+                    dot.style.boxShadow = '0 0 10px rgba(255, 235, 59, 0.8)';
+                } else if (state === 'green') {
+                    dot.style.backgroundColor = '#4caf50';
+                    dot.style.boxShadow = '0 0 10px rgba(76, 175, 80, 0.8)';
+                }
+            }
+
+            window.openPauseModal = function() { document.getElementById('pause-modal').style.display = 'flex'; };
+            window.closePauseModal = function() { document.getElementById('pause-modal').style.display = 'none'; };
+            window.manualSaveGame = function() { saveGameState(); alert("💾 Partita salvata con successo!"); closePauseModal(); };
+            window.abandonGame = function() {
                 if (confirm("Vuoi davvero abbandonare la partita attuale e tornare al menu iniziale?")) {
                     closePauseModal();
                     showScreen('selection-screen');
                 }
-            }
+            };
 
             function saveGameState() {
                 var state = {
@@ -451,7 +472,8 @@
                     currentScreenId: currentScreenId,
                     selectedVictim: selectedVictim,
                     currentDrawnAction: currentDrawnAction,
-                    isCardFlipped: isCardFlipped
+                    isCardFlipped: isCardFlipped,
+                    turnHistory: turnHistory
                 };
                 localStorage.setItem("ScenariGameState_v10", JSON.stringify(state));
             }
@@ -469,7 +491,7 @@
                 }
             }
 
-            function resumeSavedGame() { restoreGameState(); }
+            window.resumeSavedGame = function() { restoreGameState(); };
 
             function restoreGameState() {
                 var saved = localStorage.getItem("ScenariGameState_v10");
@@ -486,6 +508,7 @@
                         selectedVictim = state.selectedVictim || "";
                         currentDrawnAction = state.currentDrawnAction || null;
                         isCardFlipped = state.isCardFlipped || false;
+                        turnHistory = state.turnHistory || [];
 
                         document.getElementById('btn-select-tiziano').disabled = (currentPlayer === 'Claudia');
                         document.getElementById('btn-select-claudia').disabled = (currentPlayer === 'Tiziano');
@@ -527,12 +550,12 @@
                 return false;
             }
 
-            function resetGameState() {
+            window.resetGameState = function() {
                 if (confirm("Vuoi azzerare la partita attuale per iniziarne una nuova?")) {
                     localStorage.removeItem("ScenariGameState_v10");
                     location.reload();
                 }
-            }
+            };
 
             function playNotificationSound() {
                 try {
@@ -551,7 +574,7 @@
                 } catch(e){}
             }
 
-            function openLightbox(src, isVideo) {
+            window.openLightbox = function(src, isVideo) {
                 var modal = document.getElementById('lightbox-modal');
                 var container = document.getElementById('lightbox-container');
                 if (isVideo) {
@@ -560,18 +583,18 @@
                     container.innerHTML = '<img id="lightbox-content" src="' + src + '" style="max-width:100%; max-height:85vh;">';
                 }
                 modal.style.display = 'flex';
-            }
+            };
 
-            function closeLightbox() {
+            window.closeLightbox = function() {
                 var modal = document.getElementById('lightbox-modal');
                 var container = document.getElementById('lightbox-container');
                 container.innerHTML = '';
                 modal.style.display = 'none';
-            }
+            };
 
             var mediaRecorder = null, audioChunks = [], isRecording = false;
 
-            function toggleAudioRecording() {
+            window.toggleAudioRecording = function() {
                 var btn = document.getElementById('btn-record-audio');
                 if (!isRecording) {
                     navigator.mediaDevices.getUserMedia({ audio: true })
@@ -608,7 +631,7 @@
                     btn.innerText = "🎙️ Registra Audio";
                     btn.style.background = "rgba(233, 30, 99, 0.2)";
                 }
-            }
+            };
 
             // --- SISTEMA DATABASE LOCALE (INDEXEDDB) ---
             var db = null;
@@ -708,6 +731,7 @@
                 statusEl.style.display = 'flex';
                 statusEl.innerHTML = "🟡 Ricerca automatica del partner in corso...<br><span style='font-size:0.8rem; color:#a996b8; margin-top:5px; font-weight:normal;'>L'app si connetterà non appena l'altro dispositivo sarà online.</span>";
                 statusEl.style.color = "#ffeb3b";
+                updateConnectionDot('yellow');
                 
                 var myId = SECRET_ROOM_ID + "-" + name.toLowerCase();
                 var targetId = SECRET_ROOM_ID + "-" + (name === "Tiziano" ? "claudia" : "tiziano");
@@ -778,6 +802,7 @@
                     statusEl.style.color = "#4caf50";
                     statusEl.innerHTML = "🟢 Partner Connesso! Entrambi pronti.";
                     document.getElementById('start-sync-btn').style.display = "inline-block";
+                    updateConnectionDot('green');
                     playNotificationSound();
 
                     if (pingInterval) clearInterval(pingInterval);
@@ -827,6 +852,7 @@
                     statusEl.style.color = "#e91e63";
                     statusEl.innerHTML = "🔴 Connessione persa. Riconnessione automatica in corso...";
                 }
+                updateConnectionDot('red');
 
                 var targetId = SECRET_ROOM_ID + "-" + (currentPlayer === "Tiziano" ? "claudia" : "tiziano");
                 setTimeout(function() { attemptConnection(targetId); }, 2000);
@@ -938,14 +964,25 @@
 
             window.toggleChat = function() {
                 var modal = document.getElementById('chat-modal');
+                var badge = document.getElementById('chat-badge');
                 if (modal.style.display === "flex") {
                     modal.style.display = "none";
                 } else {
                     modal.style.display = "flex";
                     unreadChatCount = 0;
-                    document.getElementById('chat-badge').style.display = "none";
+                    if (badge) badge.style.display = "none";
                 }
             };
+
+            function notifyChatBadge() {
+                var modal = document.getElementById('chat-modal');
+                if (modal.style.display !== "flex") {
+                    unreadChatCount++;
+                    var badge = document.getElementById('chat-badge');
+                    badge.innerText = unreadChatCount;
+                    badge.style.display = "inline-block";
+                }
+            }
 
             window.sendTextMessage = function() {
                 var input = document.getElementById('chat-text-input');
@@ -1046,7 +1083,6 @@
                         
                         var mediaHTML = "";
                         var ext = item.type === "image" ? "jpg" : (item.type === "video" ? "mp4" : "mp3");
-                        // Correzione bug Regex (sostituisce caratteri non validi)
                         var safeTimestamp = item.timestamp ? item.timestamp.replace(/[/:,\s]/g, "-") : Date.now();
                         var fileName = "Scenari_" + item.category + "_" + safeTimestamp + "." + ext;
 
@@ -1235,9 +1271,25 @@
                 var tizianoHas = currentLevelActions["Tiziano"].length > 0;
                 var victim = "";
 
+                // Controllo Prevenzione 2 turni consecutivi
+                var claudiaConsecutive = 0;
+                var tizianoConsecutive = 0;
+                for (var i = turnHistory.length - 1; i >= 0; i--) {
+                    if (turnHistory[i] === "Claudia") claudiaConsecutive++; else break;
+                }
+                for (var j = turnHistory.length - 1; j >= 0; j--) {
+                    if (turnHistory[j] === "Tiziano") tizianoConsecutive++; else break;
+                }
+
                 if (claudiaHas && !tizianoHas) { victim = "Claudia"; }
                 else if (tizianoHas && !claudiaHas) { victim = "Tiziano"; }
-                else { victim = Math.random() < 0.5 ? "Tiziano" : "Claudia"; }
+                else {
+                    if (claudiaConsecutive >= 2) { victim = "Tiziano"; }
+                    else if (tizianoConsecutive >= 2) { victim = "Claudia"; }
+                    else { victim = Math.random() < 0.5 ? "Tiziano" : "Claudia"; }
+                }
+
+                turnHistory.push(victim);
 
                 var mazzo = currentLevelActions[victim];
                 var randomIndex = Math.floor(Math.random() * mazzo.length);
@@ -1321,16 +1373,20 @@
                     return;
                 }
 
-                var levelIndicator = document.getElementById('level-indicator');
+                // GESTIONE NUOVO PULSANTE SKIP / LIVELLO
+                var levelBtn = document.getElementById('fixed-skip-level-btn');
                 if (levelData.level === 1) {
-                    levelIndicator.innerText = "🟢 Livello: EASY";
-                    levelIndicator.style.borderColor = "#4caf50";
+                    levelBtn.innerHTML = "⚡ Salta (Liv: EASY)";
+                    levelBtn.style.borderColor = "#4caf50";
+                    levelBtn.style.color = "#fff";
                 } else if (levelData.level === 2) {
-                    levelIndicator.innerText = "🟡 Livello: SOFT";
-                    levelIndicator.style.borderColor = "#ffeb3b";
+                    levelBtn.innerHTML = "⚡ Salta (Liv: SOFT)";
+                    levelBtn.style.borderColor = "#ffeb3b";
+                    levelBtn.style.color = "#fff";
                 } else {
-                    levelIndicator.innerText = "🔴 Livello: HARD";
-                    levelIndicator.style.borderColor = "#f44336";
+                    levelBtn.innerHTML = "⚡ Salta (Liv: HARD)";
+                    levelBtn.style.borderColor = "#f44336";
+                    levelBtn.style.color = "#fff";
                 }
                 
                 if (levelData.background && levelData.background.indexOf("http") === 0) {
@@ -1398,7 +1454,8 @@
                 document.getElementById('spinBtn').style.display = 'none';
                 var winnerText = document.getElementById('winner-text');
                 
-                var extraDegrees = (victim === "Tiziano") ? 90 : 270;
+                // FIXED BUG ROTAZIONE OPPOSTA
+                var extraDegrees = (victim === "Tiziano") ? 270 : 90;  
                 currentRotation += 1440 + extraDegrees; 
                 wheel.style.transform = "rotate(" + currentRotation + "deg)";
 
@@ -1451,10 +1508,8 @@
                 
                 var remainingTotal = currentLevelActions["Claudia"].length + currentLevelActions["Tiziano"].length;
                 if (remainingTotal > 0) {
-                    showScreen('vn-screen');
-                    document.getElementById('dialogue-box').style.display = 'none';
-                    document.getElementById('choices-container').innerHTML = 
-                        "<button class='choice-btn' onclick='openMinigame(false)'>Prossima Azione 🎡 (Rimaste: " + remainingTotal + ")</button>";
+                    // SKIP SCHERMATA INTERMEDIA
+                    openMinigame(isRemote);
                 } else {
                     advanceToNextLevel(isRemote);
                 }
@@ -1468,8 +1523,6 @@
                     showScreen('vn-screen');
                     document.getElementById('fixed-skip-level-btn').style.display = 'none';
                     document.getElementById('game-menu-btn').style.display = 'none';
-                    document.getElementById('level-indicator').innerText = "Fine Copione";
-                    document.getElementById('level-indicator').style.borderColor = "#673ab7";
                     document.getElementById('dialogue-box').style.display = 'none';
                     document.getElementById('choices-container').innerHTML = 
                         "<h2 style='color: white;'>Il copione è finito.</h2><p style='color: #a996b8;'>Ora le regole le scrivete voi.</p><button class='choice-btn' onclick='resetGameState()'>Torna al Menu Principale</button>";
