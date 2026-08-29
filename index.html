@@ -1277,7 +1277,7 @@
         function selectScenario(scenarioId, isRemote) {
             if (!roleplayScenarios[scenarioId]) return;
             var selectedContext = normalizeContextForGame(roleplayScenarios[scenarioId].context);
-            var expectedContext = gameMode === 'sync' ? 'distanza' : 'insieme';
+            var expectedContext = gameMode === 'sync' ? 'a distanza' : 'insieme';
             if (selectedContext !== expectedContext) {
                 alert(gameMode === 'sync' ? 'Questa storia non appartiene al contesto A distanza.' : 'Questa storia non appartiene al contesto Insieme.');
                 return;
@@ -1516,7 +1516,7 @@
             consecutiveTurns = 0;
 
             var insiemeIds = Object.keys(roleplayScenarios).filter(function(id) {
-                return normalizeContextForGame(roleplayScenarios[id].context) === (gameMode === 'sync' ? 'distanza' : 'insieme');
+                return normalizeContextForGame(roleplayScenarios[id].context) === 'insieme';
             });
             if (!insiemeIds.length) {
                 alert(gameMode === 'sync' ? '⚠️ Nessuna storia con contesto A distanza disponibile. Attendi il caricamento dei dati.' : '⚠️ Nessuna storia con contesto Insieme disponibile. Attendi il caricamento dei dati.');
@@ -1745,7 +1745,7 @@
                         });
                         roleplayScenarios[row.ID_Scenario] = {
                             title: row.Titolo_Storia || row.ID_Scenario,
-                            context: row.Contesto_Menu || "Altro",
+                            context: (row.Contesto || row.Contesto_Menu || (Object.keys(row).length > 2 ? row[Object.keys(row)[2]] : "") || "Altro"),
                             roles: { "Claudia": row.Ruolo_Claudia || "Claudia", "Tiziano": row.Ruolo_Tiziano || "Tiziano" },
                             briefing: { "Claudia": row.Briefing_Claudia || "", "Tiziano": row.Briefing_Tiziano || "" },
                             sheetCategories: scenarioCategories,
@@ -1880,36 +1880,37 @@
             var container = document.getElementById('scenario-list-container');
             if (!container) return;
             container.innerHTML = '';
-            
-            var grouped = {};
+
+            // Il contesto è determinato ESCLUSIVAMENTE dalla colonna C del foglio SCENARI.
+            // Giochiamo (un solo device) -> Insieme
+            // Gioco sincronizzato (a distanza) -> A distanza
+            var expectedContext = gameMode === 'sync' ? 'a distanza' : 'insieme';
+            var matching = [];
+
             Object.keys(roleplayScenarios).forEach(function(key) {
                 var sc = roleplayScenarios[key];
-                var ctx = String(sc.context || "").trim();
-                // Per entrambi i modi di gioco sono selezionabili solo le storie del contesto Insieme.
-                if (ctx.toLowerCase() !== 'insieme') return;
-                if (!grouped[ctx]) grouped[ctx] = [];
-                grouped[ctx].push({ id: key, title: sc.title });
+                if (normalizeContextForGame(sc.context) !== expectedContext) return;
+                matching.push({ id: key, title: sc.title });
             });
 
-            if (!Object.keys(grouped).length) {
-                container.innerHTML = '<div style="color:#a996b8;padding:20px;">Nessuna storia disponibile per il contesto Insieme.</div>';
+            if (!matching.length) {
+                var label = gameMode === 'sync' ? 'A distanza' : 'Insieme';
+                container.innerHTML = '<div style="color:#a996b8;padding:20px;">Nessuna storia disponibile per il contesto ' + label + '.</div>';
                 return;
             }
 
-            Object.keys(grouped).forEach(function(contextName) {
-                var titleDiv = document.createElement('div');
-                titleDiv.className = 'checklist-title';
-                titleDiv.style.cssText = 'color: #fff; border-bottom: 1px solid #444; width: 100%; max-width: 320px; margin-top: 15px; text-transform: uppercase; font-size: 0.95rem; text-align: left; padding-bottom: 4px;';
-                titleDiv.innerText = contextName;
-                container.appendChild(titleDiv);
+            var titleDiv = document.createElement('div');
+            titleDiv.className = 'checklist-title';
+            titleDiv.style.cssText = 'color:#fff;border-bottom:1px solid #444;width:100%;max-width:320px;margin-top:15px;text-transform:uppercase;font-size:.95rem;text-align:left;padding-bottom:4px;';
+            titleDiv.innerText = gameMode === 'sync' ? 'A DISTANZA' : 'INSIEME';
+            container.appendChild(titleDiv);
 
-                grouped[contextName].forEach(function(sc) {
-                    var btn = document.createElement('button');
-                    btn.className = 'btn btn-context';
-                    btn.innerText = sc.title;
-                    btn.onclick = function() { selectScenario(sc.id, false); };
-                    container.appendChild(btn);
-                });
+            matching.forEach(function(sc) {
+                var btn = document.createElement('button');
+                btn.className = 'btn btn-context';
+                btn.innerText = sc.title;
+                btn.onclick = function() { selectScenario(sc.id, false); };
+                container.appendChild(btn);
             });
         }
 
