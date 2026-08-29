@@ -72,8 +72,8 @@
         }
 
         #app-version {
-            position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
-            color: rgba(255,255,255,0.42); font-size: 0.68rem; letter-spacing: 0.5px;
+            position: fixed; bottom: 8px; left: 10px;
+            color: rgba(255,255,255,0.35); font-size: 0.62rem; letter-spacing: 0.5px;
             z-index: 100; pointer-events: none;
         }
 
@@ -88,15 +88,18 @@
         #connection-status-dot.sync-green { background:#43a047; box-shadow:0 0 0 3px rgba(0,0,0,0.35),0 0 12px rgba(67,160,71,0.7); }
 
         #game-media-controls {
-            display:none; position:fixed; right:15px; bottom:72px; z-index:998;
-            background:rgba(10,6,13,0.78); border:1px solid #673ab7; border-radius:16px;
-            padding:6px; gap:5px; align-items:center; box-shadow:0 5px 20px rgba(0,0,0,.55);
-            backdrop-filter:blur(5px);
+            display:none; position:fixed; left:50%; bottom:12px; transform:translateX(-50%); z-index:1100;
+            background:rgba(10,6,13,0.90); border:1px solid #673ab7; border-radius:18px;
+            padding:5px; gap:6px; align-items:center; justify-content:center; box-shadow:0 5px 20px rgba(0,0,0,.55);
+            backdrop-filter:blur(6px);
         }
-        .game-media-btn {
-            border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.08); color:white;
-            border-radius:10px; padding:8px 10px; font-size:.75rem; cursor:pointer;
+        .game-media-btn, #chat-toggle-btn {
+            width:42px; height:42px; padding:0; border:1px solid #673ab7;
+            background:linear-gradient(145deg,#673ab7,#4b278b); color:white;
+            border-radius:12px; font-size:1.15rem; cursor:pointer; display:flex; align-items:center; justify-content:center;
+            box-shadow:0 3px 10px rgba(0,0,0,.35);
         }
+        .game-media-btn span, #chat-toggle-btn span.chat-label { display:none; }
         .game-media-btn:active { transform:scale(.96); }
         #media-sync-status {
             display:none; position:fixed; left:50%; bottom:72px; transform:translateX(-50%);
@@ -143,25 +146,13 @@
         .check-item::before { content: '○'; font-size: 1.4rem; margin-right: 12px; color: #888; }
         .check-item.active::before { content: '●'; color: var(--primary-accent); }
 
-        #fixed-skip-level-btn {
-            display: none; position: fixed; bottom: 15px; left: 15px; z-index: 999;
-            background: rgba(233, 30, 99, 0.25); border: 1px solid var(--primary-accent);
-            color: white; border-radius: 50px; padding: 10px 16px;
-            font-weight: bold; font-size: 0.85rem; box-shadow: 0 5px 20px rgba(0,0,0,0.6);
-            cursor: pointer; backdrop-filter: blur(5px); transition: transform 0.2s;
-        }
-        #fixed-skip-level-btn:active { transform: scale(0.95); }
+        #fixed-skip-level-btn { display:none !important; }
 
-        #chat-toggle-btn {
-            position: fixed; bottom: 15px; right: 15px; z-index: 999;
-            background: linear-gradient(45deg, var(--primary-accent), #673ab7);
-            color: white; border: none; border-radius: 50px; padding: 12px 20px;
-            font-weight: bold; font-size: 0.95rem; box-shadow: 0 5px 20px rgba(0,0,0,0.6);
-            cursor: pointer; display: flex; align-items: center; gap: 8px;
-        }
+        #chat-toggle-btn { position:relative; bottom:auto; right:auto; z-index:1101; border:none; font-weight:bold; }
         #chat-badge {
-            background: red; color: white; border-radius: 50%; padding: 2px 7px;
-            font-size: 0.75rem; display: none;
+            position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%;
+            min-width:17px; height:17px; display:none; align-items:center; justify-content:center;
+            font-size:0.65rem; padding:0 3px; border:1px solid #fff;
         }
 
         #chat-modal {
@@ -221,11 +212,11 @@
         #vn-screen { display: none; width: 100vw; height: 100dvh; position: relative; background-size: cover; background-position: center; }
         
         #level-indicator { 
-            position: absolute; top: 20px; right: 20px; 
-            background: rgba(0,0,0,0.85); border: 2px solid #4caf50; 
-            padding: 8px 16px; border-radius: 20px; font-weight: bold; 
-            font-size: 0.95rem; z-index: 10; letter-spacing: 0.5px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            display:none; position:fixed; top:20px; right:20px; 
+            background:rgba(0,0,0,0.88); border:2px solid #4caf50; 
+            padding:8px 14px; border-radius:20px; font-weight:bold; 
+            font-size:0.9rem; z-index:1200; letter-spacing:0.4px; cursor:pointer;
+            box-shadow:0 4px 15px rgba(0,0,0,0.5); user-select:none;
         }
 
         #choices-container { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; gap: 12px; width: 90%; max-width: 400px; z-index: 10; }
@@ -295,9 +286,10 @@
         <input type="file" id="game-photo-input" accept="image/*" capture="environment" style="display:none;" onchange="captureGameMedia(this, 'image')">
         <input type="file" id="game-video-input" accept="video/*" capture="environment" style="display:none;" onchange="captureGameMedia(this, 'video')">
         <input type="file" id="game-file-input" accept="image/*,video/*,audio/*" style="display:none;" onchange="captureGameMedia(this, 'file')">
-        <button class="game-media-btn" onclick="document.getElementById('game-photo-input').click()">📷 Foto</button>
-        <button class="game-media-btn" onclick="document.getElementById('game-video-input').click()">🎥 Video</button>
-        <button class="game-media-btn" onclick="document.getElementById('game-file-input').click()">📁 File</button>
+        <button class="game-media-btn" title="Scatta foto" aria-label="Scatta foto" onclick="document.getElementById('game-photo-input').click()">📷</button>
+        <button class="game-media-btn" title="Registra video" aria-label="Registra video" onclick="document.getElementById('game-video-input').click()">🎥</button>
+        <button class="game-media-btn" title="Registra audio" aria-label="Registra audio" id="game-audio-btn" onclick="toggleAudioRecording()">🎙️</button>
+        <button id="chat-toggle-btn" title="Chat" aria-label="Chat" onclick="toggleChat()">💬<span id="chat-badge">0</span></button>
     </div>
     <div id="media-sync-status"></div>
 
@@ -316,13 +308,7 @@
         </div>
     </div>
 
-    <!-- PULSANTE CAMBIO LIVELLO FISSO IN BASSO A SINISTRA -->
-    <button id="fixed-skip-level-btn" onclick="handleForceNextLevelClick()">⚡ Sali di Livello</button>
-
-    <!-- BOTTONE FLOTTANTE LIVE CHAT P2P IN BASSO A DESTRA -->
-    <button id="chat-toggle-btn" onclick="toggleChat()">
-        💬 Chat Live <span id="chat-badge">0</span>
-    </button>
+    <!-- CONTROLLI MEDIA + CHAT: una sola riga durante il gioco -->
 
     <!-- POPUP FINESTRA CHAT LIVE -->
     <div id="chat-modal">
@@ -339,10 +325,9 @@
             <input type="file" id="chat-file-input" accept="image/*,video/*,audio/*" style="display:none;" onchange="sendChatFile(this, 'any')">
 
             <div class="chat-btn-row">
-                <button class="btn-chat-media" onclick="document.getElementById('chat-photo-input').click()">📷 Foto</button>
-                <button class="btn-chat-media" onclick="document.getElementById('chat-video-input').click()">🎥 Video</button>
-                <button class="btn-chat-media btn-chat-rec" id="btn-record-audio" onclick="toggleAudioRecording()">🎙️ Registra Audio</button>
-                <button class="btn-chat-media" onclick="document.getElementById('chat-file-input').click()">📁 File</button>
+                <button class="btn-chat-media" title="Scatta foto" aria-label="Scatta foto" onclick="document.getElementById('chat-photo-input').click()">📷</button>
+                <button class="btn-chat-media" title="Registra video" aria-label="Registra video" onclick="document.getElementById('chat-video-input').click()">🎥</button>
+                <button class="btn-chat-media btn-chat-rec" id="btn-record-audio" title="Registra audio" aria-label="Registra audio" onclick="toggleAudioRecording()">🎙️</button>
             </div>
             <div style="display:flex; gap:5px;">
                 <input type="text" id="chat-text-input" placeholder="Scrivi un messaggio..." style="flex:1; padding:8px; border-radius:5px; border:1px solid #673ab7; background:#000; color:white;">
@@ -427,8 +412,9 @@
         </div>
     </div>
 
+    <div id="level-indicator" onclick="handleForceNextLevelClick()" title="Tocca per opzioni livello">🟢 Livello: EASY</div>
+
     <div id="vn-screen">
-        <div id="level-indicator">🟢 Livello: EASY</div>
         <div id="choices-container"></div>
         <div id="dialogue-box" onclick="handleDialogueClick()">
             <div id="speaker-name">Nome</div>
@@ -588,16 +574,13 @@
 
                         if (currentScreenId === 'vn-screen') {
                             document.getElementById('game-menu-btn').style.display = 'block';
-                            document.getElementById('fixed-skip-level-btn').style.display = 'block';
-                            loadLevelNarrative();
+                                            loadLevelNarrative();
                         } else if (currentScreenId === 'minigame-screen') {
                             document.getElementById('game-menu-btn').style.display = 'block';
-                            document.getElementById('fixed-skip-level-btn').style.display = 'block';
-                            openMinigame(true);
+                                            openMinigame(true);
                         } else if (currentScreenId === 'cards-screen') {
                             document.getElementById('game-menu-btn').style.display = 'block';
-                            document.getElementById('fixed-skip-level-btn').style.display = 'block';
-                            goToCards(true);
+                                            goToCards(true);
                             if (isCardFlipped) {
                                 revealCard(true);
                             }
@@ -656,6 +639,7 @@
 
         function toggleAudioRecording() {
             var btn = document.getElementById('btn-record-audio');
+            var gameBtn = document.getElementById('game-audio-btn');
             if (!isRecording) {
                 navigator.mediaDevices.getUserMedia({ audio: true })
                     .then(function(stream) {
@@ -665,14 +649,15 @@
                         mediaRecorder.onstop = function() {
                             var audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
                             var reader = new FileReader();
-                            appendStoredMediaToChat(audioBlob, 'audio', 'Tu', 'me', 'Chat Live');
-                            saveToLocalDB(audioBlob, 'audio', 'Chat Live', currentPlayer || 'Tu', 'me', 'nota-vocale.webm');
-                            if (gameMode === 'sync') queueMediaForP2P(audioBlob, 'audio', 'Chat Live');
+                            var audioCategory = (currentScreenId === 'vn-screen' || currentScreenId === 'minigame-screen' || currentScreenId === 'cards-screen') ? 'Gioco' : 'Chat Live';
+                            appendStoredMediaToChat(audioBlob, 'audio', 'Tu', 'me', audioCategory);
+                            saveToLocalDB(audioBlob, 'audio', audioCategory, currentPlayer || 'Tu', 'me', 'nota-vocale.webm');
+                            if (gameMode === 'sync') queueMediaForP2P(audioBlob, 'audio', audioCategory);
                         };
                         mediaRecorder.start();
                         isRecording = true;
-                        btn.innerText = "⏹️ Invia Audio";
-                        btn.style.background = "#e91e63";
+                        if (btn) { btn.innerText = "⏹️"; btn.style.background = "#e91e63"; }
+                        if (gameBtn) { gameBtn.innerText = "⏹️"; gameBtn.style.background = "#e91e63"; }
                     })
                     .catch(function(err) { alert("Impossibile accedere al microfono: " + err); });
             } else {
@@ -681,8 +666,8 @@
                     mediaRecorder.stream.getTracks().forEach(track => track.stop());
                 }
                 isRecording = false;
-                btn.innerText = "🎙️ Registra Audio";
-                btn.style.background = "rgba(233, 30, 99, 0.2)";
+                if (btn) { btn.innerText = "🎙️"; btn.style.background = "rgba(233, 30, 99, 0.2)"; }
+                if (gameBtn) { gameBtn.innerText = "🎙️"; gameBtn.style.background = "linear-gradient(145deg,#673ab7,#4b278b)"; }
             }
         }
 
@@ -1219,7 +1204,8 @@
         }
 
         function handleForceNextLevelClick() {
-            if (confirm("Vuoi alzare subito l'intensità e passare al livello successivo su entrambi i telefoni?")) {
+            if (!['vn-screen','minigame-screen','cards-screen'].includes(currentScreenId)) return;
+            if (confirm("Passare subito al livello successivo? Questa azione salta le azioni rimanenti del livello attuale.")) {
                 advanceToNextLevel(false);
                 sendP2PCommand({ type: "SYNC_NEXT_LEVEL" });
             }
@@ -1250,7 +1236,6 @@
         function startRoleplay(isRemote) {
             showScreen('vn-screen');
             document.getElementById('game-menu-btn').style.display = 'block';
-            document.getElementById('fixed-skip-level-btn').style.display = 'block';
             currentLevelIndex = 0; loadLevelNarrative();
             saveGameState();
             if (!isRemote && gameMode === "sync") sendP2PCommand({ type: "SYNC_START" });
@@ -1334,7 +1319,6 @@
 
             showScreen('minigame-screen');
             document.getElementById('game-menu-btn').style.display = 'block';
-            document.getElementById('fixed-skip-level-btn').style.display = 'block';
             document.getElementById('spinBtn').style.display = 'block';
             document.getElementById('nextPhaseBtn').style.display = 'none';
             document.getElementById('winner-text').style.opacity = 0;
@@ -1374,7 +1358,6 @@
         function goToCards(isRemote) {
             showScreen('cards-screen');
             document.getElementById('game-menu-btn').style.display = 'block';
-            document.getElementById('fixed-skip-level-btn').style.display = 'block';
             document.getElementById('playingCard').classList.remove('is-flipped'); 
             document.getElementById('continueBtn').style.display = 'none';
             isCardFlipped = false;
@@ -1411,10 +1394,8 @@
             
             var remainingTotal = currentLevelActions["Claudia"].length + currentLevelActions["Tiziano"].length;
             if (remainingTotal > 0) {
-                showScreen('vn-screen');
-                document.getElementById('dialogue-box').style.display = 'none';
-                document.getElementById('choices-container').innerHTML = 
-                    "<button class='choice-btn' onclick='openMinigame(false)'>Prossima Azione 🎡 (Rimaste: " + remainingTotal + ")</button>";
+                // Dopo un'azione si torna direttamente alla ruota, senza schermata intermedia.
+                openMinigame(isRemote);
             } else {
                 advanceToNextLevel(isRemote);
             }
@@ -1426,7 +1407,6 @@
             saveGameState();
             if (currentLevelIndex >= roleplayScenarios[currentScenarioId].levels.length) {
                 showScreen('vn-screen');
-                document.getElementById('fixed-skip-level-btn').style.display = 'none';
                 document.getElementById('game-menu-btn').style.display = 'none';
                 document.getElementById('level-indicator').innerText = "Fine Copione";
                 document.getElementById('level-indicator').style.borderColor = "#673ab7";
@@ -1542,7 +1522,8 @@
 
             var isGamingScreen = (screenId === 'vn-screen' || screenId === 'minigame-screen' || screenId === 'cards-screen');
             document.getElementById('game-menu-btn').style.display = isGamingScreen ? 'block' : 'none';
-            document.getElementById('fixed-skip-level-btn').style.display = isGamingScreen ? 'block' : 'none';
+            var levelIndicator = document.getElementById('level-indicator');
+            if (levelIndicator) levelIndicator.style.display = isGamingScreen ? 'block' : 'none';
             var mediaControls = document.getElementById('game-media-controls');
             if (mediaControls) mediaControls.style.display = isGamingScreen ? 'flex' : 'none';
             var version = document.getElementById('app-version');
