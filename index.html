@@ -71,11 +71,6 @@
             cursor: pointer; z-index: 100;
         }
 
-        /* Più respiro tra il pulsante Indietro e il titolo nelle schermate interne */
-        .menu-screen .back-btn + .title {
-            margin-top: 54px !important;
-        }
-
         #app-version {
             position: fixed; bottom: 8px; left: 10px;
             color: rgba(255,255,255,0.35); font-size: 0.6rem; letter-spacing: 0.5px;
@@ -306,7 +301,7 @@
         <div id="lightbox-container" onclick="event.stopPropagation();"></div>
     </div>
 
-    <div id="app-version">Ver.13</div>
+    <div id="app-version">Ver.12</div>
     <div id="connection-status-dot" title="Stato connessione sincronizzata"></div>
 
     <div id="game-media-controls">
@@ -382,7 +377,7 @@
         <button class="btn btn-tiziano" id="btn-select-tiziano" onclick="selectPlayer('Tiziano')">Sono Tiziano</button>
         <button class="btn btn-claudia" id="btn-select-claudia" onclick="selectPlayer('Claudia')">Sono Claudia</button>
         <div id="p2p-status" style="font-size: 0.9rem; color: #e91e63; margin: 20px 0; font-weight: bold;">🔴 Seleziona chi sei per connetterti al partner</div>
-        <button class="btn btn-context" id="start-sync-btn" style="display:none;" onclick="buildScenarioMenu(); showScreen('scenario-screen')">Entra nel gioco sincronizzato</button>
+        <button class="btn btn-context" id="start-sync-btn" style="display:none;" onclick="showScreen('scenario-screen')">Entra nel gioco sincronizzato</button>
     </div>
 
     <div id="gallery-screen" class="menu-screen">
@@ -396,7 +391,7 @@
     <div id="scenario-screen" class="menu-screen">
         <button class="back-btn" onclick="showScreen('selection-screen')">← Indietro</button>
         <h1 class="title">Seleziona la Storia</h1>
-        <p id="scenario-context-description" style="margin-bottom: 20px; color: #a996b8;">Scegliete la storia.</p>
+        <p style="margin-bottom: 20px; color: #a996b8;">Scegliete la storia dal contesto <strong style="color:#e91e63;">Insieme</strong>.</p>
         <div id="scenario-list-container" style="display: flex; flex-direction: column; align-items: center; width: 100%;"></div>
     </div>
 
@@ -504,6 +499,9 @@
         var roleplayScenarios = {};
         var currentPlayer = "", currentScenarioId = "", activeCategories = [];
         var mySelectedCategories = [], partnerSelectedCategories = null;
+        var mySelectedCategoriesByLevel = { 1: [], 2: [], 3: [] };
+        var partnerSelectedCategoriesByLevel = null;
+        var activeCategoriesByLevel = { 1: [], 2: [], 3: [] };
         var currentLevelIndex = 0, currentDialogueIndex = 0, selectedVictim = "", currentRotation = 0;
         var lastVictim = "", consecutiveTurns = 0; // Nuovi contatori per i turni
         var currentScreenId = "selection-screen";
@@ -530,7 +528,7 @@
             try {
                 var state = {
                     currentPlayer: currentPlayer, currentScenarioId: currentScenarioId,
-                    activeCategories: activeCategories, currentLevelIndex: currentLevelIndex,
+                    activeCategories: activeCategories, activeCategoriesByLevel: activeCategoriesByLevel, currentLevelIndex: currentLevelIndex,
                     currentDialogueIndex: currentDialogueIndex, currentScreenId: currentScreenId,
                     selectedVictim: selectedVictim, currentDrawnAction: currentDrawnAction,
                     isCardFlipped: isCardFlipped, lastVictim: lastVictim,
@@ -566,6 +564,7 @@
                     currentPlayer = state.currentPlayer;
                     currentScenarioId = state.currentScenarioId;
                     activeCategories = state.activeCategories || [];
+                    activeCategoriesByLevel = state.activeCategoriesByLevel || { 1: [], 2: [], 3: [] };
                     currentLevelIndex = state.currentLevelIndex || 0;
                     currentDialogueIndex = state.currentDialogueIndex || 0;
                     currentScreenId = state.currentScreenId || "selection-screen";
@@ -1115,55 +1114,80 @@
             }
         }
 
-        function submitCategories() {
+        function collectSelectedCategoriesByLevel() {
+            var result = { 1: [], 2: [], 3: [] };
             var items = document.querySelectorAll('#category-list .check-item.active');
-            mySelectedCategories = [];
             for (var i = 0; i < items.length; i++) {
-                mySelectedCategories.push(items[i].dataset.category);
+                var cat = items[i].dataset.category;
+                var level = parseInt(items[i].dataset.level || '0', 10);
+                if (!cat) continue;
+                if (level >= 1 && level <= 3) result[level].push(cat);
+                else { result[1].push(cat); result[2].push(cat); result[3].push(cat); }
             }
+            return result;
+        }
 
-            if (mySelectedCategories.length === 0) { alert("⚠️ Selezionate almeno una categoria!"); return; }
+        function flattenCategoriesByLevel(map) {
+            var out = [];
+            [1,2,3].forEach(function(level) {
+                (map[level] || []).forEach(function(cat) { if (out.indexOf(cat) === -1) out.push(cat); });
+            });
+            return out;
+        }
 
-            // Un solo telefono: la selezione è comune, quindi non serve alcun accoppiamento.
-            if (gameMode === "live") {
-                activeCategories = mySelectedCategories.slice();
+        function normalizeCategoryList(list) {
+            return (list || []).map(function(c) { return String(c || '').trim().toLowerCase(); });
+        }
+
+        function intersectCategoryMaps(a, b) {
+            var result = { 1: [], 2: [], 3: [] };
+            [1,2,3].forEach(function(level) {
+                var bNorm = normalizeCategoryList(b[level] || []);
+                (a[level] || []).forEach(function(cat) {
+                    if (bNorm.indexOf(String(cat).trim().toLowerCase()) !== -1) result[level].push(cat);
+                });
+            });
+            return result;
+        }
+
+        function submitCategories() {
+            mySelectedCategoriesByLevel = collectSelectedCategoriesByLevel();
+            mySelectedCategories = flattenCategoriesByLevel(mySelectedCategoriesByLevel);
+            if (mySelectedCategories.length === 0) { alert('⚠️ Selezionate almeno una categoria!'); return; }
+
+            if (gameMode === 'live') {
+                activeCategoriesByLevel = JSON.parse(JSON.stringify(mySelectedCategoriesByLevel));
+                activeCategories = flattenCategoriesByLevel(activeCategoriesByLevel);
                 partnerSelectedCategories = null;
+                partnerSelectedCategoriesByLevel = null;
                 goToBriefing(false);
                 return;
             }
 
-            // Due telefoni: manteniamo la sincronizzazione privata e l'intersezione delle categorie.
             showScreen('waiting-screen');
             if (catSyncInterval) clearInterval(catSyncInterval);
             catSyncInterval = setInterval(function() {
-                if (partnerSelectedCategories !== null) {
-                    clearInterval(catSyncInterval);
-                    catSyncInterval = null;
+                if (partnerSelectedCategoriesByLevel !== null) {
+                    clearInterval(catSyncInterval); catSyncInterval = null;
                 } else {
-                    sendP2PCommand({ type: "SYNC_CATEGORIES_SUBMIT", categories: mySelectedCategories });
+                    sendP2PCommand({ type: 'SYNC_CATEGORIES_SUBMIT', categoriesByLevel: mySelectedCategoriesByLevel, categories: mySelectedCategories });
                 }
             }, 1500);
-
-            sendP2PCommand({ type: "SYNC_CATEGORIES_SUBMIT", categories: mySelectedCategories });
+            sendP2PCommand({ type: 'SYNC_CATEGORIES_SUBMIT', categoriesByLevel: mySelectedCategoriesByLevel, categories: mySelectedCategories });
             checkBothCategoriesSubmitted();
         }
 
         function checkBothCategoriesSubmitted() {
-            if (gameMode === "live") return;
-            if (mySelectedCategories.length > 0 && partnerSelectedCategories !== null) {
+            if (gameMode === 'live') return;
+            if (mySelectedCategories.length > 0 && partnerSelectedCategoriesByLevel !== null) {
                 if (catSyncInterval) { clearInterval(catSyncInterval); catSyncInterval = null; }
-
-                activeCategories = mySelectedCategories.filter(function(cat) {
-                    return partnerSelectedCategories.indexOf(cat) !== -1;
-                });
-
+                activeCategoriesByLevel = intersectCategoryMaps(mySelectedCategoriesByLevel, partnerSelectedCategoriesByLevel);
+                activeCategories = flattenCategoriesByLevel(activeCategoriesByLevel);
                 if (activeCategories.length === 0) {
-                    alert("⚠️ Nessuna categoria in comune selezionata! Riattivate qualche categoria.");
-                    mySelectedCategories = []; partnerSelectedCategories = null;
-                    showScreen('customize-screen');
-                    return;
+                    alert('⚠️ Nessuna categoria in comune selezionata! Riattivate qualche categoria.');
+                    mySelectedCategories = []; partnerSelectedCategories = null; partnerSelectedCategoriesByLevel = null;
+                    showScreen('customize-screen'); return;
                 }
-
                 goToBriefing(false);
             }
         }
@@ -1244,16 +1268,25 @@
             }
         }
 
+        function normalizeContextForGame(value) {
+            return String(value || '').trim().toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/\s+/g, ' ');
+        }
+
         function selectScenario(scenarioId, isRemote) {
             if (!roleplayScenarios[scenarioId]) return;
-            var scenarioContext = String(roleplayScenarios[scenarioId].context || '').trim().toLowerCase();
-            var requiredContext = (gameMode === 'sync') ? 'a distanza' : 'insieme';
-            if (scenarioContext !== requiredContext) {
-                alert(requiredContext === 'a distanza' ? 'Questa storia non appartiene al contesto A distanza.' : 'Questa storia non appartiene al contesto Insieme.');
+            var selectedContext = normalizeContextForGame(roleplayScenarios[scenarioId].context);
+            var expectedContext = gameMode === 'sync' ? 'distanza' : 'insieme';
+            if (selectedContext !== expectedContext) {
+                alert(gameMode === 'sync' ? 'Questa storia non appartiene al contesto A distanza.' : 'Questa storia non appartiene al contesto Insieme.');
                 return;
             }
             currentScenarioId = scenarioId; 
             mySelectedCategories = []; partnerSelectedCategories = null;
+            mySelectedCategoriesByLevel = { 1: [], 2: [], 3: [] };
+            partnerSelectedCategoriesByLevel = null;
+            activeCategoriesByLevel = { 1: [], 2: [], 3: [] };
             showScreen('customize-screen');
             buildCategoryList();
             saveGameState();
@@ -1276,7 +1309,9 @@
         function startRoleplay(isRemote) {
             showScreen('vn-screen');
             document.getElementById('game-menu-btn').style.display = 'block';
-            currentLevelIndex = 0; loadLevelNarrative();
+            currentLevelIndex = 0;
+            activeCategoriesByLevel = activeCategoriesByLevel || { 1: [], 2: [], 3: [] };
+            loadLevelNarrative();
             saveGameState();
             if (!isRemote && gameMode === "sync") sendP2PCommand({ type: "SYNC_START" });
         }
@@ -1290,7 +1325,9 @@
                 else showScreen('selection-screen');
                 return;
             }
-            var normalizedActiveCategories = activeCategories.map(function(c){ return String(c).trim().toLowerCase(); });
+            var levelNumber = currentLevelIndex + 1;
+            var levelCategories = activeCategoriesByLevel[levelNumber] || activeCategories || [];
+            var normalizedActiveCategories = levelCategories.map(function(c){ return String(c).trim().toLowerCase(); });
             currentLevelActions["Claudia"] = levelData.actions.filter(function(a) {
                 return a.actor === "Claudia" && normalizedActiveCategories.indexOf(String(a.category || '').trim().toLowerCase()) !== -1;
             });
@@ -1299,7 +1336,9 @@
             });
 
             if (currentLevelActions["Claudia"].length === 0 && currentLevelActions["Tiziano"].length === 0) {
-                advanceToNextLevel(true);
+                alert('⚠️ Nessuna azione disponibile per il Livello ' + levelNumber + ' nelle categorie selezionate.');
+                showScreen('customize-screen');
+                buildCategoryList();
                 return;
             }
 
@@ -1382,7 +1421,7 @@
             // La ruota è divisa in due metà: Tiziano = metà blu (0°-180°), Claudia = metà fucsia (180°-360°).
             // Il risultato grafico viene quindi fatto coincidere con il risultato testuale, senza offset casuali che
             // potrebbero far finire la ruota nella metà opposta.
-            var targetDegrees = (victim === "Tiziano") ? 90 : 270;
+            var targetDegrees = (victim === "Tiziano") ? 270 : 90;
             var currentMod = ((currentRotation % 360) + 360) % 360;
             var delta = (targetDegrees - currentMod + 360) % 360;
             currentRotation += 1440 + delta;
@@ -1477,10 +1516,10 @@
             consecutiveTurns = 0;
 
             var insiemeIds = Object.keys(roleplayScenarios).filter(function(id) {
-                return String(roleplayScenarios[id].context || '').trim().toLowerCase() === 'insieme';
+                return normalizeContextForGame(roleplayScenarios[id].context) === (gameMode === 'sync' ? 'distanza' : 'insieme');
             });
             if (!insiemeIds.length) {
-                alert("⚠️ Nessuna storia con contesto Insieme disponibile. Attendi il caricamento dei dati.");
+                alert(gameMode === 'sync' ? '⚠️ Nessuna storia con contesto A distanza disponibile. Attendi il caricamento dei dati.' : '⚠️ Nessuna storia con contesto Insieme disponibile. Attendi il caricamento dei dati.');
                 return;
             }
 
@@ -1843,23 +1882,17 @@
             container.innerHTML = '';
             
             var grouped = {};
-            var requiredContext = (gameMode === 'sync') ? 'a distanza' : 'insieme';
             Object.keys(roleplayScenarios).forEach(function(key) {
                 var sc = roleplayScenarios[key];
                 var ctx = String(sc.context || "").trim();
-                if (ctx.toLowerCase() !== requiredContext) return;
+                // Per entrambi i modi di gioco sono selezionabili solo le storie del contesto Insieme.
+                if (ctx.toLowerCase() !== 'insieme') return;
                 if (!grouped[ctx]) grouped[ctx] = [];
                 grouped[ctx].push({ id: key, title: sc.title });
             });
 
-            var desc = document.getElementById('scenario-context-description');
-            if (desc) {
-                desc.innerHTML = gameMode === 'sync'
-                    ? 'Scegliete la storia dal contesto <strong style="color:#e91e63;">A distanza</strong>.'
-                    : 'Scegliete la storia dal contesto <strong style="color:#e91e63;">Insieme</strong>.';
-            }
             if (!Object.keys(grouped).length) {
-                container.innerHTML = '<div style="color:#a996b8;padding:20px;">Nessuna storia disponibile per il contesto ' + (requiredContext === 'a distanza' ? 'A distanza' : 'Insieme') + '.</div>';
+                container.innerHTML = '<div style="color:#a996b8;padding:20px;">Nessuna storia disponibile per il contesto Insieme.</div>';
                 return;
             }
 
