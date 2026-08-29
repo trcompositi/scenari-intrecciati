@@ -60,6 +60,8 @@
         .btn-context { background: rgba(255,255,255,0.08); border: 1px solid #673ab7; }
         .btn-gallery { background: linear-gradient(45deg, #673ab7, #e91e63); }
         .btn-resume { background: linear-gradient(45deg, #4caf50, #2e7d32); }
+        .btn-live { background: linear-gradient(45deg, #43a047, #1b5e20); box-shadow: 0 6px 20px rgba(76,175,80,.25); }
+        .mode-note { max-width: 340px; color:#a996b8; font-size:.85rem; line-height:1.45; margin:4px 0 12px; }
         .btn-reset { background: rgba(255, 82, 82, 0.2); border: 1px solid #ff5252; color: #ff5252; margin-top: 15px; }
 
         .back-btn {
@@ -67,6 +69,39 @@
             background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
             color: #d1c4db; border-radius: 50px; padding: 8px 16px; font-size: 0.9rem;
             cursor: pointer; z-index: 100;
+        }
+
+        #app-version {
+            position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+            color: rgba(255,255,255,0.42); font-size: 0.68rem; letter-spacing: 0.5px;
+            z-index: 100; pointer-events: none;
+        }
+
+        #connection-status-dot {
+            display: none; position: fixed; top: 14px; right: 14px; width: 13px; height: 13px;
+            border-radius: 50%; background: #e53935; border: 2px solid rgba(255,255,255,0.8);
+            box-shadow: 0 0 0 3px rgba(0,0,0,0.35), 0 0 12px rgba(229,57,53,0.7);
+            z-index: 1200; transition: background 0.25s, box-shadow 0.25s;
+        }
+        #connection-status-dot.sync-red { background:#e53935; box-shadow:0 0 0 3px rgba(0,0,0,0.35),0 0 12px rgba(229,57,53,0.7); }
+        #connection-status-dot.sync-yellow { background:#fbc02d; box-shadow:0 0 0 3px rgba(0,0,0,0.35),0 0 12px rgba(251,192,45,0.7); }
+        #connection-status-dot.sync-green { background:#43a047; box-shadow:0 0 0 3px rgba(0,0,0,0.35),0 0 12px rgba(67,160,71,0.7); }
+
+        #game-media-controls {
+            display:none; position:fixed; right:15px; bottom:72px; z-index:998;
+            background:rgba(10,6,13,0.78); border:1px solid #673ab7; border-radius:16px;
+            padding:6px; gap:5px; align-items:center; box-shadow:0 5px 20px rgba(0,0,0,.55);
+            backdrop-filter:blur(5px);
+        }
+        .game-media-btn {
+            border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.08); color:white;
+            border-radius:10px; padding:8px 10px; font-size:.75rem; cursor:pointer;
+        }
+        .game-media-btn:active { transform:scale(.96); }
+        #media-sync-status {
+            display:none; position:fixed; left:50%; bottom:72px; transform:translateX(-50%);
+            z-index:997; background:rgba(15,10,25,.92); color:#d1c4db; border:1px solid #673ab7;
+            border-radius:20px; padding:6px 12px; font-size:.72rem; white-space:nowrap;
         }
 
         #game-menu-btn {
@@ -253,6 +288,19 @@
         <div id="lightbox-container" onclick="event.stopPropagation();"></div>
     </div>
 
+    <div id="app-version">Ver.10</div>
+    <div id="connection-status-dot" title="Stato connessione sincronizzata"></div>
+
+    <div id="game-media-controls">
+        <input type="file" id="game-photo-input" accept="image/*" capture="environment" style="display:none;" onchange="captureGameMedia(this, 'image')">
+        <input type="file" id="game-video-input" accept="video/*" capture="environment" style="display:none;" onchange="captureGameMedia(this, 'video')">
+        <input type="file" id="game-file-input" accept="image/*,video/*,audio/*" style="display:none;" onchange="captureGameMedia(this, 'file')">
+        <button class="game-media-btn" onclick="document.getElementById('game-photo-input').click()">📷 Foto</button>
+        <button class="game-media-btn" onclick="document.getElementById('game-video-input').click()">🎥 Video</button>
+        <button class="game-media-btn" onclick="document.getElementById('game-file-input').click()">📁 File</button>
+    </div>
+    <div id="media-sync-status"></div>
+
     <!-- PULSANTE MENU PAUSA FISSO IN ALTO A SINISTRA -->
     <button id="game-menu-btn" onclick="openPauseModal()">⚙️ Menu</button>
 
@@ -283,7 +331,7 @@
             <button onclick="toggleChat()" style="background:none; border:none; color:white; font-weight:bold; cursor:pointer;">✕</button>
         </div>
         <div id="chat-messages">
-            <div style="font-size:0.75rem; color:#a996b8; text-align:center;">Messaggi e media inviati risiedono solo sul tuo dispositivo.</div>
+            <div style="font-size:0.75rem; color:#a996b8; text-align:center;">Messaggi e media restano in locale; nella modalità sincronizzata i media vengono trasferiti direttamente all’altro dispositivo.</div>
         </div>
         <div id="chat-controls">
             <input type="file" id="chat-photo-input" accept="image/*" capture="environment" style="display:none;" onchange="sendChatFile(this, 'image')">
@@ -303,26 +351,32 @@
         </div>
     </div>
 
-    <!-- SELEZIONE GIOCATORE E LOBBY ATTESA -->
+    <!-- HOME PRINCIPALE -->
     <div id="selection-screen" class="menu-screen">
         <h1 class="title">Scenari Intrecciati</h1>
+        <p class="mode-note">Scegliete come volete giocare.</p>
+        <button class="btn btn-live" id="btn-live-game" onclick="startLiveMode()">🎮 Giochiamo</button>
+        <button class="btn btn-context" id="btn-sync-entry" onclick="enterSyncMode()">🔗 Entra nel gioco sincronizzato</button>
+        <button class="btn btn-resume" id="btn-resume-game" style="display:none;" onclick="resumeSavedGame()">▶️ Riprendi Partita Salvata</button>
+        <button class="btn btn-gallery" style="margin-top: 15px;" onclick="openGallery()">📂 Galleria Privata In-App</button>
+        <button class="btn btn-reset" id="btn-reset-game" style="display:none;" onclick="resetGameState()">🔄 Abbandona e Nuova Partita</button>
+    </div>
+
+    <!-- IDENTIFICAZIONE SOLO PER IL GIOCO SINCRONIZZATO -->
+    <div id="sync-player-screen" class="menu-screen">
+        <button class="back-btn" onclick="showScreen('selection-screen')">← Indietro</button>
+        <h1 class="title">Gioco Sincronizzato</h1>
         <p style="margin-bottom: 15px;">Chi ha in mano il dispositivo?</p>
         <button class="btn btn-tiziano" id="btn-select-tiziano" onclick="selectPlayer('Tiziano')">Sono Tiziano</button>
         <button class="btn btn-claudia" id="btn-select-claudia" onclick="selectPlayer('Claudia')">Sono Claudia</button>
-
         <div id="p2p-status" style="font-size: 0.9rem; color: #e91e63; margin: 20px 0; font-weight: bold;">🔴 Seleziona chi sei per connetterti al partner</div>
-
-        <button class="btn btn-resume" id="btn-resume-game" style="display:none;" onclick="resumeSavedGame()">▶️ Riprendi Partita Salvata</button>
-        <button class="btn btn-context" id="start-sync-btn" style="display:none; background: var(--primary-accent);" onclick="showScreen('scenario-screen')">Entra nel Gioco Sincronizzato</button>
-
-        <button class="btn btn-gallery" style="margin-top: 15px;" onclick="openGallery()">📂 Galleria Privata In-App</button>
-        <button class="btn btn-reset" id="btn-reset-game" style="display:none;" onclick="resetGameState()">🔄 Abbandona e Nuova Partita</button>
+        <button class="btn btn-context" id="start-sync-btn" style="display:none; background: var(--primary-accent);" onclick="showScreen('scenario-screen')">Entra nel gioco sincronizzato</button>
     </div>
 
     <div id="gallery-screen" class="menu-screen">
         <button class="back-btn" onclick="showScreen('selection-screen')">← Indietro</button>
         <h1 class="title" style="font-size: 1.8rem;">Galleria Privata</h1>
-        <p style="color: #a996b8; font-size: 0.85rem; margin-bottom: 10px;">I file restano nascosti nella memoria dell'app finché non li scarichi.</p>
+        <p style="color: #a996b8; font-size: 0.85rem; margin-bottom: 10px;">I file sono salvati nella memoria locale dell'app. I media ricevuti dal partner vengono mantenuti anche offline.</p>
         <button class="btn-chat-media" style="background:#ff5252; border:none; padding:8px 15px; margin-bottom:15px;" onclick="clearAllGallery()">🧹 Svuota Tutta la Galleria</button>
         <div id="gallery-grid"></div>
     </div>
@@ -337,7 +391,7 @@
     <div id="customize-screen" class="menu-screen">
         <button class="back-btn" onclick="showScreen('scenario-screen')">← Indietro</button>
         <h1 class="title" style="font-size: 1.8rem; margin-bottom: 5px;">Regole d'Ingaggio</h1>
-        <p style="color: #a996b8; margin-bottom: 15px; font-size: 0.9rem;">Selezionate privatamente le categorie. Verranno incluse solo quelle accettate da entrambi.</p>
+        <p style="color: #a996b8; margin-bottom: 15px; font-size: 0.9rem;">In modalità live scegliete insieme le categorie desiderate. Nel gioco sincronizzato verranno usate solo quelle accettate da entrambi.</p>
         <div class="checklist-container">
             <div class="checklist-title">CATEGORIE DISPONIBILI</div>
             <div id="category-list" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;"></div>
@@ -440,6 +494,7 @@
         var currentLevelIndex = 0, currentDialogueIndex = 0, selectedVictim = "", currentRotation = 0;
         var lastVictim = "", consecutiveTurns = 0; // Nuovi contatori per i turni
         var currentScreenId = "selection-screen";
+        var gameMode = "live"; // live = un solo telefono, sync = due dispositivi P2P
         var isCardFlipped = false;
         
         var currentLevelActions = { "Claudia": [], "Tiziano": [] };
@@ -454,6 +509,7 @@
             if (confirm("Vuoi davvero abbandonare la partita attuale e tornare al menu iniziale?")) {
                 closePauseModal();
                 showScreen('selection-screen');
+                updateConnectionIndicator();
             }
         }
 
@@ -465,7 +521,7 @@
                     currentDialogueIndex: currentDialogueIndex, currentScreenId: currentScreenId,
                     selectedVictim: selectedVictim, currentDrawnAction: currentDrawnAction,
                     isCardFlipped: isCardFlipped, lastVictim: lastVictim,
-                    consecutiveTurns: consecutiveTurns, currentRotation: currentRotation
+                    consecutiveTurns: consecutiveTurns, currentRotation: currentRotation, gameMode: gameMode
                 };
                 localStorage.setItem("ScenariGameState_v3", JSON.stringify(state));
             } catch (err) { console.warn("Salvataggio locale non disponibile:", err); }
@@ -500,6 +556,7 @@
                     currentLevelIndex = state.currentLevelIndex || 0;
                     currentDialogueIndex = state.currentDialogueIndex || 0;
                     currentScreenId = state.currentScreenId || "selection-screen";
+                    gameMode = state.gameMode || "sync";
                     selectedVictim = state.selectedVictim || "";
                     currentDrawnAction = state.currentDrawnAction || null;
                     isCardFlipped = state.isCardFlipped || false;
@@ -514,7 +571,7 @@
                     document.getElementById('btn-select-claudia').disabled = (currentPlayer === 'Tiziano');
                     document.getElementById('btn-reset-game').style.display = 'inline-block';
                     
-                    autoConnectP2P(currentPlayer);
+                    if (gameMode === "sync") autoConnectP2P(currentPlayer);
 
                     if (currentScenarioId && roleplayScenarios[currentScenarioId]) {
                         var levelData = roleplayScenarios[currentScenarioId].levels[currentLevelIndex];
@@ -608,14 +665,9 @@
                         mediaRecorder.onstop = function() {
                             var audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
                             var reader = new FileReader();
-                            reader.onloadend = function() {
-                                var base64Data = reader.result;
-                                appendChatMediaMessage("Tu", base64Data, "audio", "me");
-                                saveToLocalDB(base64Data, "audio", "Chat Live", "Tu", "me");    if (conn && conn.open) {
-                                    conn.send({ type: "media", mediaType: "audio", fileData: base64Data, category: "Nota Vocale", sender: currentPlayer });
-                                }
-                            };
-                            reader.readAsDataURL(audioBlob);
+                            appendStoredMediaToChat(audioBlob, 'audio', 'Tu', 'me', 'Chat Live');
+                            saveToLocalDB(audioBlob, 'audio', 'Chat Live', currentPlayer || 'Tu', 'me', 'nota-vocale.webm');
+                            if (gameMode === 'sync') queueMediaForP2P(audioBlob, 'audio', 'Chat Live');
                         };
                         mediaRecorder.start();
                         isRecording = true;
@@ -657,46 +709,32 @@
         }
         initDB();
 
-        function saveToLocalDB(fileData, type, category, sender, msgClass) {
-            if (!db) return;
-            var tx = db.transaction(["media"], "readwrite");
-            var store = tx.objectStore("media");
-            store.add({ type: type, data: fileData, category: category, sender: sender, msgClass: msgClass || "", timestamp: new Date().toLocaleString() });
+        function saveToLocalDB(fileData, type, category, sender, msgClass, fileName) {
+            if (!db) return null;
+            try {
+                var tx = db.transaction(['media'], 'readwrite');
+                var store = tx.objectStore('media');
+                var req = store.add({ type: type, data: fileData, category: category, sender: sender, msgClass: msgClass || '', fileName: fileName || '', timestamp: new Date().toLocaleString() });
+                return req;
+            } catch (err) { console.warn('Salvataggio media locale non riuscito:', err); return null; }
         }
 
         function loadChatHistory() {
             if (!db) return;
-            var tx = db.transaction(["media"], "readonly");
-            var store = tx.objectStore("media");
+            var tx = db.transaction(['media'], 'readonly');
+            var store = tx.objectStore('media');
             var request = store.getAll();
-
             request.onsuccess = function() {
-                var items = request.result;
+                var items = request.result || [];
                 var box = document.getElementById('chat-messages');
-                box.innerHTML = '<div style="font-size:0.75rem; color:#a996b8; text-align:center; margin-bottom: 10px;">Messaggi e media inviati risiedono solo sul tuo dispositivo.</div>';
-                
+                if (!box) return;
+                box.innerHTML = '<div style="font-size:.75rem;color:#a996b8;text-align:center;margin-bottom:10px;">Messaggi e media restano in locale; nella modalità sincronizzata i media vengono trasferiti direttamente all’altro dispositivo.</div>';
                 items.forEach(function(item) {
-                    if (item.category === "Chat Live" || item.type === "chat_text") {
-                        var div = document.createElement('div');
-                        div.className = "chat-msg " + (item.msgClass || "partner");
-                        
-                        if (item.type === "chat_text") {
-                            div.innerHTML = "<strong>" + item.sender + ":</strong> " + item.data;
-                        } else {
-                            var mediaHTML = "";
-                            if (item.type === "image") {
-                                mediaHTML = '<img src="' + item.data + '" onclick="openLightbox(\'' + item.data + '\', false)">';
-                            } else if (item.type === "video") {
-                                mediaHTML = '<video src="' + item.data + '" controls onclick="openLightbox(\'' + item.data + '\', true)"></video>';
-                            } else if (item.type === "audio") {
-                                mediaHTML = '<audio src="' + item.data + '" controls style="width:100%;"></audio>';
-                            }
-                            div.innerHTML = "<strong>" + item.sender + ":</strong><br>" + mediaHTML;
-                        }
-                        box.appendChild(div);
+                    if (item.category === 'Chat Live' || item.category === 'Gioco' || item.type === 'chat_text') {
+                        if (item.type === 'chat_text') appendChatMessage(item.sender || 'Partner', item.data || '', item.msgClass || 'partner');
+                        else appendStoredMediaToChat(item.data, item.type, item.sender || 'Partner', item.msgClass || 'partner', item.category);
                     }
                 });
-                box.scrollTop = box.scrollHeight;
             };
         }
 
@@ -720,6 +758,28 @@
 
         // --- MOTORE P2P ULTRA-STABILE (PING/PONG + RECONNECT LOOP) ---
         var peer = null, conn = null, retryTimer = null, pingInterval = null;
+        var mediaSendQueue = [], mediaSending = false, incomingMediaTransfers = {};
+        var p2pPeerReady = false;
+
+        function updateConnectionIndicator() {
+            var dot = document.getElementById('connection-status-dot');
+            if (!dot) return;
+            var isSync = (gameMode === 'sync');
+            var isGaming = (currentScreenId === 'vn-screen' || currentScreenId === 'minigame-screen' || currentScreenId === 'cards-screen');
+            dot.style.display = (isSync && isGaming) ? 'block' : 'none';
+            dot.classList.remove('sync-red','sync-yellow','sync-green');
+            if (!isSync || !isGaming) return;
+            if (!p2pPeerReady) dot.classList.add('sync-red');
+            else if (!conn || !conn.open) dot.classList.add('sync-yellow');
+            else dot.classList.add('sync-green');
+        }
+
+        function updateMediaSyncStatus(text, show) {
+            var el = document.getElementById('media-sync-status');
+            if (!el) return;
+            el.innerText = text || '';
+            el.style.display = show ? 'block' : 'none';
+        }
 
         function autoConnectP2P(playerName) {
             if (!playerName) return;
@@ -734,8 +794,12 @@
             }
             
             peer = new Peer(myPeerId);
+            p2pPeerReady = false;
+            updateConnectionIndicator();
             peer.on('open', function(id) {
+                p2pPeerReady = true;
                 document.getElementById('p2p-status').innerText = "🟡 In attesa del partner...";
+                updateConnectionIndicator();
                 attemptConnection(targetPeerId);
             });
 
@@ -744,7 +808,22 @@
                 setupConnEvents();
             });
 
+            peer.on('disconnected', function() {
+                p2pPeerReady = false;
+                updateConnectionIndicator();
+                document.getElementById('p2p-status').style.color = '#e91e63';
+                document.getElementById('p2p-status').innerText = '🔴 Connessione P2P non disponibile. Tentativo di ripristino...';
+                try { peer.reconnect(); } catch (e) {}
+            });
+
+            peer.on('close', function() {
+                p2pPeerReady = false;
+                updateConnectionIndicator();
+            });
+
             peer.on('error', function(err) {
+                p2pPeerReady = false;
+                updateConnectionIndicator();
                 console.log("P2P Status Info:", err);
                 if (err.type === 'unavailable-id') {
                     // ID occupato da sessione precedente in sospeso, riconnette senza distruggere
@@ -779,8 +858,11 @@
             if (!conn) return;
             conn.on('open', function() {
                 if (retryTimer) { clearInterval(retryTimer); retryTimer = null; }
+                p2pPeerReady = true;
                 document.getElementById('p2p-status').style.color = "#4caf50";
                 document.getElementById('p2p-status').innerText = "🟢 Partner Connesso! Entrambi pronti.";
+                updateConnectionIndicator();
+                flushMediaSendQueue();
                 document.getElementById('start-sync-btn').style.display = "inline-block";
                 playNotificationSound();
 
@@ -803,7 +885,8 @@
             conn.on('data', function(data) { handleIncomingP2PData(data); });
             conn.on('close', function() {
                 document.getElementById('p2p-status').style.color = "#e91e63";
-                document.getElementById('p2p-status').innerText = "🔴 Connessione persa. Riconnessione...";
+                document.getElementById('p2p-status').innerText = "🟡 Partner non connesso. Riconnessione...";
+                updateConnectionIndicator();
                 if (pingInterval) { clearInterval(pingInterval); pingInterval = null; }
                 attemptConnection(FIXED_ROOM_CODE + "-" + (currentPlayer === "Tiziano" ? "claudia" : "tiziano"));
             });
@@ -824,10 +907,43 @@
                 saveToLocalDB(data.text || "", "chat_text", "Chat Live", data.sender || "Partner", "partner");
                 notifyChatBadge();
             } else if (data.type === "media") {
+                // Compatibilità con il vecchio formato base64 della chat.
                 playNotificationSound();
                 saveToLocalDB(data.fileData, data.mediaType, data.category || "Chat Live", data.sender || "Partner", "partner");
                 appendChatMediaMessage(data.sender || "Partner", data.fileData, data.mediaType, "partner");
                 notifyChatBadge();
+            } else if (data.type === "MEDIA_START") {
+                incomingMediaTransfers[data.transferId] = {
+                    type: data.mediaType, category: data.category || "Gioco", sender: data.sender || "Partner",
+                    fileName: data.fileName || "media", mimeType: data.mimeType || "application/octet-stream",
+                    total: data.total || 0, received: 0, chunks: []
+                };
+                updateMediaSyncStatus("📥 Ricezione media: 0%", true);
+                sendP2PCommand({ type: "MEDIA_READY", transferId: data.transferId });
+            } else if (data.type === "MEDIA_CHUNK") {
+                var tr = incomingMediaTransfers[data.transferId];
+                if (!tr) return;
+                tr.chunks[data.index] = data.chunk;
+                tr.received++;
+                var pct = tr.total ? Math.min(100, Math.round((tr.received / tr.total) * 100)) : 0;
+                updateMediaSyncStatus("📥 Ricezione media: " + pct + "%", true);
+                sendP2PCommand({ type: "MEDIA_CHUNK_ACK", transferId: data.transferId, index: data.index });
+            } else if (data.type === "MEDIA_END") {
+                finishIncomingMedia(data.transferId);
+            } else if (data.type === "MEDIA_NACK") {
+                if (mediaSendQueue.length && mediaSendQueue[0].transferId === data.transferId) {
+                    mediaSendQueue[0].waitingAck = false;
+                    mediaSendQueue[0].nextIndex = data.index || 0;
+                    continueMediaTransfer(data.transferId);
+                }
+            } else if (data.type === "MEDIA_READY") {
+                continueMediaTransfer(data.transferId);
+            } else if (data.type === "MEDIA_CHUNK_ACK") {
+                if (mediaSendQueue.length && mediaSendQueue[0].transferId === data.transferId) {
+                    mediaSendQueue[0].waitingAck = false;
+                    mediaSendQueue[0].nextIndex = (data.index || 0) + 1;
+                }
+                continueMediaTransfer(data.transferId, data.index);
             } else if (data.type === "SYNC_SCENARIO_SELECT") {
                 if (data.scenarioId && roleplayScenarios[data.scenarioId]) selectScenario(data.scenarioId, true);
             } else if (data.type === "SYNC_CATEGORIES_SUBMIT") {
@@ -858,6 +974,125 @@
             }
         }
 
+        var MEDIA_CHUNK_SIZE = 64 * 1024;
+
+        function detectMediaType(file) {
+            if (!file || !file.type) return 'file';
+            if (file.type.indexOf('image/') === 0) return 'image';
+            if (file.type.indexOf('video/') === 0) return 'video';
+            if (file.type.indexOf('audio/') === 0) return 'audio';
+            return 'file';
+        }
+
+        function captureGameMedia(input, requestedKind) {
+            if (!input || !input.files || !input.files[0]) return;
+            var file = input.files[0];
+            var mediaType = detectMediaType(file);
+            if (requestedKind === 'image' && mediaType !== 'image') mediaType = 'image';
+            if (requestedKind === 'video' && mediaType !== 'video') mediaType = 'video';
+
+            // Salvataggio locale immediato: il file non dipende dalla connessione.
+            saveToLocalDB(file, mediaType, 'Gioco', currentPlayer || 'Tu', 'me');
+            appendStoredMediaToChat(file, mediaType, currentPlayer || 'Tu', 'me', 'Gioco');
+
+            if (gameMode === 'sync') {
+                queueMediaForP2P(file, mediaType, 'Gioco');
+            }
+            updateMediaSyncStatus(gameMode === 'sync' ? '🔄 Media salvato. In coda per la sincronizzazione...' : '✓ Media salvato localmente', true);
+            setTimeout(function(){ updateMediaSyncStatus('', false); }, 3000);
+            input.value = '';
+        }
+
+        function appendStoredMediaToChat(data, mediaType, sender, msgClass, category) {
+            var src = data;
+            if (data instanceof Blob) src = URL.createObjectURL(data);
+            appendChatMediaMessage(sender, src, mediaType, msgClass);
+        }
+
+        function queueMediaForP2P(file, mediaType, category) {
+            if (gameMode !== 'sync') return;
+            var transferId = 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+            mediaSendQueue.push({ transferId: transferId, file: file, mediaType: mediaType, category: category || 'Gioco', sender: currentPlayer || 'Tu' });
+            flushMediaSendQueue();
+        }
+
+        function flushMediaSendQueue() {
+            if (mediaSending || !mediaSendQueue.length || !conn || !conn.open || gameMode !== 'sync') return;
+            mediaSending = true;
+            var job = mediaSendQueue[0];
+            job.bufferPromise = job.file.arrayBuffer();
+            job.bufferPromise.then(function(buffer) {
+                job.buffer = buffer;
+                job.total = Math.ceil(buffer.byteLength / MEDIA_CHUNK_SIZE);
+                job.nextIndex = 0;
+                job.waitingAck = false;
+                sendP2PCommand({
+                    type: 'MEDIA_START', transferId: job.transferId, mediaType: job.mediaType,
+                    category: job.category, sender: job.sender, fileName: job.file.name || 'media',
+                    mimeType: job.file.type || 'application/octet-stream', total: job.total
+                });
+                updateMediaSyncStatus('🔄 Invio media: 0%', true);
+                setTimeout(function(){ continueMediaTransfer(job.transferId); }, 20);
+            }).catch(function(err) {
+                console.error('Errore lettura media:', err);
+                mediaSendQueue.shift(); mediaSending = false;
+                updateMediaSyncStatus('⚠️ Impossibile leggere il media', true);
+                setTimeout(function(){ updateMediaSyncStatus('', false); flushMediaSendQueue(); }, 2500);
+            });
+        }
+
+        function continueMediaTransfer(transferId) {
+            if (!mediaSending || !mediaSendQueue.length || !conn || !conn.open) return;
+            var job = mediaSendQueue[0];
+            if (!job || job.transferId !== transferId || job.waitingAck) return;
+            if (job.nextIndex >= job.total) {
+                sendP2PCommand({ type: 'MEDIA_END', transferId: job.transferId });
+                mediaSendQueue.shift();
+                mediaSending = false;
+                updateMediaSyncStatus('✓ Media sincronizzato', true);
+                setTimeout(function(){ updateMediaSyncStatus('', false); }, 2200);
+                setTimeout(flushMediaSendQueue, 50);
+                return;
+            }
+            var start = job.nextIndex * MEDIA_CHUNK_SIZE;
+            var end = Math.min(job.buffer.byteLength, start + MEDIA_CHUNK_SIZE);
+            var chunk = job.buffer.slice(start, end);
+            job.waitingAck = true;
+            sendP2PCommand({ type:'MEDIA_CHUNK', transferId:job.transferId, index:job.nextIndex, chunk:chunk });
+            var pct = Math.round(((job.nextIndex + 1) / job.total) * 100);
+            updateMediaSyncStatus('🔄 Invio media: ' + pct + '%', true);
+        }
+
+        function finishIncomingMedia(transferId) {
+            var tr = incomingMediaTransfers[transferId];
+            if (!tr) return;
+            var ordered = [];
+            for (var i = 0; i < tr.total; i++) {
+                if (tr.chunks[i] === undefined) {
+                    sendP2PCommand({ type:'MEDIA_NACK', transferId:transferId, index:i });
+                    return;
+                }
+                ordered.push(tr.chunks[i]);
+            }
+            try {
+                var blob = new Blob(ordered, { type: tr.mimeType });
+                saveToLocalDB(blob, tr.type, tr.category, tr.sender, 'partner');
+                appendStoredMediaToChat(blob, tr.type, tr.sender, 'partner', tr.category);
+                playNotificationSound();
+                notifyChatBadge();
+                sendP2PCommand({ type:'MEDIA_RECEIVED', transferId:transferId });
+                updateMediaSyncStatus('✓ Media ricevuto e salvato', true);
+                setTimeout(function(){ updateMediaSyncStatus('', false); }, 2500);
+            } catch (err) {
+                console.error('Errore ricomposizione media:', err);
+            }
+            delete incomingMediaTransfers[transferId];
+        }
+
+        function sendPendingMediaOnReconnect() {
+            if (gameMode === 'sync') flushMediaSendQueue();
+        }
+
         function notifyChatBadge() {
             var modal = document.getElementById('chat-modal');
             if (modal.style.display !== "flex") {
@@ -869,16 +1104,24 @@
         }
 
         function submitCategories() {
-            var items = document.querySelectorAll('.check-item.active');
+            var items = document.querySelectorAll('#category-list .check-item.active');
             mySelectedCategories = [];
             for (var i = 0; i < items.length; i++) {
                 mySelectedCategories.push(items[i].dataset.category);
             }
 
-            if (mySelectedCategories.length === 0) { alert("⚠️ Seleziona almeno una categoria!"); return; }
+            if (mySelectedCategories.length === 0) { alert("⚠️ Selezionate almeno una categoria!"); return; }
 
+            // Un solo telefono: la selezione è comune, quindi non serve alcun accoppiamento.
+            if (gameMode === "live") {
+                activeCategories = mySelectedCategories.slice();
+                partnerSelectedCategories = null;
+                goToBriefing(false);
+                return;
+            }
+
+            // Due telefoni: manteniamo la sincronizzazione privata e l'intersezione delle categorie.
             showScreen('waiting-screen');
-
             if (catSyncInterval) clearInterval(catSyncInterval);
             catSyncInterval = setInterval(function() {
                 if (partnerSelectedCategories !== null) {
@@ -894,6 +1137,7 @@
         }
 
         function checkBothCategoriesSubmitted() {
+            if (gameMode === "live") return;
             if (mySelectedCategories.length > 0 && partnerSelectedCategories !== null) {
                 if (catSyncInterval) { clearInterval(catSyncInterval); catSyncInterval = null; }
 
@@ -987,7 +1231,7 @@
             showScreen('customize-screen');
             buildCategoryList();
             saveGameState();
-            if (!isRemote) sendP2PCommand({ type: "SYNC_SCENARIO_SELECT", scenarioId: scenarioId });
+            if (!isRemote && gameMode === "sync") sendP2PCommand({ type: "SYNC_SCENARIO_SELECT", scenarioId: scenarioId });
         }
 
         function goToBriefing(isRemote) {
@@ -1000,7 +1244,7 @@
             document.getElementById('briefing-tiziano').innerText = scenario.briefing["Tiziano"];
 
             saveGameState();
-            if (!isRemote) sendP2PCommand({ type: "SYNC_BRIEFING" });
+            if (!isRemote && gameMode === "sync") sendP2PCommand({ type: "SYNC_BRIEFING" });
         }
 
         function startRoleplay(isRemote) {
@@ -1009,7 +1253,7 @@
             document.getElementById('fixed-skip-level-btn').style.display = 'block';
             currentLevelIndex = 0; loadLevelNarrative();
             saveGameState();
-            if (!isRemote) sendP2PCommand({ type: "SYNC_START" });
+            if (!isRemote && gameMode === "sync") sendP2PCommand({ type: "SYNC_START" });
         }
 
         function loadLevelNarrative() {
@@ -1195,13 +1439,60 @@
             loadLevelNarrative();
         }
 
+        // MODALITA DI GIOCO
+        function startLiveMode() {
+            gameMode = "live";
+            updateConnectionIndicator();
+            currentPlayer = "";
+            mySelectedCategories = [];
+            partnerSelectedCategories = null;
+            activeCategories = [];
+            currentLevelIndex = 0;
+            currentDialogueIndex = 0;
+            selectedVictim = "";
+            currentDrawnAction = null;
+            lastVictim = "";
+            consecutiveTurns = 0;
+
+            var ids = Object.keys(roleplayScenarios);
+            if (!ids.length) {
+                alert("⚠️ Nessuno scenario disponibile. Attendi il caricamento dei dati.");
+                return;
+            }
+
+            // In modalità live viene usato automaticamente l'unico scenario pubblicato nel foglio.
+            currentScenarioId = ids[0];
+            buildCategoryList();
+            document.getElementById('btn-submit-categories').innerText = "Conferma e Inizia";
+            var customizeBack = document.querySelector('#customize-screen .back-btn');
+            if (customizeBack) customizeBack.onclick = function() { showScreen('selection-screen'); };
+            showScreen('customize-screen');
+            saveGameState();
+        }
+
+        function enterSyncMode() {
+            gameMode = "sync";
+            p2pPeerReady = false;
+            updateConnectionIndicator();
+            currentPlayer = "";
+            partnerSelectedCategories = null;
+            document.getElementById('p2p-status').innerText = "🔴 Seleziona chi sei per connetterti al partner";
+            document.getElementById('p2p-status').style.color = "#e91e63";
+            document.getElementById('start-sync-btn').style.display = 'none';
+            document.getElementById('btn-submit-categories').innerText = "Conferma Selezione Privata";
+            showScreen('sync-player-screen');
+        }
+
         // UTILITIES
         function selectPlayer(name) { 
             currentPlayer = name; 
             document.getElementById('btn-select-tiziano').disabled = (name === 'Claudia');
             document.getElementById('btn-select-claudia').disabled = (name === 'Tiziano');
-            document.getElementById('btn-reset-game').style.display = 'inline-block';
+            var resetBtn = document.getElementById('btn-reset-game');
+            if (resetBtn) resetBtn.style.display = 'inline-block';
             saveGameState();
+            p2pPeerReady = false;
+            updateConnectionIndicator();
             autoConnectP2P(name);
         }
 
@@ -1252,6 +1543,11 @@
             var isGamingScreen = (screenId === 'vn-screen' || screenId === 'minigame-screen' || screenId === 'cards-screen');
             document.getElementById('game-menu-btn').style.display = isGamingScreen ? 'block' : 'none';
             document.getElementById('fixed-skip-level-btn').style.display = isGamingScreen ? 'block' : 'none';
+            var mediaControls = document.getElementById('game-media-controls');
+            if (mediaControls) mediaControls.style.display = isGamingScreen ? 'flex' : 'none';
+            var version = document.getElementById('app-version');
+            if (version) version.style.display = (screenId === 'selection-screen') ? 'block' : 'none';
+            updateConnectionIndicator();
 
             var target = document.getElementById(screenId);
             if (target) {
@@ -1444,45 +1740,46 @@
         }
 
         function sendChatFile(input, mediaKind) {
-            if (!input.files || !input.files[0]) return;
+            if (!input || !input.files || !input.files[0]) return;
             var file = input.files[0];
-            var reader = new FileReader();
-            
-            reader.onload = function(e) {
-                var base64Data = e.target.result;
-                var mediaType = file.type.startsWith("image") ? "image" : (file.type.startsWith("video") ? "video" : "audio");
-                
-                appendChatMediaMessage("Tu", base64Data, mediaType, "me");
-                saveToLocalDB(base64Data, mediaType, "Chat Live", "Tu", "me"); // Salva media inviato
-
-                if (conn && conn.open) {
-                    conn.send({
-                        type: "media",
-                        mediaType: mediaType,
-                        fileData: base64Data,
-                        category: "Chat Live",
-                        sender: currentPlayer
-                    });
-                }
-            };
-            reader.readAsDataURL(file);
+            var mediaType = detectMediaType(file);
+            saveToLocalDB(file, mediaType, 'Chat Live', currentPlayer || 'Tu', 'me', file.name || 'media');
+            appendStoredMediaToChat(file, mediaType, 'Tu', 'me', 'Chat Live');
+            if (gameMode === 'sync') {
+                queueMediaForP2P(file, mediaType, 'Chat Live');
+            }
+            input.value = '';
         }
 
-        function appendChatMediaMessage(sender, base64Data, mediaType, msgClass) {
+        function appendChatMediaMessage(sender, data, mediaType, msgClass) {
             var box = document.getElementById('chat-messages');
+            if (!box) return;
             var div = document.createElement('div');
-            div.className = "chat-msg " + msgClass;
-            
-            var mediaHTML = "";
-            if (mediaType === "image") {
-                mediaHTML = '<img src="' + base64Data + '" onclick="openLightbox(\'' + base64Data + '\', false)">';
-            } else if (mediaType === "video") {
-                mediaHTML = '<video src="' + base64Data + '" controls onclick="openLightbox(\'' + base64Data + '\', true)"></video>';
-            } else {
-                mediaHTML = '<audio src="' + base64Data + '" controls style="width:100%;"></audio>';
-            }
+            div.className = 'chat-msg ' + msgClass;
+            var label = document.createElement('strong');
+            label.textContent = sender + ':';
+            div.appendChild(label);
+            div.appendChild(document.createElement('br'));
 
-            div.innerHTML = "<strong>" + sender + ":</strong><br>" + mediaHTML;
+            var src = (data instanceof Blob) ? URL.createObjectURL(data) : data;
+            var el;
+            if (mediaType === 'image') {
+                el = document.createElement('img');
+                el.src = src; el.onclick = function(){ openLightbox(src, false); };
+            } else if (mediaType === 'video') {
+                el = document.createElement('video');
+                el.src = src; el.controls = true; el.playsInline = true;
+                el.onclick = function(){ openLightbox(src, true); };
+            } else if (mediaType === 'audio') {
+                el = document.createElement('audio');
+                el.src = src; el.controls = true; el.style.width = '100%';
+            } else {
+                var link = document.createElement('a');
+                link.href = src; link.download = 'Scenari_media'; link.textContent = '📎 Apri file';
+                link.style.color = 'var(--primary-accent)';
+                el = link;
+            }
+            div.appendChild(el);
             box.appendChild(div);
             box.scrollTop = box.scrollHeight;
         }
@@ -1494,49 +1791,52 @@
 
 function loadGalleryContent() {
             var grid = document.getElementById('gallery-grid');
-            grid.innerHTML = "Caricamento...";
-            if (!db) return;
+            if (!grid) return;
+            grid.innerHTML = 'Caricamento...';
+            if (!db) { grid.innerHTML = '<p style="color:#ff8a80;">Memoria locale non disponibile.</p>'; return; }
 
-            var tx = db.transaction(["media"], "readonly");
-            var store = tx.objectStore("media");
+            var tx = db.transaction(['media'], 'readonly');
+            var store = tx.objectStore('media');
             var request = store.getAll();
-
             request.onsuccess = function() {
-                var items = request.result;
-                var mediaItems = items.filter(item => item.type !== "chat_text"); // Filtra il testo
-                
-                if (!mediaItems || mediaItems.length === 0) {
-                    grid.innerHTML = "<p style='color:#a996b8; grid-column: 1/-1;'>Nessun file presente nella Galleria Privata.</p>";
+                var items = request.result || [];
+                var mediaItems = items.filter(function(item) { return item.type !== 'chat_text'; });
+                if (!mediaItems.length) {
+                    grid.innerHTML = "<p style='color:#a996b8; grid-column:1/-1;'>Nessun file presente nella Galleria Privata.</p>";
                     return;
                 }
-                grid.innerHTML = "";
+                grid.innerHTML = '';
                 mediaItems.reverse().forEach(function(item) {
                     var div = document.createElement('div');
-                    div.className = "gallery-card";
-                    
-                    var mediaHTML = "";
-                    var ext = item.type === "image" ? "jpg" : (item.type === "video" ? "mp4" : "mp3");
-                    var fileName = "Scenari_" + item.category + "_" + item.timestamp.replace(/[/:,\s]/g, "-") + "." + ext;
-
-                    if (item.type === "image") {
-                        mediaHTML = '<img src="' + item.data + '" onclick="openLightbox(\'' + item.data + '\', false)">';
-                    } else if (item.type === "video") {
-                        mediaHTML = '<video src="' + item.data + '" controls onclick="openLightbox(\'' + item.data + '\', true)"></video>';
+                    div.className = 'gallery-card';
+                    var src = (item.data instanceof Blob) ? URL.createObjectURL(item.data) : item.data;
+                    var type = item.type || 'file';
+                    var mediaEl;
+                    if (type === 'image') {
+                        mediaEl = document.createElement('img'); mediaEl.src = src;
+                        mediaEl.onclick = function(){ openLightbox(src, false); };
+                    } else if (type === 'video') {
+                        mediaEl = document.createElement('video'); mediaEl.src = src; mediaEl.controls = true; mediaEl.playsInline = true;
+                        mediaEl.onclick = function(){ openLightbox(src, true); };
+                    } else if (type === 'audio') {
+                        mediaEl = document.createElement('audio'); mediaEl.src = src; mediaEl.controls = true; mediaEl.style.width = '100%';
                     } else {
-                        mediaHTML = '<audio src="' + item.data + '" controls style="width:100%;"></audio>';
+                        mediaEl = document.createElement('a'); mediaEl.href = src; mediaEl.download = item.fileName || 'Scenari_media'; mediaEl.textContent = '📎 File'; mediaEl.style.color = 'var(--primary-accent)';
                     }
+                    div.appendChild(mediaEl);
 
-                    div.innerHTML = mediaHTML + 
-                        '<div style="font-size:0.7rem; color:#d1c4db;">Da: ' + item.sender + '</div>' +
-                        '<div style="font-size:0.65rem; color:#888;">' + item.timestamp + '</div>' +
-                        '<div class="gallery-actions">' +
-                            '<a href="' + item.data + '" download="' + fileName + '" style="font-size:0.75rem; color:var(--primary-accent); text-decoration:none;">💾 Scarica</a>' +
-                            '<button class="gallery-btn-del" onclick="deleteSingleMedia(' + item.id + ')">🗑️ Elimina</button>' +
-                        '</div>';
-                    
+                    var from = document.createElement('div'); from.style.cssText = 'font-size:.7rem;color:#d1c4db;'; from.textContent = 'Da: ' + (item.sender || 'Tu'); div.appendChild(from);
+                    var cat = document.createElement('div'); cat.style.cssText = 'font-size:.65rem;color:#aaa;'; cat.textContent = item.category || 'Gioco'; div.appendChild(cat);
+                    var ts = document.createElement('div'); ts.style.cssText = 'font-size:.65rem;color:#888;'; ts.textContent = item.timestamp || ''; div.appendChild(ts);
+
+                    var actions = document.createElement('div'); actions.className = 'gallery-actions';
+                    var download = document.createElement('a'); download.href = src; download.download = item.fileName || ('Scenari_' + type + '_' + Date.now()); download.textContent = '💾 Scarica'; download.style.cssText = 'font-size:.75rem;color:var(--primary-accent);text-decoration:none;';
+                    var del = document.createElement('button'); del.className = 'gallery-btn-del'; del.textContent = '🗑️ Elimina'; del.onclick = function(){ deleteSingleMedia(item.id); };
+                    actions.appendChild(download); actions.appendChild(del); div.appendChild(actions);
                     grid.appendChild(div);
                 });
             };
+            request.onerror = function(){ grid.innerHTML = '<p style="color:#ff8a80;">Impossibile leggere la Galleria.</p>'; };
         }
     </script>
 </body>
