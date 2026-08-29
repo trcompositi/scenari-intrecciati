@@ -57,10 +57,10 @@
         .btn:active:not(:disabled) { transform: scale(0.96); }
         .btn-tiziano { background: linear-gradient(45deg, var(--secondary-accent), #0d47a1); }
         .btn-claudia { background: linear-gradient(45deg, var(--primary-accent), #c2185b); }
-        .btn-context { background: rgba(255,255,255,0.08); border: 1px solid #673ab7; }
-        .btn-gallery { background: linear-gradient(45deg, #673ab7, #e91e63); }
+        .btn-context { background: linear-gradient(135deg, #e91e63 0%, #9c27b0 55%, #673ab7 100%); border: 1px solid #d94acb; box-shadow: 0 6px 18px rgba(156,39,176,.25); }
+        .btn-gallery { background: linear-gradient(135deg, #e91e63 0%, #9c27b0 55%, #673ab7 100%); }
         .btn-resume { background: linear-gradient(45deg, #4caf50, #2e7d32); }
-        .btn-live { background: linear-gradient(45deg, #43a047, #1b5e20); box-shadow: 0 6px 20px rgba(76,175,80,.25); }
+        .btn-live { background: linear-gradient(135deg, #e91e63 0%, #c02acb 45%, #673ab7 100%); box-shadow: 0 6px 20px rgba(156,39,176,.30); }
         .mode-note { max-width: 340px; color:#a996b8; font-size:.85rem; line-height:1.45; margin:4px 0 12px; }
         .btn-reset { background: rgba(255, 82, 82, 0.2); border: 1px solid #ff5252; color: #ff5252; margin-top: 15px; }
 
@@ -73,7 +73,7 @@
 
         #app-version {
             position: fixed; bottom: 8px; left: 10px;
-            color: rgba(255,255,255,0.35); font-size: 0.62rem; letter-spacing: 0.5px;
+            color: rgba(255,255,255,0.35); font-size: 0.6rem; letter-spacing: 0.5px;
             z-index: 100; pointer-events: none;
         }
 
@@ -89,13 +89,13 @@
 
         #game-media-controls {
             display:none; position:fixed; left:50%; bottom:12px; transform:translateX(-50%); z-index:1100;
-            background:rgba(10,6,13,0.90); border:1px solid #673ab7; border-radius:18px;
+            background:rgba(10,6,13,0.90); border:1px solid #8e3fd1; border-radius:18px;
             padding:5px; gap:6px; align-items:center; justify-content:center; box-shadow:0 5px 20px rgba(0,0,0,.55);
             backdrop-filter:blur(6px);
         }
         .game-media-btn, #chat-toggle-btn {
             width:42px; height:42px; padding:0; border:1px solid #673ab7;
-            background:linear-gradient(145deg,#673ab7,#4b278b); color:white;
+            background:linear-gradient(145deg,#e91e63,#9c27b0 55%,#673ab7); color:white;
             border-radius:12px; font-size:1.15rem; cursor:pointer; display:flex; align-items:center; justify-content:center;
             box-shadow:0 3px 10px rgba(0,0,0,.35);
         }
@@ -145,6 +145,25 @@
         .check-item.active { background-color: rgba(103, 58, 183, 0.25); border: 1px solid var(--secondary-accent); color: #fff; }
         .check-item::before { content: '○'; font-size: 1.4rem; margin-right: 12px; color: #888; }
         .check-item.active::before { content: '●'; color: var(--primary-accent); }
+        .category-level-group {
+            width: 100%;
+            margin: 14px 0 18px;
+            padding: 12px;
+            border: 1px solid rgba(156,39,176,.45);
+            border-radius: 14px;
+            background: linear-gradient(180deg, rgba(45,20,60,.55), rgba(20,10,30,.35));
+        }
+        .category-level-title {
+            display:flex; align-items:center; justify-content:space-between;
+            margin-bottom:10px; padding-bottom:8px;
+            border-bottom:1px solid rgba(233,30,99,.35);
+            font-weight:800; letter-spacing:.7px; font-size:.95rem;
+        }
+        .category-level-title .level-subtitle { color:#a996b8; font-size:.72rem; font-weight:500; letter-spacing:0; }
+        .category-level-group .category-items { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+        .category-level-group .check-item { margin:0; padding:10px; min-height:46px; }
+        .category-level-group .check-item::before { font-size:1.15rem; margin-right:8px; }
+
 
         #fixed-skip-level-btn { display:none !important; }
 
@@ -355,7 +374,7 @@
         <button class="btn btn-tiziano" id="btn-select-tiziano" onclick="selectPlayer('Tiziano')">Sono Tiziano</button>
         <button class="btn btn-claudia" id="btn-select-claudia" onclick="selectPlayer('Claudia')">Sono Claudia</button>
         <div id="p2p-status" style="font-size: 0.9rem; color: #e91e63; margin: 20px 0; font-weight: bold;">🔴 Seleziona chi sei per connetterti al partner</div>
-        <button class="btn btn-context" id="start-sync-btn" style="display:none; background: var(--primary-accent);" onclick="showScreen('scenario-screen')">Entra nel gioco sincronizzato</button>
+        <button class="btn btn-context" id="start-sync-btn" style="display:none;" onclick="showScreen('scenario-screen')">Entra nel gioco sincronizzato</button>
     </div>
 
     <div id="gallery-screen" class="menu-screen">
@@ -1205,9 +1224,15 @@
 
         function handleForceNextLevelClick() {
             if (!['vn-screen','minigame-screen','cards-screen'].includes(currentScreenId)) return;
-            if (confirm("Passare subito al livello successivo? Questa azione salta le azioni rimanenti del livello attuale.")) {
+            var scenario = roleplayScenarios[currentScenarioId];
+            if (!scenario || !Array.isArray(scenario.levels)) return;
+            if (currentLevelIndex >= scenario.levels.length - 1) {
+                alert("Sei già all'ultimo livello disponibile.");
+                return;
+            }
+            if (confirm('Passare subito al livello successivo? Le azioni rimanenti del livello attuale verranno saltate.')) {
                 advanceToNextLevel(false);
-                sendP2PCommand({ type: "SYNC_NEXT_LEVEL" });
+                if (gameMode === 'sync') sendP2PCommand({ type: 'SYNC_NEXT_LEVEL' });
             }
         }
 
@@ -1250,11 +1275,12 @@
                 else showScreen('selection-screen');
                 return;
             }
+            var normalizedActiveCategories = activeCategories.map(function(c){ return String(c).trim().toLowerCase(); });
             currentLevelActions["Claudia"] = levelData.actions.filter(function(a) {
-                return a.actor === "Claudia" && activeCategories.indexOf(a.category) !== -1;
+                return a.actor === "Claudia" && normalizedActiveCategories.indexOf(String(a.category || '').trim().toLowerCase()) !== -1;
             });
             currentLevelActions["Tiziano"] = levelData.actions.filter(function(a) {
-                return a.actor === "Tiziano" && activeCategories.indexOf(a.category) !== -1;
+                return a.actor === "Tiziano" && normalizedActiveCategories.indexOf(String(a.category || '').trim().toLowerCase()) !== -1;
             });
 
             if (currentLevelActions["Claudia"].length === 0 && currentLevelActions["Tiziano"].length === 0) {
@@ -1477,35 +1503,74 @@
         }
 
         function buildCategoryList() {
-            var list = document.getElementById('category-list'); 
+            var list = document.getElementById('category-list');
             if (!list) return;
             list.innerHTML = '';
-            var allCategories = [];
-            
+
             var scenario = roleplayScenarios[currentScenarioId];
             if (!scenario || !Array.isArray(scenario.levels)) return;
+
+            var levelDefinitions = [
+                { level: 1, name: 'EASY', icon: '🟢', description: 'Rompere il ghiaccio', categories: ['Dialogo','Coccole','Romantico','Soft','Imbarazzante','Voice','Foto'] },
+                { level: 2, name: 'SOFT', icon: '🟡', description: 'Far salire la tensione', categories: ['Coraggio','Sensuale','Mani','Bocca','Piedi','Travestimenti'] },
+                { level: 3, name: 'HARD', icon: '🔴', description: 'Passione e fantasie', categories: ['Dominazione','Sex Toys','Bondage','Masturbazione','Culo','Sega, Ditalino','Sesso Orale','Penetrazione'] }
+            ];
+
+            // Le categorie vengono mostrate secondo la progressione di game design.
+            // Se lo Sheet contiene una categoria non prevista, viene aggiunta in un gruppo finale.
+            var present = {};
             scenario.levels.forEach(function(lvl) {
                 if (lvl && Array.isArray(lvl.actions)) {
-                    lvl.actions.forEach(function(act) { 
-                        if (act.category && act.category.trim() !== "" && allCategories.indexOf(act.category.trim()) === -1) {
-                            allCategories.push(act.category.trim()); 
-                        }
+                    lvl.actions.forEach(function(act) {
+                        var cat = act && act.category ? String(act.category).trim() : '';
+                        if (cat) present[cat] = true;
                     });
                 }
             });
 
-            if (allCategories.length === 0) allCategories.push("Generale");
-
-            allCategories.forEach(function(cat) {
-                var div = document.createElement('div'); 
-                div.className = 'check-item active'; 
-                div.style.flex = "1 1 calc(50% - 10px)"; 
-                div.style.justifyContent = "center";
-                div.innerText = cat; 
-                div.onclick = function() { this.classList.toggle('active'); }; 
-                div.dataset.category = cat; 
-                list.appendChild(div);
+            var used = {};
+            levelDefinitions.forEach(function(def) {
+                var available = def.categories.filter(function(cat){ return present[cat]; });
+                if (!available.length) return;
+                var group = document.createElement('div');
+                group.className = 'category-level-group';
+                group.innerHTML = '<div class="category-level-title"><span>' + def.icon + ' LIVELLO ' + def.level + ' · ' + def.name + '</span><span class="level-subtitle">' + def.description + '</span></div>';
+                var items = document.createElement('div');
+                items.className = 'category-items';
+                available.forEach(function(cat) {
+                    used[cat] = true;
+                    var div = document.createElement('div');
+                    div.className = 'check-item active';
+                    div.innerText = cat;
+                    div.onclick = function() { this.classList.toggle('active'); };
+                    div.dataset.category = cat;
+                    items.appendChild(div);
+                });
+                group.appendChild(items);
+                list.appendChild(group);
             });
+
+            var extra = Object.keys(present).filter(function(cat){ return !used[cat]; });
+            if (extra.length) {
+                var group = document.createElement('div');
+                group.className = 'category-level-group';
+                group.innerHTML = '<div class="category-level-title"><span>⚪ ALTRE CATEGORIE</span><span class="level-subtitle">Presenti nel foglio dati</span></div>';
+                var items = document.createElement('div'); items.className = 'category-items';
+                extra.forEach(function(cat) {
+                    var div = document.createElement('div');
+                    div.className = 'check-item active'; div.innerText = cat; div.dataset.category = cat;
+                    div.onclick = function() { this.classList.toggle('active'); };
+                    items.appendChild(div);
+                });
+                group.appendChild(items); list.appendChild(group);
+            }
+
+            if (!Object.keys(present).length) {
+                var empty = document.createElement('div');
+                empty.style.color = '#a996b8'; empty.style.padding = '10px';
+                empty.innerText = 'Nessuna categoria disponibile nello scenario.';
+                list.appendChild(empty);
+            }
         }
 
         function showScreen(screenId) {
