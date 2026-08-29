@@ -301,7 +301,7 @@
         <div id="lightbox-container" onclick="event.stopPropagation();"></div>
     </div>
 
-    <div id="app-version">Ver.10</div>
+    <div id="app-version">Ver.12</div>
     <div id="connection-status-dot" title="Stato connessione sincronizzata"></div>
 
     <div id="game-media-controls">
@@ -1528,18 +1528,28 @@
             // Le categorie vengono mostrate secondo la progressione di game design.
             // Se lo Sheet contiene una categoria non prevista, viene aggiunta in un gruppo finale.
             var present = {};
+            // Fonte primaria: categorie dichiarate nello Sheet SCENARI.
+            (scenario.sheetCategories || []).forEach(function(cat) {
+                var key = String(cat).trim();
+                if (key) present[key.toLowerCase()] = key;
+            });
+            // Fallback/integrazione: categorie effettivamente presenti nel COPIONE.
+            // Non nasconde mai una categoria dichiarata in SCENARI.
             scenario.levels.forEach(function(lvl) {
                 if (lvl && Array.isArray(lvl.actions)) {
                     lvl.actions.forEach(function(act) {
                         var cat = act && act.category ? String(act.category).trim() : '';
-                        if (cat) present[cat] = true;
+                        if (cat) {
+                            var key = cat.toLowerCase();
+                            if (!present[key]) present[key] = cat;
+                        }
                     });
                 }
             });
 
             var used = {};
             levelDefinitions.forEach(function(def) {
-                var available = def.categories.filter(function(cat){ return present[cat]; });
+                var available = def.categories.filter(function(cat){ return !!present[String(cat).trim().toLowerCase()]; }).map(function(cat){ return present[String(cat).trim().toLowerCase()]; });
                 if (!available.length) return;
                 var group = document.createElement('div');
                 group.className = 'category-level-group';
@@ -1559,7 +1569,7 @@
                 list.appendChild(group);
             });
 
-            var extra = Object.keys(present).filter(function(cat){ return !used[cat]; });
+            var extra = Object.keys(present).filter(function(key){ return !used[present[key]]; }).map(function(key){ return present[key]; });
             if (extra.length) {
                 var group = document.createElement('div');
                 group.className = 'category-level-group';
@@ -1672,11 +1682,27 @@
                     roleplayScenarios = {};
                     res.data.forEach(function(row) {
                         if (!row || !row.ID_Scenario) return;
+                        var scenarioCategories = [];
+                        // Supporta le categorie dichiarate direttamente in SCENARI.
+                        // Accetta sia una colonna unica (es. Categorie/Categoria) sia
+                        // colonne separate per livello.
+                        var categoryFields = [
+                            "Categorie", "Categorie_Disponibili", "Categorie_Preferred", "Categorie_Livello_1",
+                            "Categorie_Livello_2", "Categorie_Livello_3", "Categoria", "Categorie_EASY", "Categorie_SOFT", "Categorie_HARD"
+                        ];
+                        categoryFields.forEach(function(field) {
+                            if (row[field] == null || row[field] === "") return;
+                            String(row[field]).split(/[;,|]/).forEach(function(value) {
+                                var cat = String(value).trim();
+                                if (cat && scenarioCategories.indexOf(cat) === -1) scenarioCategories.push(cat);
+                            });
+                        });
                         roleplayScenarios[row.ID_Scenario] = {
                             title: row.Titolo_Storia || row.ID_Scenario,
                             context: row.Contesto_Menu || "Altro",
                             roles: { "Claudia": row.Ruolo_Claudia || "Claudia", "Tiziano": row.Ruolo_Tiziano || "Tiziano" },
                             briefing: { "Claudia": row.Briefing_Claudia || "", "Tiziano": row.Briefing_Tiziano || "" },
+                            sheetCategories: scenarioCategories,
                             levels: []
                         };
                     });
@@ -1691,12 +1717,57 @@
                             if (startupFinished) return;
                             if (!resCopione || !Array.isArray(resCopione.data)) { finishWithError("Il copione restituito da Google Sheets non è valido."); return; }
 
+                            // Il COPIONE è un database unico delle azioni.
+                            // Le righe con un ID scenario specifico contengono i dialoghi
+                            // e, se presenti, eventuali azioni specifiche dello scenario.
+                            // Le azioni con ID "comune" sono invece condivise da TUTTI gli
+                            // scenari con contesto Insieme; le azioni con ID contenente
+                            // "distanza" sono condivise dagli scenari a distanza.
+                            var commonActions = { insieme: {}, distanza: {} };
+
+                            function normalizeContext(value) {
+                                return String(value || "").trim().toLowerCase()
+                                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                            }
+
+                            function getCommonPoolForId(id) {
+                                var normalizedId = normalizeContext(id).replace(/[\s-]+/g, '_');
+                                if (normalizedId === 'comune' || normalizedId === 'comune_insieme' || normalizedId === 'comuneinsieme' || normalizedId === 'insieme_comune') {
+                                    return 'insieme';
+                                }
+                                if (normalizedId.indexOf('distanza') !== -1 || normalizedId.indexOf('distance') !== -1) {
+                                    return 'distanza';
+                                }
+                                return null;
+                            }
+
+                            // Prima passata: costruisce il materiale specifico degli scenari
+                            // e raccoglie separatamente le azioni comuni.
                             resCopione.data.forEach(function(row) {
                                 if (!row) return;
-                                var id = row.ID_Scenario;
-                                if (!id || !roleplayScenarios[id]) return;
+
+                                var id = row.ID_Scenario ? String(row.ID_Scenario).trim() : '';
+                                var tipo = String(row.Tipo || "").trim();
+                                var actor = row.Chi_Parla_o_Agisce || "";
+                                var text = row.Testo || "";
+                                var category = row.Categoria ? String(row.Categoria).trim() : "";
                                 var lvlIndex = parseInt(row.Livello, 10) - 1;
+
                                 if (isNaN(lvlIndex) || lvlIndex < 0) return;
+
+                                var commonPool = getCommonPoolForId(id);
+                                if (commonPool && tipo === "Azione") {
+                                    if (!commonActions[commonPool][lvlIndex]) commonActions[commonPool][lvlIndex] = [];
+                                    commonActions[commonPool][lvlIndex].push({
+                                        actor: actor, text: text, category: category, common: true
+                                    });
+                                    return;
+                                }
+
+                                // Le righe specifiche vengono caricate solo se lo scenario
+                                // esiste nel foglio SCENARI. Questo mantiene SCENARI come
+                                // anagrafica delle storie e COPIONE come archivio dei contenuti.
+                                if (!id || !roleplayScenarios[id]) return;
 
                                 if (!roleplayScenarios[id].levels[lvlIndex]) {
                                     roleplayScenarios[id].levels[lvlIndex] = {
@@ -1707,17 +1778,45 @@
                                 }
 
                                 var level = roleplayScenarios[id].levels[lvlIndex];
-                                var tipo = String(row.Tipo || "").trim();
-                                var actor = row.Chi_Parla_o_Agisce || "";
-                                var text = row.Testo || "";
-                                var category = row.Categoria ? String(row.Categoria).trim() : "";
 
-                                if (tipo === "Dialogo") level.introDialogues.push({ speaker: actor, text: text });
-                                else if (tipo === "Azione") level.actions.push({ actor: actor, text: text, category: category });
+                                if (tipo === "Dialogo") {
+                                    level.introDialogues.push({ speaker: actor, text: text });
+                                } else if (tipo === "Azione") {
+                                    level.actions.push({ actor: actor, text: text, category: category });
+                                }
                             });
 
+                            // Seconda passata: innesta le azioni comuni nello scenario in base
+                            // al contesto. Così NON è necessario duplicare le azioni per ogni storia.
                             Object.keys(roleplayScenarios).forEach(function(id) {
-                                roleplayScenarios[id].levels = roleplayScenarios[id].levels.filter(function(level) { return !!level; });
+                                var scenario = roleplayScenarios[id];
+                                var context = normalizeContext(scenario.context);
+                                var poolName = context === 'insieme' ? 'insieme' :
+                                               (context.indexOf('distanza') !== -1 || context.indexOf('distance') !== -1 ? 'distanza' : null);
+
+                                if (poolName) {
+                                    var pool = commonActions[poolName];
+                                    Object.keys(pool).forEach(function(levelKey) {
+                                        var idx = parseInt(levelKey, 10);
+                                        if (isNaN(idx)) return;
+
+                                        if (!scenario.levels[idx]) {
+                                            scenario.levels[idx] = {
+                                                level: idx + 1,
+                                                background: "#000",
+                                                introDialogues: [], actions: []
+                                            };
+                                        }
+
+                                        // Le azioni comuni vengono aggiunte senza modificare
+                                        // i dialoghi o le eventuali azioni specifiche dello scenario.
+                                        scenario.levels[idx].actions = scenario.levels[idx].actions.concat(pool[levelKey]);
+                                    });
+                                }
+
+                                // Mantiene l'ordine dei livelli numerico e non crea buchi
+                                // che possano spostare il numero del livello.
+                                scenario.levels = scenario.levels.filter(function(level) { return !!level; });
                             });
 
                             buildScenarioMenu();
