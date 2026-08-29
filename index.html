@@ -71,6 +71,11 @@
             cursor: pointer; z-index: 100;
         }
 
+        /* Più respiro tra il pulsante Indietro e il titolo nelle schermate interne */
+        .menu-screen .back-btn + .title {
+            margin-top: 54px !important;
+        }
+
         #app-version {
             position: fixed; bottom: 8px; left: 10px;
             color: rgba(255,255,255,0.35); font-size: 0.6rem; letter-spacing: 0.5px;
@@ -301,7 +306,7 @@
         <div id="lightbox-container" onclick="event.stopPropagation();"></div>
     </div>
 
-    <div id="app-version">Ver.12</div>
+    <div id="app-version">Ver.13</div>
     <div id="connection-status-dot" title="Stato connessione sincronizzata"></div>
 
     <div id="game-media-controls">
@@ -377,7 +382,7 @@
         <button class="btn btn-tiziano" id="btn-select-tiziano" onclick="selectPlayer('Tiziano')">Sono Tiziano</button>
         <button class="btn btn-claudia" id="btn-select-claudia" onclick="selectPlayer('Claudia')">Sono Claudia</button>
         <div id="p2p-status" style="font-size: 0.9rem; color: #e91e63; margin: 20px 0; font-weight: bold;">🔴 Seleziona chi sei per connetterti al partner</div>
-        <button class="btn btn-context" id="start-sync-btn" style="display:none;" onclick="showScreen('scenario-screen')">Entra nel gioco sincronizzato</button>
+        <button class="btn btn-context" id="start-sync-btn" style="display:none;" onclick="buildScenarioMenu(); showScreen('scenario-screen')">Entra nel gioco sincronizzato</button>
     </div>
 
     <div id="gallery-screen" class="menu-screen">
@@ -391,7 +396,7 @@
     <div id="scenario-screen" class="menu-screen">
         <button class="back-btn" onclick="showScreen('selection-screen')">← Indietro</button>
         <h1 class="title">Seleziona la Storia</h1>
-        <p style="margin-bottom: 20px; color: #a996b8;">Scegliete la storia dal contesto <strong style="color:#e91e63;">Insieme</strong>.</p>
+        <p id="scenario-context-description" style="margin-bottom: 20px; color: #a996b8;">Scegliete la storia.</p>
         <div id="scenario-list-container" style="display: flex; flex-direction: column; align-items: center; width: 100%;"></div>
     </div>
 
@@ -1241,8 +1246,10 @@
 
         function selectScenario(scenarioId, isRemote) {
             if (!roleplayScenarios[scenarioId]) return;
-            if (String(roleplayScenarios[scenarioId].context || '').trim().toLowerCase() !== 'insieme') {
-                alert('Questa storia non appartiene al contesto Insieme.');
+            var scenarioContext = String(roleplayScenarios[scenarioId].context || '').trim().toLowerCase();
+            var requiredContext = (gameMode === 'sync') ? 'a distanza' : 'insieme';
+            if (scenarioContext !== requiredContext) {
+                alert(requiredContext === 'a distanza' ? 'Questa storia non appartiene al contesto A distanza.' : 'Questa storia non appartiene al contesto Insieme.');
                 return;
             }
             currentScenarioId = scenarioId; 
@@ -1836,17 +1843,23 @@
             container.innerHTML = '';
             
             var grouped = {};
+            var requiredContext = (gameMode === 'sync') ? 'a distanza' : 'insieme';
             Object.keys(roleplayScenarios).forEach(function(key) {
                 var sc = roleplayScenarios[key];
                 var ctx = String(sc.context || "").trim();
-                // Per entrambi i modi di gioco sono selezionabili solo le storie del contesto Insieme.
-                if (ctx.toLowerCase() !== 'insieme') return;
+                if (ctx.toLowerCase() !== requiredContext) return;
                 if (!grouped[ctx]) grouped[ctx] = [];
                 grouped[ctx].push({ id: key, title: sc.title });
             });
 
+            var desc = document.getElementById('scenario-context-description');
+            if (desc) {
+                desc.innerHTML = gameMode === 'sync'
+                    ? 'Scegliete la storia dal contesto <strong style="color:#e91e63;">A distanza</strong>.'
+                    : 'Scegliete la storia dal contesto <strong style="color:#e91e63;">Insieme</strong>.';
+            }
             if (!Object.keys(grouped).length) {
-                container.innerHTML = '<div style="color:#a996b8;padding:20px;">Nessuna storia disponibile per il contesto Insieme.</div>';
+                container.innerHTML = '<div style="color:#a996b8;padding:20px;">Nessuna storia disponibile per il contesto ' + (requiredContext === 'a distanza' ? 'A distanza' : 'Insieme') + '.</div>';
                 return;
             }
 
